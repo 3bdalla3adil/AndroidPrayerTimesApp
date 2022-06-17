@@ -1,0 +1,22 @@
+<resources>
+    <string name="app_name">Salawat</string>
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="nav_header_title">Android Studio</string>
+    <string name="nav_header_subtitle">android.studio@android.com</string>
+    <string name="nav_header_desc">Navigation header</string>
+    <string name="menu_calender">التقويم الميلادي</string>
+
+    <string name="menu_home">الصفحة الرئيسية</string>
+    <string name="salawat_time">اوقات الصلوات</string>
+    <string name="alqibla">اتجاه القبلة</string>
+    <string name="menu_reminder">المذكر</string>
+    <string name="menu_hijri">التقويم الهجري</string>
+    <string name="menu_holydates">الايام الدينية</string>
+    <string name="title_activity_read_json">read_json</string>
+    <string name="title_activity_main3">اوقات الصلوات</string>
+    <string name="tv">TextView</string>
+    <string name="menu_qibla">اتجاه القبلة</string>
+    <string name="menu_prayertimes">اوقات الصلوات</string>
+    <string name="qibla_direction_text">اتجاه القبلة</string>
+</resources>
