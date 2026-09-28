@@ -34,15 +34,10 @@
             android:label="Compass"
             android:theme="@style/AppTheme.NoActionBar"/>
 
-        <service
-            android:name=".services"
-            android:enabled="true"
-            android:exported="true" />
-
         <receiver
             android:name=".MyReceiver"
             android:enabled="true"
-            android:exported="true" />
+            android:exported="false" />
 
     </application>
 
