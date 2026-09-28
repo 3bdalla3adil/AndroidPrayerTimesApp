@@ -10,6 +10,7 @@ import 'quran_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
@@ -31,6 +32,12 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  @override
+  void dispose() {
+    timer?.cancel();
+    super.dispose();
+  }
+
   Future<void> load({bool refresh = false}) async {
     try {
       final data = await service.today(refreshLocation: refresh);
@@ -46,6 +53,23 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _scheduleReminders() async {
+    await NotificationService.cancelAll();
+
+    for (var i = 0; i < prayers.length; i++) {
+      await NotificationService.schedulePrayer(
+        id: 100 + i,
+        prayerName: prayers[i].name,
+        time: prayers[i].time,
+      );
+    }
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Prayer reminders scheduled.')),
+    );
+  }
+
   PrayerEntry? get nextPrayer {
     for (final prayer in prayers) {
       if (prayer.time.isAfter(now)) return prayer;
@@ -59,13 +83,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   String formatDuration(Duration value) {
-    return '${value.inHours.toString().padLeft(2, '0')}:${(value.inMinutes % 60).toString().padLeft(2, '0')}:${(value.inSeconds % 60).toString().padLeft(2, '0')}';
-  }
-
-  @override
-  void dispose() {
-    timer?.cancel();
-    super.dispose();
+    return '${value.inHours.toString().padLeft(2, '0')}:'
+        '${(value.inMinutes % 60).toString().padLeft(2, '0')}:'
+        '${(value.inSeconds % 60).toString().padLeft(2, '0')}';
   }
 
   @override
@@ -84,8 +104,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('السلام عليكم',
-                        style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800)),
+                    Text(
+                      'السلام عليكم',
+                      style: theme.textTheme.headlineSmall
+                          ?.copyWith(fontWeight: FontWeight.w800),
+                    ),
                     const SizedBox(height: 4),
                     Text(DateFormat('EEEE, d MMMM').format(now)),
                     Text(location, style: theme.textTheme.bodySmall),
@@ -115,38 +138,65 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.all(22),
                 child: Column(
                   children: [
-                    Text('NEXT PRAYER',
-                        style: theme.textTheme.labelLarge?.copyWith(letterSpacing: 1.4)),
+                    Text(
+                      'NEXT PRAYER',
+                      style: theme.textTheme.labelLarge
+                          ?.copyWith(letterSpacing: 1.4),
+                    ),
                     const SizedBox(height: 8),
-                    Text(next.arabicName,
-                        textDirection: TextDirection.rtl,
-                        style: theme.textTheme.displaySmall?.copyWith(fontWeight: FontWeight.w800)),
+                    Text(
+                      next.arabicName,
+                      textDirection: TextDirection.rtl,
+                      style: theme.textTheme.displaySmall
+                          ?.copyWith(fontWeight: FontWeight.w800),
+                    ),
                     Text(next.name, style: theme.textTheme.titleMedium),
                     const SizedBox(height: 8),
-                    Text(DateFormat('h:mm a').format(next.time),
-                        style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800)),
+                    Text(
+                      DateFormat('h:mm a').format(next.time),
+                      style: theme.textTheme.headlineMedium
+                          ?.copyWith(fontWeight: FontWeight.w800),
+                    ),
                     const SizedBox(height: 8),
-                    Text(formatDuration(countdown), style: theme.textTheme.titleLarge),
+                    Text(
+                      formatDuration(countdown),
+                      style: theme.textTheme.titleLarge,
+                    ),
                   ],
                 ),
               ),
             ),
           const SizedBox(height: 18),
-          Text('Today', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
+          Text(
+            'Today',
+            style: theme.textTheme.titleLarge
+                ?.copyWith(fontWeight: FontWeight.w800),
+          ),
           const SizedBox(height: 10),
-          ...prayers.map((p) => Card(
-                margin: const EdgeInsets.only(bottom: 10),
-                child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: theme.colorScheme.secondaryContainer,
-                    child: const Icon(Icons.access_time),
-                  ),
-                  title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.w700)),
-                  subtitle: Text(p.arabicName, textDirection: TextDirection.rtl),
-                  trailing: Text(DateFormat('h:mm a').format(p.time),
-                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+          ...prayers.map(
+            (p) => Card(
+              margin: const EdgeInsets.only(bottom: 10),
+              child: ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: theme.colorScheme.secondaryContainer,
+                  child: const Icon(Icons.access_time),
                 ),
-              )),
+                title: Text(
+                  p.name,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+                subtitle: Text(
+                  p.arabicName,
+                  textDirection: TextDirection.rtl,
+                ),
+                trailing: Text(
+                  DateFormat('h:mm a').format(p.time),
+                  style: theme.textTheme.titleMedium
+                      ?.copyWith(fontWeight: FontWeight.w800),
+                ),
+              ),
+            ),
+          ),
           const SizedBox(height: 10),
           Card(
             child: ListTile(
@@ -161,23 +211,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(height: 12),
           FilledButton.icon(
-            onPressed: prayers.isEmpty
-                ? null
-                : () async {
-                    await NotificationService.cancelAll();
-                    for (var i = 0; i < prayers.length; i++) {
-                      await NotificationService.schedulePrayer(
-                        id: 100 + i,
-                        prayerName: prayers[i].name,
-                        time: prayers[i].time,
-                      );
-                    }
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Prayer reminders scheduled.')),
-                      );
-                    }
-                  },
+            onPressed: prayers.isEmpty ? null : _scheduleReminders,
             icon: const Icon(Icons.notifications_active_outlined),
             label: const Text('Schedule prayer reminders'),
           ),
