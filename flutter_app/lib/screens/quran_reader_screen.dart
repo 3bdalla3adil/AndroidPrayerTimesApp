@@ -68,11 +68,11 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
                           style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800),
                         ),
                         const SizedBox(height: 6),
-                        Text(s.englishName + ' • ' + s.numberOfAyahs.toString() + ' ayat'),
+                        Text('${s.englishName} • ${s.numberOfAyahs} ayat'),
                         if (widget.surahId != 9) ...[
                           const SizedBox(height: 22),
                           const Text(
-                            'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ',
+                            'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ',
                             textDirection: TextDirection.rtl,
                             textAlign: TextAlign.center,
                             style: TextStyle(fontSize: 23, height: 1.8),
@@ -108,7 +108,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
                               children: [
                                 TextSpan(text: ayah.text),
                                 TextSpan(
-                                  text: '  ﴿' + ayah.id.toString() + '﴾',
+                                  text: '  ﴿${ayah.id}﴾',
                                   style: TextStyle(
                                     fontSize: fontSize * .72,
                                     color: Theme.of(context).colorScheme.primary,
