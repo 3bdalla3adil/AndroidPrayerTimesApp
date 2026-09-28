@@ -68,7 +68,7 @@ class _QuranScreenState extends State<QuranScreen> {
                   child: ListView.separated(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                     itemCount: filtered.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    separatorBuilder: (_, _) => const SizedBox(height: 8),
                     itemBuilder: (_, index) {
                       final s = filtered[index];
                       return Card(
@@ -81,7 +81,7 @@ class _QuranScreenState extends State<QuranScreen> {
                             style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
                           ),
                           subtitle: Text(
-                            s.englishName + ' • ' + s.numberOfAyahs.toString() + ' ayat',
+                            '${s.englishName} • ${s.numberOfAyahs} ayat',
                           ),
                           trailing: const Icon(Icons.chevron_right),
                           onTap: () => Navigator.of(context).push(
