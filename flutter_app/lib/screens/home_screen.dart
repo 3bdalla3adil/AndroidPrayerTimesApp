@@ -59,11 +59,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   String formatDuration(Duration value) {
-    return value.inHours.toString().padLeft(2, '0') +
-        ':' +
-        (value.inMinutes % 60).toString().padLeft(2, '0') +
-        ':' +
-        (value.inSeconds % 60).toString().padLeft(2, '0');
+    return '${value.inHours.toString().padLeft(2, '0')}:${(value.inMinutes % 60).toString().padLeft(2, '0')}:${(value.inSeconds % 60).toString().padLeft(2, '0')}';
   }
 
   @override
