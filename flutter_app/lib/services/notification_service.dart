@@ -8,9 +8,7 @@ class NotificationService {
   static final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
 
-  /// Call once at app startup (from main.dart or app.dart).
   static Future<void> initialize() async {
-    // Initialize timezone database so zonedSchedule works correctly.
     tz_data.initializeTimeZones();
 
     const androidSettings =
@@ -28,28 +26,13 @@ class NotificationService {
 
     await _plugin.initialize(
       settings: settings,
-      onDidReceiveNotificationResponse: (response) {
-        // Handle notification tap here if needed.
-      },
+      onDidReceiveNotificationResponse: (_) {},
     );
 
-    // Ask for Android 13+ permission.
     await _plugin
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
         ?.requestNotificationsPermission();
-  }
-
-  /// Request permission explicitly (call from a button if needed).
-  static Future<bool> requestPermission() async {
-    final android = _plugin.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>();
-    final ios = _plugin.resolvePlatformSpecificImplementation<
-        IOSFlutterLocalNotificationsPlugin>();
-
-    final a = await android?.requestNotificationsPermission() ?? true;
-    final i = await ios?.requestPermissions(alert: true, badge: true, sound: true) ?? true;
-    return a && i;
   }
 
   static const AndroidNotificationDetails _androidDetails =
@@ -65,7 +48,6 @@ class NotificationService {
   static const NotificationDetails _details =
       NotificationDetails(android: _androidDetails);
 
-  /// Show an immediate notification.
   static Future<void> show({
     required int id,
     required String title,
@@ -80,39 +62,28 @@ class NotificationService {
   }
 
   /// Schedule a single prayer notification.
-  ///
-  /// [id] must be unique per prayer per day. A common scheme is:
-  ///   id = dayIndex * 10 + prayerIndex
   static Future<void> schedulePrayer({
     required int id,
-    required String title,
-    required String body,
-    required DateTime scheduledDate,
+    required String prayerName,
+    required DateTime time,
   }) async {
-    // Convert to TZDateTime in the device's local zone.
-    final tzDate = tz.TZDateTime.from(scheduledDate, tz.local);
+    final tzDate = tz.TZDateTime.from(time, tz.local);
 
-    // Skip if the time is in the past.
     if (tzDate.isBefore(tz.TZDateTime.now(tz.local))) return;
 
     await _plugin.zonedSchedule(
       id: id,
-      title: title,
-      body: body,
+      title: prayerName,
+      body: 'It is time for $prayerName prayer',
       scheduledDate: tzDate,
       notificationDetails: _details,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      matchDateTimeComponents: DateTimeComponents.time, // daily repeat
+      matchDateTimeComponents: DateTimeComponents.time,
     );
   }
 
-  /// Cancel a single notification.
   static Future<void> cancel(int id) => _plugin.cancel(id: id);
-
-  /// Cancel all notifications.
   static Future<void> cancelAll() => _plugin.cancelAll();
-
-  /// List pending scheduled notifications (useful for debugging).
   static Future<List<PendingNotificationRequest>> pending() =>
       _plugin.pendingNotificationRequests();
 }
