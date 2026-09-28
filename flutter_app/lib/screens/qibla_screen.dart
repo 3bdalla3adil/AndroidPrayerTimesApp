@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'package:adhan_dart/adhan_dart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_device_compass/flutter_device_compass.dart';
@@ -38,7 +37,7 @@ class _QiblaScreenState extends State<QiblaScreen> {
       if (!mounted) return;
       setState(() {
         qiblaBearing = qibla;
-        status = 'Qibla is ' + qibla.toStringAsFixed(1) + '° from North.';
+        status = 'Qibla is ${qibla.toStringAsFixed(1)}° from North.';
       });
     } catch (e) {
       if (!mounted) return;
