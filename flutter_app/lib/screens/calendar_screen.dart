@@ -42,7 +42,7 @@ class CalendarScreen extends StatelessWidget {
                     style: TextStyle(fontSize: 25, fontWeight: FontWeight.w800),
                   ),
                   const SizedBox(height: 8),
-                  Text('Approximate Hijri cycle ' + hijriApprox(now).toString()),
+                  Text('Approximate Hijri cycle ${hijriApprox(now)}'),
                   const SizedBox(height: 12),
                   const Text(
                     'Hijri dates can differ by local moon-sighting and official calendars.',
