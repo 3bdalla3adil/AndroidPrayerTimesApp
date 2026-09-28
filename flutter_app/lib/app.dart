@@ -1,75 +1,75 @@
 import 'package:flutter/material.dart';
-import 'package:quran_data_dart/quran.dart';
 
 import 'screens/home_screen.dart';
 import 'screens/quran_screen.dart';
-import 'screens/qibla_screen.dart';
 import 'screens/calendar_screen.dart';
-import 'screens/settings_screen.dart';
-import 'services/notification_service.dart';
+// import 'screens/other_screens.dart';  // add yours
 
-class AppBootstrap {
-  static Future<void> initialize() async {
-    await QuranService.initialize();
-    await NotificationService.initialize();
-  }
-}
-
-class SalawatQuranApp extends StatefulWidget {
+class SalawatQuranApp extends StatelessWidget {
   const SalawatQuranApp({super.key});
 
   @override
-  State<SalawatQuranApp> createState() => _SalawatQuranAppState();
-}
-
-class _SalawatQuranAppState extends State<SalawatQuranApp> {
-  int index = 0;
-
-  final screens = const [
-    HomeScreen(),
-    QuranScreen(),
-    QiblaScreen(),
-    CalendarScreen(),
-    SettingsScreen(),
-  ];
-
-  @override
   Widget build(BuildContext context) {
-    const seed = Color(0xFF176B5B);
     return MaterialApp(
-      title: 'Salawat & Quran',
+      title: 'Salawat Quran',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: seed),
-        scaffoldBackgroundColor: const Color(0xFFF6F8F6),
-        cardTheme: CardThemeData(
-          elevation: 0,
-          margin: EdgeInsets.zero,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        ),
+        colorSchemeSeed: Colors.green,
       ),
-      darkTheme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: seed,
-          brightness: Brightness.dark,
-        ),
-      ),
-      themeMode: ThemeMode.system,
-      home: Scaffold(
-        body: IndexedStack(index: index, children: screens),
-        bottomNavigationBar: NavigationBar(
-          selectedIndex: index,
-          onDestinationSelected: (value) => setState(() => index = value),
-          destinations: const [
-            NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Home'),
-            NavigationDestination(icon: Icon(Icons.menu_book_outlined), selectedIcon: Icon(Icons.menu_book), label: 'Quran'),
-            NavigationDestination(icon: Icon(Icons.explore_outlined), selectedIcon: Icon(Icons.explore), label: 'Qibla'),
-            NavigationDestination(icon: Icon(Icons.calendar_month_outlined), selectedIcon: Icon(Icons.calendar_month), label: 'Calendar'),
-            NavigationDestination(icon: Icon(Icons.settings_outlined), selectedIcon: Icon(Icons.settings), label: 'Settings'),
-          ],
-        ),
+      home: const RootShell(),
+    );
+  }
+}
+
+class RootShell extends StatefulWidget {
+  const RootShell({super.key});
+
+  @override
+  State<RootShell> createState() => _RootShellState();
+}
+
+class _RootShellState extends State<RootShell> {
+  int _currentIndex = 0;
+
+  // Build only the active tab — lazy loading.
+  Widget _buildBody() {
+    switch (_currentIndex) {
+      case 0:
+        return const HomeScreen();
+      case 1:
+        return const QuranScreen();
+      case 2:
+        return const CalendarScreen();
+      default:
+        return const HomeScreen();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _buildBody(),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _currentIndex,
+        onDestinationSelected: (i) => setState(() => _currentIndex = i),
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.menu_book_outlined),
+            selectedIcon: Icon(Icons.menu_book),
+            label: 'Quran',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.calendar_today_outlined),
+            selectedIcon: Icon(Icons.calendar_today),
+            label: 'Calendar',
+          ),
+        ],
       ),
     );
   }
