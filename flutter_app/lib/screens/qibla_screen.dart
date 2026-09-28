@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:adhan_dart/adhan_dart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_device_compass/flutter_device_compass.dart';
 import 'package:geolocator/geolocator.dart';
 
 class QiblaScreen extends StatefulWidget {
@@ -10,30 +11,34 @@ class QiblaScreen extends StatefulWidget {
 }
 
 class _QiblaScreenState extends State<QiblaScreen> {
-  double? bearing;
-  String status = 'Tap the button to calculate Qibla from your current location.';
+  double? qiblaBearing;
+  String status = 'Find your Qibla direction using the phone compass.';
 
   Future<void> calculate() async {
     try {
       if (!await Geolocator.isLocationServiceEnabled()) {
         throw StateError('Location services are disabled.');
       }
+
       var permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
       }
+
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
         throw StateError('Location permission was not granted.');
       }
+
       final position = await Geolocator.getCurrentPosition();
       final qibla = Qibla.qibla(
         Coordinates(position.latitude, position.longitude),
       );
+
       if (!mounted) return;
       setState(() {
-        bearing = qibla;
-        status = 'Qibla direction is ' + qibla.toStringAsFixed(1) + '° from North.';
+        qiblaBearing = qibla;
+        status = 'Qibla is ' + qibla.toStringAsFixed(1) + '° from North.';
       });
     } catch (e) {
       if (!mounted) return;
@@ -41,48 +46,87 @@ class _QiblaScreenState extends State<QiblaScreen> {
     }
   }
 
+  double relativeHeading(double deviceHeading) {
+    final target = qiblaBearing ?? 0;
+    var value = target - deviceHeading;
+    while (value < -180) {
+      value += 360;
+    }
+    while (value > 180) {
+      value -= 360;
+    }
+    return value;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final angle = (bearing ?? 0) * math.pi / 180;
     return Scaffold(
       appBar: AppBar(title: const Text('Qibla direction')),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                'القبلة',
-                textDirection: TextDirection.rtl,
-                style: Theme.of(context).textTheme.displaySmall?.copyWith(fontWeight: FontWeight.w800),
+      body: StreamBuilder<CompassEvent>(
+        stream: FlutterCompass.events,
+        builder: (context, snapshot) {
+          final heading = snapshot.data?.heading;
+          final relative = heading == null ? 0.0 : relativeHeading(heading);
+
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'القبلة',
+                    textDirection: TextDirection.rtl,
+                    style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                  ),
+                  const SizedBox(height: 30),
+                  Container(
+                    width: 250,
+                    height: 250,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.primary,
+                        width: 3,
+                      ),
+                    ),
+                    child: AnimatedRotation(
+                      turns: relative / 360,
+                      duration: const Duration(milliseconds: 180),
+                      child: Icon(
+                        Icons.navigation,
+                        size: 170,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    heading == null
+                        ? 'Waiting for compass sensor…'
+                        : 'Turn the arrow toward the Qibla',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(status, textAlign: TextAlign.center),
+                  const SizedBox(height: 24),
+                  FilledButton.icon(
+                    onPressed: calculate,
+                    icon: const Icon(Icons.my_location),
+                    label: const Text('Calculate Qibla'),
+                  ),
+                  const SizedBox(height: 10),
+                  const Text(
+                    'Keep the phone flat. If the heading is unstable, calibrate the compass.',
+                    textAlign: TextAlign.center,
+                  ),
+                ],
               ),
-              const SizedBox(height: 32),
-              AnimatedRotation(
-                turns: bearing == null ? 0 : angle / (2 * math.pi),
-                duration: const Duration(milliseconds: 500),
-                child: Icon(
-                  Icons.navigation,
-                  size: 190,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              ),
-              const SizedBox(height: 28),
-              Text(status, textAlign: TextAlign.center),
-              const SizedBox(height: 24),
-              FilledButton.icon(
-                onPressed: calculate,
-                icon: const Icon(Icons.my_location),
-                label: const Text('Find Qibla'),
-              ),
-              const SizedBox(height: 10),
-              const Text(
-                'For best accuracy, hold the phone flat and calibrate its compass if requested.',
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
