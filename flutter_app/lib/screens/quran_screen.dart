@@ -8,7 +8,7 @@ class QuranScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final total = quran.totalSurahCount; // 114
+    const total = quran.totalSurahCount; // 114
 
     return Scaffold(
       appBar: AppBar(title: const Text('Quran')),
