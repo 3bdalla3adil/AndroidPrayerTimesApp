@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:quran/quran.dart';
+import 'package:quran/quran.dart' as quran;
 
 class QuranScreen extends StatefulWidget {
   const QuranScreen({super.key});
@@ -9,85 +9,101 @@ class QuranScreen extends StatefulWidget {
 }
 
 class _QuranScreenState extends State<QuranScreen> {
-  bool _isLoading = true;
-  String? _error;
-
   @override
-  void initState() {
-    super.initState();
-    load();
-  }
+  Widget build(BuildContext context) {
+    // quran.surahList is a List<int> of surah numbers: [1, 2, 3, ..., 114]
+    final surahNumbers = quran.surahList;
 
-  Future<void> load() async {
-    try {
-      await QuranService.initialize();
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-        _error = null;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-        _error = 'Could not load Quran data: $e';
-      });
-    }
+    return Scaffold(
+      appBar: AppBar(title: const Text('Quran')),
+      body: ListView.separated(
+        itemCount: surahNumbers.length,
+        separatorBuilder: (_, __) => const Divider(height: 1),
+        itemBuilder: (context, index) {
+          final surahNumber = surahNumbers[index];
+          final name = quran.getSurahName(surahNumber);
+          final nameArabic = quran.getSurahNameArabic(surahNumber);
+          final verseCount = quran.getVerseCount(surahNumber);
+          final place = quran.getPlaceOfRevelation(surahNumber);
+
+          return ListTile(
+            leading: CircleAvatar(
+              child: Text('$surahNumber'),
+            ),
+            title: Text('$name  —  $nameArabic'),
+            subtitle: Text('$place • $verseCount verses'),
+            onTap: () {
+              // TODO: navigate to a surah reader screen
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => _SurahReaderScreen(surahNumber: surahNumber),
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
   }
+}
+
+class _SurahReaderScreen extends StatelessWidget {
+  const _SurahReaderScreen({required this.surahNumber});
+
+  final int surahNumber;
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
+    final verseCount = quran.getVerseCount(surahNumber);
+    final surahName = quran.getSurahName(surahNumber);
 
-    if (_error != null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Quran')),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
+    return Scaffold(
+      appBar: AppBar(title: Text(surahName)),
+      body: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: verseCount,
+        itemBuilder: (context, index) {
+          final verseNumber = index + 1;
+          final arabic = quran.getVerse(surahNumber, verseNumber);
+          final translation = quran.getVerseTranslation(
+            surahNumber,
+            verseNumber,
+          );
+
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 24),
             child: Column(
-              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Icon(Icons.error_outline, size: 48),
-                const SizedBox(height: 12),
-                Text(_error!, textAlign: TextAlign.center),
-                const SizedBox(height: 16),
-                FilledButton(
-                  onPressed: () {
-                    setState(() {
-                      _isLoading = true;
-                      _error = null;
-                    });
-                    load();
-                  },
-                  child: const Text('Retry'),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircleAvatar(
+                      radius: 14,
+                      child: Text(
+                        '$verseNumber',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  arabic,
+                  textAlign: TextAlign.right,
+                  textDirection: TextDirection.rtl,
+                  style: const TextStyle(fontSize: 24, height: 1.8),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  translation,
+                  style: const TextStyle(fontSize: 15, color: Colors.black87),
                 ),
               ],
             ),
-          ),
-        ),
-      );
-    }
-
-    // --- Success state: render your Quran UI here ---
-    // This is where your existing surah list / reader goes.
-    return Scaffold(
-      appBar: AppBar(title: const Text('Quran')),
-      body: ListView(
-        children: const [
-          // Replace with your actual Quran UI, e.g.:
-          // ...surahs.map((s) => ListTile(title: Text(s.name), ...)),
-          Center(
-            child: Padding(
-              padding: EdgeInsets.all(24),
-              child: Text('Quran data loaded'),
-            ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
