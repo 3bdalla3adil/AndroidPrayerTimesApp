@@ -6,3 +6,15 @@ Future<void> main() async {
   await AppBootstrap.initialize();
   runApp(const SalawatQuranApp());
 }
+
+class AppBootstrap extends StatelessWidget {
+  const AppBootstrap({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const MaterialApp(
+      title: 'Quran App',
+      home: QuranScreen(),
+    );
+  }
+}
