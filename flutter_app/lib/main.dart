@@ -1,20 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import 'app.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await AppBootstrap.initialize();
+
+  // Warm up SharedPreferences so screens can read it synchronously later.
+  await SharedPreferences.getInstance();
+
   runApp(const SalawatQuranApp());
-}
-
-class AppBootstrap extends StatelessWidget {
-  const AppBootstrap({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const MaterialApp(
-      title: 'Quran App',
-      home: QuranScreen(),
-    );
-  }
 }
