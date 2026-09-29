@@ -13,7 +13,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   adhan_dart: ^2.0.1
   geolocator: ^14.0.2
-  quran_data_dart: ^1.7.1
+  #quran_data_dart: ^1.7.1
   quran: ^1.2.3
   shared_preferences: ^2.5.5
   flutter_local_notifications: ^22.3.1
