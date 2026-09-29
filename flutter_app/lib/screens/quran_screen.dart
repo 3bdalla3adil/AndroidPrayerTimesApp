@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:quran_data_dart/quran_data_dart.dart';
+import 'package:quran/quran.dart';
 
 class QuranScreen extends StatefulWidget {
   const QuranScreen({super.key});
