@@ -1,27 +1,19 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
+
 import 'package:salawat_quran/app.dart';
 
 void main() {
   setUp(() {
+    // Mocks BOTH the legacy and async SharedPreferences APIs.
     SharedPreferences.setMockInitialValues({});
   });
-// void main() {
-//   TestWidgetsFlutterBinding.ensureInitialized();
-
-//   setUp(() {
-    // Mock the NEW async SharedPreferences API.
-    // SharedPreferences.setMockInitialValues only covers the legacy API.
-  //   SharedPreferencesAsyncPlatform.instance =
-  //       InMemorySharedPreferencesAsync.empty();
-  // });
 
   testWidgets('app renders navigation', (tester) async {
     await tester.pumpWidget(const SalawatQuranApp());
 
-    // Two frames is enough. Do NOT use pumpAndSettle — HomeScreen has a
-    // Timer.periodic(1s) that would make it time out.
+    // Two pumps only — HomeScreen may use a Timer.periodic that would
+    // make pumpAndSettle() time out.
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
