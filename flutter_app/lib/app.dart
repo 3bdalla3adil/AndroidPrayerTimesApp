@@ -78,11 +78,25 @@ class RootShell extends StatefulWidget {
 
 class _RootShellState extends State<RootShell> {
   int _currentIndex = 0;
-  final _pages = const [HomeScreen(), QuranScreen(), PrayerScreen(), QiblaScreen(), MoreScreen()];
+  Widget _buildBody() {
+    switch (_currentIndex) {
+      case 0:
+        return const HomeScreen();
+      case 1:
+        return const QuranScreen();
+      case 2:
+        return const PrayerScreen();
+      case 3:
+        return const QiblaScreen();
+      case 4:
+        return const MoreScreen();
+    }
+    return const HomeScreen();
+  }
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    body: IndexedStack(index: _currentIndex, children: _pages),
+    body: _buildBody(),
     bottomNavigationBar: NavigationBar(
       selectedIndex: _currentIndex,
       onDestinationSelected: (index) => setState(() => _currentIndex = index),
