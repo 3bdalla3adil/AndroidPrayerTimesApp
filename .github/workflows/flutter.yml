@@ -32,7 +32,7 @@ jobs:
         run: flutter pub get
 
       - name: Analyze
-        run: flutter analyze
+        run: flutter analyze --fatal-warnings
 
       - name: Test
         run: flutter test
