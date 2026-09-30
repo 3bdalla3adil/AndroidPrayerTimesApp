@@ -82,3 +82,39 @@ jobs:
           path: flutter_app/build/app/outputs/bundle/release/app-release.aab
           if-no-files-found: error
           retention-days: 30
+  
+  build-ipa:
+    needs: analyze-and-test
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Generate iOS platform
+        run: flutter create . --platforms=ios --org "com.salawat-quran" --project-name "salawat-quran"
+
+      - name: Add Firebase config
+        run: echo "${{ secrets.GOOGLE_SERVICE_INFO_PLIST }}" | base64 -d > ios/Runner/GoogleService-Info.plist
+
+      - run: flutter pub get
+
+      - name: Build iOS (no codesign)
+        run: flutter build ios --release --no-codesign
+
+      - name: Package unsigned IPA
+        run: |
+          rm -rf Payload app-release-unsigned.ipa
+          mkdir -p Payload
+          cp -R build/ios/iphoneos/Runner.app Payload/
+          zip -r app-release-unsigned.ipa Payload
+          ls -la app-release-unsigned.ipa
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-release-ipa-unsigned
+          path: app-release-unsigned.ipa
+          if-no-files-found: error
