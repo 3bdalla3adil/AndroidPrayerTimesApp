@@ -33,7 +33,7 @@ class _QuranScreenState extends State<QuranScreen> {
     final theme = Theme.of(context);
     final items = _filtered;
     return ListView(
-      padding: const EdgeInsets.fromLTRB(22, 28, 22, 110),
+      padding: const EdgeInsets.fromLTRB(22, 20, 22, 112),
       children: [
         Text('THE HOLY QURAN', style: theme.textTheme.labelSmall?.copyWith(letterSpacing: 1.6, fontWeight: FontWeight.w800, color: theme.colorScheme.primary)),
         const SizedBox(height: 7),
@@ -78,18 +78,53 @@ class _QuranScreenState extends State<QuranScreen> {
           final arabic = quran.getSurahNameArabic(number);
           final place = quran.getPlaceOfRevelation(number);
           final count = quran.getVerseCount(number);
-          return Card(
-            margin: const EdgeInsets.only(bottom: 8),
-            child: ListTile(
-              leading: _DiamondNumber(number: number, color: theme.colorScheme.primary),
-              title: Text(name, style: const TextStyle(fontWeight: FontWeight.w700)),
-              subtitle: Text('$place · $count verses'),
-              trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-                Text(arabic, textDirection: TextDirection.rtl, style: TextStyle(color: theme.colorScheme.primary, fontSize: 17)),
-                const SizedBox(width: 4),
-                const Icon(Icons.chevron_right),
-              ]),
+          return Material(
+            color: Colors.transparent,
+            child: InkWell(
               onTap: () => _openReader(number),
+              borderRadius: BorderRadius.circular(13),
+              child: Container(
+                constraints: const BoxConstraints(minHeight: 74),
+                decoration: BoxDecoration(
+                  border: Border(bottom: BorderSide(color: theme.colorScheme.outlineVariant)),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Row(
+                  children: [
+                    _DiamondNumber(number: number, color: theme.colorScheme.primary),
+                    const SizedBox(width: 13),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(name, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
+                          const SizedBox(height: 3),
+                          Text('$place · $count verses', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Flexible(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              arabic,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textDirection: TextDirection.rtl,
+                              style: TextStyle(color: theme.colorScheme.primary, fontSize: 17, fontFamily: 'serif'),
+                            ),
+                          ),
+                          const SizedBox(width: 7),
+                          Icon(Icons.chevron_right, size: 17, color: theme.colorScheme.onSurfaceVariant),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           );
         }),
