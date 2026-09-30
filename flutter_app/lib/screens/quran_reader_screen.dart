@@ -17,6 +17,7 @@ class QuranReaderScreen extends StatefulWidget {
 class _QuranReaderScreenState extends State<QuranReaderScreen> {
   final _player = AudioPlayer();
   final _storage = StorageService();
+  final _scrollController = ScrollController();
   double _fontSize = 28;
   bool _showTranslation = true;
   int? _playingAyah;
@@ -26,6 +27,15 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
   void initState() {
     super.initState();
     _restore();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || widget.startingAyah <= 1 || !_scrollController.hasClients) {
+        return;
+      }
+      final target = (widget.startingAyah - 1) * 210.0;
+      _scrollController.jumpTo(
+        target.clamp(0.0, _scrollController.position.maxScrollExtent),
+      );
+    });
   }
 
   Future<void> _restore() async {
@@ -39,7 +49,11 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
   }
 
   @override
-  void dispose() { _player.dispose(); super.dispose(); }
+  void dispose() {
+    _scrollController.dispose();
+    _player.dispose();
+    super.dispose();
+  }
 
   int _globalAyahNumber(int surah, int ayah) {
     var total = 0;
@@ -98,6 +112,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
         ],
       ),
       body: ListView.builder(
+        controller: _scrollController,
         padding: const EdgeInsets.fromLTRB(18, 10, 18, 40),
         itemCount: count + 2,
         itemBuilder: (context, index) {
