@@ -25,9 +25,11 @@ final class QuranPackageDataSource implements QuranLocalDataSource {
     final matches = <QuranVerse>[];
     for (var surah = 1; surah <= quran.totalSurahCount; surah++) {
       final verses = await getSurah(surah);
-      for (final verse in verses) {
-        final haystack = verse.arabicText + ' ' + (verse.translationEn ?? '');
-        if (haystack.toLowerCase().contains(needle)) matches.add(verse);
+      for (final verse of verses) {
+        final haystack = '${verse.arabicText} ${verse.translationEn ?? ''}';
+        if (haystack.toLowerCase().contains(needle)) {
+          matches.add(verse);
+        }
       }
     }
     return matches;
@@ -36,7 +38,7 @@ final class QuranPackageDataSource implements QuranLocalDataSource {
   @override
   Future<QuranVerse> getVerse(int surahNumber, int ayahNumber) async {
     if (ayahNumber < 1 || ayahNumber > quran.getVerseCount(surahNumber)) {
-      throw RangeError('Invalid ayah number: ' + ayahNumber.toString());
+      throw RangeError('Invalid ayah number: $ayahNumber');
     }
     return QuranVerse(
       surahNumber: surahNumber,
