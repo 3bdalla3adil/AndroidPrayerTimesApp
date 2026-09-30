@@ -97,6 +97,12 @@ jobs:
       - name: Generate iOS platform
         run: flutter create . --platforms=ios --org "com.salawatquran" --project-name "salawat_quran"
 
+      - name: Configure iOS permissions and background audio
+        run: |
+          /usr/libexec/PlistBuddy -c "Add :NSLocationWhenInUseUsageDescription string Allow Quran Prayer Companion to use your location for prayer times and Qibla direction." ios/Runner/Info.plist || true
+          /usr/libexec/PlistBuddy -c "Add :UIBackgroundModes array" ios/Runner/Info.plist || true
+          /usr/libexec/PlistBuddy -c "Add :UIBackgroundModes:0 string audio" ios/Runner/Info.plist || true
+
       - run: flutter pub get
 
       - name: Build iOS (no codesign)
