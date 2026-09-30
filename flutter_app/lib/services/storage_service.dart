@@ -41,5 +41,5 @@ class StorageService {
   }
 
   Future<void> saveBookmarks(List<(int, int)> bookmarks) async =>
-      prefs.setStringList(_bookmarks, bookmarks.map((b) => b.$1.toString() + ':' + b.$2.toString()).toList());
+      prefs.setStringList(_bookmarks, bookmarks.map((b) => '${b.$1}:${b.$2}').toList());
 }
