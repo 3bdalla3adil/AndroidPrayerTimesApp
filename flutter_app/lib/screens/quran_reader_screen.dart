@@ -90,10 +90,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-          Text(arabicName, textDirection: TextDirection.rtl, style: const TextStyle(fontSize: 12)),
-        ]),
+        title: const Text('Quran reader', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
         actions: [
           IconButton(onPressed: () => setState(() => _showTranslation = !_showTranslation), icon: Icon(_showTranslation ? Icons.translate : Icons.translate_outlined)),
           IconButton(onPressed: _fontSize <= 24 ? null : () { setState(() => _fontSize = math.max(24, _fontSize - 2)); _storage.saveQuranFontSize(_fontSize); }, icon: const Icon(Icons.text_decrease)),
@@ -102,7 +99,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
       ),
       body: ListView.builder(
         padding: const EdgeInsets.fromLTRB(18, 10, 18, 40),
-        itemCount: count + 1,
+        itemCount: count + 2,
         itemBuilder: (context, index) {
           if (index == 0) {
             return Column(children: [
@@ -111,7 +108,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 18),
                 decoration: BoxDecoration(color: theme.colorScheme.inverseSurface, borderRadius: BorderRadius.circular(22)),
                 child: Column(children: [
-                  Text('THE HOLY QURAN · $count VERSES', style: TextStyle(color: theme.colorScheme.onInverseSurface.withValues(alpha: .7), fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 1.4)),
+                  Text('${quran.getPlaceOfRevelation(widget.surahNumber).toUpperCase()} · $count VERSES', style: TextStyle(color: theme.colorScheme.onInverseSurface.withValues(alpha: .7), fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 1.4)),
                   const SizedBox(height: 9),
                   Text(arabicName, textDirection: TextDirection.rtl, style: TextStyle(color: theme.colorScheme.onInverseSurface, fontSize: 31, height: 1.4, fontFamily: 'serif')),
                   Text(name, style: TextStyle(color: theme.colorScheme.onInverseSurface, fontSize: 18, fontWeight: FontWeight.w800)),
@@ -119,11 +116,90 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
                   Text(quran.getPlaceOfRevelation(widget.surahNumber), style: TextStyle(color: theme.colorScheme.onInverseSurface.withValues(alpha: .7), fontSize: 12)),
                 ]),
               ),
-              const SizedBox(height: 14),
+              Container(
+                margin: const EdgeInsets.only(top: 16, bottom: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('ARABIC SIZE', style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 1.2)),
+                        const SizedBox(height: 3),
+                        Text('${_fontSize.toInt()} pt', style: TextStyle(color: theme.colorScheme.onSurface, fontSize: 12, fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          tooltip: 'Decrease Arabic text size',
+                          onPressed: _fontSize <= 24 ? null : () {
+                            setState(() => _fontSize = math.max(24, _fontSize - 2));
+                            _storage.saveQuranFontSize(_fontSize);
+                          },
+                          icon: const Icon(Icons.remove),
+                        ),
+                        Container(width: 1, height: 23, color: theme.colorScheme.outlineVariant),
+                        IconButton(
+                          tooltip: 'Increase Arabic text size',
+                          onPressed: _fontSize >= 42 ? null : () {
+                            setState(() => _fontSize = math.min(42, _fontSize + 2));
+                            _storage.saveQuranFontSize(_fontSize);
+                          },
+                          icon: const Icon(Icons.add),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
               Text('بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ', textDirection: TextDirection.rtl, style: TextStyle(color: theme.colorScheme.primary, fontSize: 24, fontFamily: 'serif')),
               const SizedBox(height: 16),
             ]);
           }
+          if (index == count + 1) {
+            return Padding(
+              padding: const EdgeInsets.only(top: 12, bottom: 20),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  if (widget.surahNumber > 1)
+                    OutlinedButton.icon(
+                      onPressed: () => Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => QuranReaderScreen(
+                            surahNumber: widget.surahNumber - 1,
+                          ),
+                        ),
+                      ),
+                      icon: const Icon(Icons.arrow_back, size: 16),
+                      label: Text(quran.getSurahName(widget.surahNumber - 1)),
+                    )
+                  else
+                    const SizedBox.shrink(),
+                  if (widget.surahNumber < quran.totalSurahCount)
+                    OutlinedButton.icon(
+                      onPressed: () => Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => QuranReaderScreen(
+                            surahNumber: widget.surahNumber + 1,
+                          ),
+                        ),
+                      ),
+                      icon: const Icon(Icons.arrow_forward, size: 16),
+                      label: Text(quran.getSurahName(widget.surahNumber + 1)),
+                    )
+                  else
+                    const SizedBox.shrink(),
+                ],
+              ),
+            );
+          }
+
           final ayah = index;
           final arabic = quran.getVerse(widget.surahNumber, ayah);
           final translation = quran.getVerseTranslation(widget.surahNumber, ayah);
@@ -133,7 +209,12 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
             onTap: () => _savePosition(ayah),
             child: Container(
               padding: const EdgeInsets.fromLTRB(12, 12, 12, 16),
-              decoration: BoxDecoration(border: Border(bottom: BorderSide(color: theme.dividerColor))),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                border: Border.all(color: theme.colorScheme.outlineVariant),
+                borderRadius: BorderRadius.circular(18),
+              ),
+              margin: const EdgeInsets.only(bottom: 11),
               child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                 Row(children: [
                   CircleAvatar(radius: 15, backgroundColor: theme.colorScheme.secondaryContainer, child: Text(ayah.toString(), style: TextStyle(fontSize: 11, color: theme.colorScheme.primary))),
