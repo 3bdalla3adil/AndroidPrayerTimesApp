@@ -21,7 +21,7 @@ class _QuranScreenState extends State<QuranScreen> {
     final all = List.generate(quran.totalSurahCount, (i) => i + 1);
     if (query.isEmpty) return all;
     return all.where((number) {
-      final text = quran.getSurahName(number) + ' ' + quran.getSurahNameArabic(number) + ' ' + quran.getPlaceOfRevelation(number);
+      final text = '${quran.getSurahName(number)} ${quran.getSurahNameArabic(number)} ${quran.getPlaceOfRevelation(number)}';
       return text.toLowerCase().contains(query);
     }).toList();
   }
@@ -60,7 +60,7 @@ class _QuranScreenState extends State<QuranScreen> {
               child: ListTile(
                 leading: Icon(Icons.bookmark_outline, color: theme.colorScheme.onInverseSurface),
                 title: Text('Continue reading', style: TextStyle(color: theme.colorScheme.onInverseSurface, fontWeight: FontWeight.w800)),
-                subtitle: Text('Verse ' + ayah.toString(), style: TextStyle(color: theme.colorScheme.onInverseSurface.withOpacity(.7))),
+                subtitle: Text('Verse $ayah', style: TextStyle(color: theme.colorScheme.onInverseSurface.withValues(alpha: .7))),
                 trailing: Icon(Icons.arrow_outward, color: theme.colorScheme.onInverseSurface),
                 onTap: () => _openReader(surah, ayah: ayah),
               ),
@@ -70,7 +70,7 @@ class _QuranScreenState extends State<QuranScreen> {
         const SizedBox(height: 20),
         Row(children: [
           Expanded(child: Text('Surahs', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800))),
-          Text(items.length.toString() + ' / 114', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+          Text('${items.length} / 114', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
         ]),
         const SizedBox(height: 8),
         ...items.map((number) {
@@ -83,7 +83,7 @@ class _QuranScreenState extends State<QuranScreen> {
             child: ListTile(
               leading: _DiamondNumber(number: number, color: theme.colorScheme.primary),
               title: Text(name, style: const TextStyle(fontWeight: FontWeight.w700)),
-              subtitle: Text(place + ' · ' + count.toString() + ' verses'),
+              subtitle: Text('$place · $count verses'),
               trailing: Row(mainAxisSize: MainAxisSize.min, children: [
                 Text(arabic, textDirection: TextDirection.rtl, style: TextStyle(color: theme.colorScheme.primary, fontSize: 17)),
                 const SizedBox(width: 4),
@@ -109,7 +109,7 @@ class _DiamondNumber extends StatelessWidget {
     child: Container(
       width: 38,
       height: 38,
-      decoration: BoxDecoration(border: Border.all(color: color.withOpacity(.2)), borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(border: Border.all(color: color.withValues(alpha: .2)), borderRadius: BorderRadius.circular(12)),
       alignment: Alignment.center,
       child: Transform.rotate(angle: -0.785398, child: Text(number.toString(), style: TextStyle(color: color, fontWeight: FontWeight.w800))),
     ),
