@@ -10,7 +10,7 @@ void main() {
     final source = QuranPackageDataSource();
     final verses = await source.getSurah(1);
     expect(verses.length, 7);
-    expect(verses.first.arabicText, contains('بِسۡمِ'));
+    expect(verses.first.arabicText, contains('بِسْمِ اللَّهِ'));
   });
 
   test('repository returns a successful ayah result', () async {
