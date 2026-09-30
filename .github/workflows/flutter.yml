@@ -95,7 +95,7 @@ jobs:
           cache: true
 
       - name: Generate iOS platform
-        run: flutter create . --platforms=ios --org "com.salawat-quran" --project-name "salawat-quran"
+        run: flutter create . --platforms=ios --org "com.salawat_quran" --project-name "salawat_quran"
 
       - name: Add Firebase config
         run: echo "${{ secrets.GOOGLE_SERVICE_INFO_PLIST }}" | base64 -d > ios/Runner/GoogleService-Info.plist
