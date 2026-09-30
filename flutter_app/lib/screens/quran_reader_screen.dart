@@ -116,7 +116,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
                   Text(arabicName, textDirection: TextDirection.rtl, style: TextStyle(color: theme.colorScheme.onInverseSurface, fontSize: 31, height: 1.4, fontFamily: 'serif')),
                   Text(name, style: TextStyle(color: theme.colorScheme.onInverseSurface, fontSize: 18, fontWeight: FontWeight.w800)),
                   const SizedBox(height: 2),
-                  Text(quran.getPlaceOfRevelation(widget.surahNumber), style: TextStyle(color: theme.colorScheme.onInverseSurface.withOpacity(.7), fontSize: 12)),
+                  Text(quran.getPlaceOfRevelation(widget.surahNumber), style: TextStyle(color: theme.colorScheme.onInverseSurface.withValues(alpha: .7), fontSize: 12)),
                 ]),
               ),
               const SizedBox(height: 14),
