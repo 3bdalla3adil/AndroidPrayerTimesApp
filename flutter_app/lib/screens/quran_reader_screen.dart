@@ -43,13 +43,13 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
 
   int _globalAyahNumber(int surah, int ayah) {
     var total = 0;
-    for (var i = 1; i < surah; i++) total += quran.getVerseCount(i);
+    for (var i = 1; i < surah; i++) { total += quran.getVerseCount(i); }
     return total + ayah;
   }
 
   Future<void> _toggleAudio(int ayah) async {
     final global = _globalAyahNumber(widget.surahNumber, ayah);
-    final url = 'https://cdn.islamic.network/quran/audio/128/ar.alafasy/' + global.toString() + '.mp3';
+    final url = 'https://cdn.islamic.network/quran/audio/128/ar.alafasy/$global.mp3';
     try {
       if (_playingAyah == ayah && _player.playing) {
         await _player.pause();
@@ -111,7 +111,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 18),
                 decoration: BoxDecoration(color: theme.colorScheme.inverseSurface, borderRadius: BorderRadius.circular(22)),
                 child: Column(children: [
-                  Text('THE HOLY QURAN · ' + count.toString() + ' VERSES', style: TextStyle(color: theme.colorScheme.onInverseSurface.withOpacity(.7), fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 1.4)),
+                  Text('THE HOLY QURAN · $count VERSES', style: TextStyle(color: theme.colorScheme.onInverseSurface.withValues(alpha: .7), fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 1.4)),
                   const SizedBox(height: 9),
                   Text(arabicName, textDirection: TextDirection.rtl, style: TextStyle(color: theme.colorScheme.onInverseSurface, fontSize: 31, height: 1.4, fontFamily: 'serif')),
                   Text(name, style: TextStyle(color: theme.colorScheme.onInverseSurface, fontSize: 18, fontWeight: FontWeight.w800)),
