@@ -86,6 +86,9 @@ jobs:
   build-ipa:
     needs: analyze-and-test
     runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: flutter_app
     steps:
       - uses: actions/checkout@v5
 
@@ -119,5 +122,5 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: app-release-ipa-unsigned
-          path: app-release-unsigned.ipa
+          path: flutter_app/app-release-unsigned.ipa
           if-no-files-found: error
