@@ -1,6 +1,4 @@
 import 'dart:async';
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 
@@ -136,7 +134,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
                 const SizedBox(height: 10),
                 Text(_countdown(next.time), style: theme.textTheme.headlineSmall?.copyWith(color: theme.colorScheme.onInverseSurface, fontFeatures: const [FontFeature.tabularFigures()])),
                 const SizedBox(height: 4),
-                Text('Time remaining until the next prayer', style: TextStyle(color: theme.colorScheme.onInverseSurface.withOpacity(.7))),
+                Text('Time remaining until the next prayer', style: TextStyle(color: theme.colorScheme.onInverseSurface.withValues(alpha: .7))),
               ]),
             ),
           ),
