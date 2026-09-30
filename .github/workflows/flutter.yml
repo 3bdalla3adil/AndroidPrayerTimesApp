@@ -95,7 +95,7 @@ jobs:
           cache: true
 
       - name: Generate iOS platform
-        run: flutter create . --platforms=ios --org "com.salawatquran" --project-name "salawat_quran"
+        run: flutter create . --platforms=ios --org "com.salawat_quran" --project-name "salawat_quran"
 
       - name: Configure iOS permissions and background audio
         run: |
