@@ -89,7 +89,33 @@ print("Patched android/app/build.gradle.kts")
 PY
 fi
 
-# 3. Sanity check
+# 3. Add runtime permissions required by prayer, Qibla, notifications and exact scheduling.
+MANIFEST="android/app/src/main/AndroidManifest.xml"
+python3 - <<'PY'
+from pathlib import Path
+p = Path("android/app/src/main/AndroidManifest.xml")
+s = p.read_text()
+permissions = [
+    "android.permission.INTERNET",
+    "android.permission.ACCESS_COARSE_LOCATION",
+    "android.permission.ACCESS_FINE_LOCATION",
+    "android.permission.POST_NOTIFICATIONS",
+    "android.permission.SCHEDULE_EXACT_ALARM",
+    "android.permission.USE_EXACT_ALARM",
+    "android.permission.RECEIVE_BOOT_COMPLETED",
+    "android.permission.VIBRATE",
+    "android.permission.WAKE_LOCK",
+]
+for permission in permissions:
+    tag = f'    <uses-permission android:name="{permission}" />'
+    if permission not in s:
+        s = s.replace("<manifest ", "<manifest ", 1)
+        pos = s.find(">") + 1
+        s = s[:pos] + "\n" + tag + s[pos:]
+p.write_text(s)
+PY
+
+# 4. Sanity check
 grep -n "coreLibraryDesugaringEnabled\|coreLibraryDesugaring" android/app/build.gradle* || {
   echo "ERROR: desugaring patch failed"
   exit 1
