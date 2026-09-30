@@ -25,7 +25,7 @@ final class QuranPackageDataSource implements QuranLocalDataSource {
     final matches = <QuranVerse>[];
     for (var surah = 1; surah <= quran.totalSurahCount; surah++) {
       final verses = await getSurah(surah);
-      for (final verse of verses) {
+      for (final QuranVerse verse in verses) {
         final haystack = '${verse.arabicText} ${verse.translationEn ?? ''}';
         if (haystack.toLowerCase().contains(needle)) {
           matches.add(verse);
