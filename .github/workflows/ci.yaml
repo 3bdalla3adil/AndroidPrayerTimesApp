@@ -1,0 +1,156 @@
+name: Flutter CI
+
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  analyze-and-test:
+    name: Analyze and test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: flutter_app
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.47.5
+          cache: true
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze --fatal-warnings
+
+      - name: Test
+        run: flutter test
+
+  build-android:
+    name: Build Android APK and App Bundle
+    runs-on: ubuntu-latest
+    needs: analyze-and-test
+    defaults:
+      run:
+        working-directory: flutter_app
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.47.5
+          cache: true
+
+      - name: Bootstrap Android project
+        run: bash tool/bootstrap_android.sh
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Build release APK
+        run: flutter build apk --release
+
+      - name: Build release App Bundle
+        run: flutter build appbundle --release
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: salawat-quran-release-apk
+          path: flutter_app/build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: salawat-quran-release-aab
+          path: flutter_app/build/app/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+          retention-days: 30
+
+  build-ios:
+    name: Build iOS unsigned IPA
+    runs-on: macos-latest
+    needs: analyze-and-test
+    defaults:
+      run:
+        working-directory: flutter_app
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.47.5
+          cache: true
+
+      - name: Generate iOS platform
+        run: flutter create . --platforms=ios --org "com.salawat_quran" --project-name "salawat_quran"
+
+      - name: Configure iOS permissions and background audio
+        run: |
+          /usr/libexec/PlistBuddy -c "Add :NSLocationWhenInUseUsageDescription string Allow Quran Prayer Companion to use your location for prayer times and Qibla direction." ios/Runner/Info.plist || true
+          /usr/libexec/PlistBuddy -c "Add :UIBackgroundModes array" ios/Runner/Info.plist || true
+          /usr/libexec/PlistBuddy -c "Add :UIBackgroundModes:0 string audio" ios/Runner/Info.plist || true
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Prepare iOS Flutter project
+        run: flutter build ios --config-only --release --no-codesign
+
+      - name: Disable Xcode code signing for CI
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          project = Path("ios/Runner.xcodeproj/project.pbxproj")
+          text = project.read_text()
+          text = text.replace(
+              "buildSettings = {",
+              "buildSettings = {\n\t\t\t\tCODE_SIGNING_ALLOWED = NO;\n\t\t\t\tCODE_SIGNING_REQUIRED = NO;",
+          )
+          project.write_text(text)
+          PY
+
+      - name: Build iOS device app without code signing
+        run: |
+          set -e
+          rm -rf build/ios
+          xcodebuild             -workspace ios/Runner.xcworkspace             -scheme Runner             -configuration Release             -sdk iphoneos             -destination 'generic/platform=iOS'             -derivedDataPath build/ios             CODE_SIGNING_ALLOWED=NO             CODE_SIGNING_REQUIRED=NO             CODE_SIGN_IDENTITY=""             DEVELOPMENT_TEAM=""             PROVISIONING_PROFILE_SPECIFIER=""             build
+
+      - name: Package unsigned IPA
+        run: |
+          set -e
+          rm -rf Payload app-release-unsigned.ipa
+          mkdir -p Payload
+          APP_PATH="build/ios/Build/Products/Release-iphoneos/Runner.app"
+          test -d "$APP_PATH"
+          cp -R "$APP_PATH" Payload/
+          /usr/bin/zip -qry app-release-unsigned.ipa Payload
+          ls -lh app-release-unsigned.ipa
+
+      - name: Upload unsigned IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: salawat-quran-release-ipa-unsigned
+          path: flutter_app/app-release-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 30
