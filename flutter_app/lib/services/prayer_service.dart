@@ -62,7 +62,7 @@ Error: Process completed with exit code 1.
       18 => CalculationMethodParameters.tunisia(),
       //19 => CalculationMethodParameters.algeria(), // Error
       20 => CalculationMethodParameters.indonesian(),
-      21 => C/alculationMethodParameters.morocco(),
+      21 => CalculationMethodParameters.morocco(),
       23 => CalculationMethodParameters.muslimWorldLeague(),
       _ => CalculationMethodParameters.muslimWorldLeague(),
     };
