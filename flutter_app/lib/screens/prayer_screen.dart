@@ -111,7 +111,15 @@ class _PrayerScreenState extends State<PrayerScreen> {
                     DropdownButtonFormField<String>(
                       initialValue: country,
                       decoration: const InputDecoration(labelText: 'Country', border: OutlineInputBorder()),
-                      items: prayerCountries.map((item) => DropdownMenuItem(initialValue: item, child: Text(item))).toList(),
+                     items: prayerCountries
+                     .map<DropdownMenuItem<String>>(
+                       (item) => DropdownMenuItem<String>(
+                         value: item,
+                         child: Text(item),
+                       ),
+                     )
+                     .toList(),
+                      //items: prayerCountries.map((item) => DropdownMenuItem(initialValue: item, child: Text(item))).toList(),
                       onChanged: (initialValue) {
                         if (initialValue == null) return;
                         setSheetState(() {
@@ -125,7 +133,15 @@ class _PrayerScreenState extends State<PrayerScreen> {
                     DropdownButtonFormField<String>(
                       initialValue: city,
                       decoration: const InputDecoration(labelText: 'City', border: OutlineInputBorder()),
-                      items: cities.map((item) => DropdownMenuItem(initialValue: item.city, child: Text(item.city))).toList(),
+                     items: cities
+                     .map<DropdownMenuItem<String>>(
+                       (item) => DropdownMenuItem<String>(
+                         value: item.city,
+                         child: Text(item.city),
+                       ),
+                     )
+                     .toList(),
+                      //items: cities.map((item) => DropdownMenuItem(initialValue: item.city, child: Text(item.city))).toList(),
                       onChanged: (initialValue) => setSheetState(() => city = initialValue ?? city),
                     ),
                     const SizedBox(height: 16),
