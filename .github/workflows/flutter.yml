@@ -111,15 +111,20 @@ jobs:
       - name: Prepare iOS Flutter project
         run: flutter build ios --config-only --release --no-codesign
 
+      - name: Install CocoaPods dependencies
+        run: pod install --project-directory=ios --deployment-target=13.0
+
       - name: Build iOS device app without code signing
         run: |
           set -e
+          rm -rf build/ios
           xcodebuild \
             -workspace ios/Runner.xcworkspace \
             -scheme Runner \
             -configuration Release \
             -sdk iphoneos \
             -destination 'generic/platform=iOS' \
+            -derivedDataPath build/ios \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             DEVELOPMENT_TEAM= \
@@ -130,8 +135,8 @@ jobs:
           set -e
           rm -rf Payload app-release-unsigned.ipa
           mkdir -p Payload
-          APP_PATH="$(find build/ios/iphoneos -maxdepth 1 -type d -name '*.app' -print -quit)"
-          test -n "$APP_PATH"
+          APP_PATH="build/ios/Build/Products/Release-iphoneos/Runner.app"
+          test -d "$APP_PATH"
           cp -R "$APP_PATH" Payload/
           /usr/bin/zip -qry app-release-unsigned.ipa Payload
           ls -lh app-release-unsigned.ipa
