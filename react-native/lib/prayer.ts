@@ -1,0 +1,8 @@
+import {CalculationMethod,Coordinates,HighLatitudeRule,Madhab,PrayerTimes,Qibla,type CalculationParameters} from "adhan";
+export type Method="Qatar"|"MuslimWorldLeague"|"Egyptian"|"UmmAlQura";
+const methods:Record<Method,()=>CalculationParameters>={Qatar:CalculationMethod.Qatar,MuslimWorldLeague:CalculationMethod.MuslimWorldLeague,Egyptian:CalculationMethod.Egyptian,UmmAlQura:CalculationMethod.UmmAlQura};
+export const prayers=[["Fajr","الفجر"],["Dhuhr","الظهر"],["Asr","العصر"],["Maghrib","المغرب"],["Isha","العشاء"]] as const;
+export function calculatePrayerTimes(location:{latitude:number;longitude:number},date:Date,method:Method){const c=new Coordinates(location.latitude,location.longitude);const p=methods[method]();p.madhab=Madhab.Shafi;p.highLatitudeRule=HighLatitudeRule.recommended(c);const t=new PrayerTimes(c,new Date(date.getFullYear(),date.getMonth(),date.getDate()),p);return [{name:"Fajr",ar:"الفجر",time:t.fajr},{name:"Dhuhr",ar:"الظهر",time:t.dhuhr},{name:"Asr",ar:"العصر",time:t.asr},{name:"Maghrib",ar:"المغرب",time:t.maghrib},{name:"Isha",ar:"العشاء",time:t.isha}];}
+export function qiblaBearing(location:{latitude:number;longitude:number}){return Qibla(new Coordinates(location.latitude,location.longitude))}
+export function formatTime(d:Date){return d.toLocaleTimeString([], {hour:"numeric",minute:"2-digit"})}
+export function countdown(ms:number){const s=Math.max(0,Math.floor(ms/1000));return [Math.floor(s/3600),Math.floor(s/60)%60,s%60].map(v=>String(v).padStart(2,"0")).join(":")}
