@@ -112,7 +112,7 @@ jobs:
         run: flutter build ios --config-only --release --no-codesign
 
       - name: Install CocoaPods dependencies
-        run: pod install --project-directory=ios --deployment-target=13.0
+        run: pod install --project-directory=ios --repo-update
 
       - name: Build iOS device app without code signing
         run: |
