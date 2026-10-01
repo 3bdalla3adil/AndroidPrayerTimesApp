@@ -1,4 +1,1 @@
-export const colors={
-  light:{background:"#F5F2E9",card:"#FFFEFA",text:"#18251F",primary:"#285C43",muted:"#737C73",border:"#E0DCCF",gold:"#C39B55"},
-  dark:{background:"#101A16",card:"#19251F",text:"#F1F1E9",primary:"#A8C99F",muted:"#A3B0A5",border:"#314038",gold:"#D2AD67"}
-};
+export const colors={light:{background:"#F7F7F2",card:"#FFFFFF",text:"#17211B",primary:"#276749",muted:"#6B756E",border:"#DDE3DD",gold:"#B78A42"},dark:{background:"#0E1712",card:"#17231C",text:"#F3F5EF",primary:"#9CCF9D",muted:"#A5B2A9",border:"#304036",gold:"#D5B36A"},sepia:{background:"#F4ECD8",card:"#FBF5E6",text:"#3B3024",primary:"#76552F",muted:"#766A5C",border:"#D9C9AA",gold:"#A87838"}};
