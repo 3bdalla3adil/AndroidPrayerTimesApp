@@ -1,1 +1,2 @@
-import {useColorScheme} from "react-native";import {colors} from "./colors";export function useTheme(){const dark=useColorScheme()==="dark";return dark?colors.dark:colors.light}
+import{useColorScheme}from"react-native";import{usePreferences}from"../contexts/PreferencesContext";import{colors}from"./colors";
+export function useTheme(){const system=useColorScheme()==="dark";const{preferences}=usePreferences();if(preferences.theme==="dark"||(preferences.theme==="system"&&system))return colors.dark;if(preferences.theme==="sepia")return colors.sepia;return colors.light}
