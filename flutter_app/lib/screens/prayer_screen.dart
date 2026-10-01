@@ -46,12 +46,13 @@ class _PrayerScreenState extends State<PrayerScreen> {
     try {
       final prayers = await _service.today(refreshLocation: refresh);
       final location = await StorageService().loadLocation();
+      final selected = await StorageService().loadPrayerCity();
       if (!mounted) return;
       setState(() {
         _prayers = prayers;
         _location = location.$3;
-        _country = (await StorageService().loadPrayerCity()).$1;
-        _city = (await StorageService().loadPrayerCity()).$2;
+        _country = selected.$1;
+        _city = selected.$2;
         _message = null;
         _loading = false;
       });
