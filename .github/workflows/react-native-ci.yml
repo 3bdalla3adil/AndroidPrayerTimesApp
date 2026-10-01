@@ -25,6 +25,7 @@ jobs:
       - run: npm install
       - run: npm run prepare:quran
       - run: npm run typecheck
+      - run: npm test -- --runInBand
       - run: npx expo export --platform android
 
   android:
