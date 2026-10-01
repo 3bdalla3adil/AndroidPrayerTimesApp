@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 
+import '../models/prayer_city.dart';
 import '../models/prayer_entry.dart';
 import '../services/notification_service.dart';
 import '../services/prayer_service.dart';
@@ -18,6 +19,8 @@ class _PrayerScreenState extends State<PrayerScreen> {
   List<PrayerEntry> _prayers = const [];
   DateTime _now = DateTime.now();
   String? _location;
+  String? _country;
+  String? _city;
   String? _message;
   bool _loading = true;
   bool _reminders = false;
@@ -47,6 +50,8 @@ class _PrayerScreenState extends State<PrayerScreen> {
       setState(() {
         _prayers = prayers;
         _location = location.$3;
+        _country = (await StorageService().loadPrayerCity()).$1;
+        _city = (await StorageService().loadPrayerCity()).$2;
         _message = null;
         _loading = false;
       });
@@ -70,6 +75,92 @@ class _PrayerScreenState extends State<PrayerScreen> {
     final d = time.difference(_now);
     if (d.isNegative) return '00:00:00';
     return '${d.inHours.toString().padLeft(2, '0')}:${(d.inMinutes % 60).toString().padLeft(2, '0')}:${(d.inSeconds % 60).toString().padLeft(2, '0')}';
+  }
+
+  Future<void> _chooseCity() async {
+    var country = _country ?? prayerCountries.first;
+    var cities = citiesForCountry(country);
+    var city = cities.any((item) => item.city == _city) ? _city : cities.first.city;
+
+    final result = await showModalBottomSheet<PrayerCity>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            cities = citiesForCountry(country);
+            if (!cities.any((item) => item.city == city)) city = cities.first.city;
+            final selectedCity = cities.firstWhere((item) => item.city == city);
+            return SafeArea(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(20, 8, 20, 20 + MediaQuery.viewInsetsOf(context).bottom),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Prayer location', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800)),
+                    const SizedBox(height: 6),
+                    const Text('Choose a country and city. Prayer times use the city coordinates and its regional calculation method.'),
+                    const SizedBox(height: 18),
+                    DropdownButtonFormField<String>(
+                      value: country,
+                      decoration: const InputDecoration(labelText: 'Country', border: OutlineInputBorder()),
+                      items: prayerCountries.map((item) => DropdownMenuItem(value: item, child: Text(item))).toList(),
+                      onChanged: (value) {
+                        if (value == null) return;
+                        setSheetState(() {
+                          country = value;
+                          cities = citiesForCountry(country);
+                          city = cities.first.city;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      value: city,
+                      decoration: const InputDecoration(labelText: 'City', border: OutlineInputBorder()),
+                      items: cities.map((item) => DropdownMenuItem(value: item.city, child: Text(item.city))).toList(),
+                      onChanged: (value) => setSheetState(() => city = value ?? city),
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        onPressed: () => Navigator.pop(context, selectedCity),
+                        icon: const Icon(Icons.check),
+                        label: const Text('Use this city'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    if (result == null) return;
+    await StorageService().savePrayerCity(
+      country: result.country,
+      city: result.city,
+      lat: result.latitude,
+      lon: result.longitude,
+      method: result.calculationMethod,
+    );
+    await _load();
+  }
+
+  Future<void> _useDeviceLocation() async {
+    try {
+      final position = await _service.determinePosition();
+      await StorageService().clearPrayerCity();
+      await StorageService().saveLocation(position.latitude, position.longitude, 'Current location');
+      await _load();
+    } catch (error) {
+      if (mounted) setState(() => _message = error.toString().replaceFirst('Bad state: ', ''));
+    }
   }
 
   Future<void> _toggleReminders(bool value) async {
@@ -109,11 +200,21 @@ class _PrayerScreenState extends State<PrayerScreen> {
           ]),
           Text(DateFormat('EEEE, d MMMM').format(_now), style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
           const SizedBox(height: 12),
-          Card(child: ListTile(
-            leading: Icon(Icons.location_on_outlined, color: theme.colorScheme.primary),
-            title: Text(_location ?? 'Location not set'),
-            subtitle: const Text('Coordinates stay on this device for local calculations.'),
-          )),
+          Card(
+            child: ListTile(
+              leading: Icon(Icons.location_on_outlined, color: theme.colorScheme.primary),
+              title: Text(_country != null && _city != null ? '$_city, $_country' : (_location ?? 'Location not set')),
+              subtitle: Text(_country == null ? 'Select a country and city' : 'Prayer calculation is based on this city'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: _chooseCity,
+            ),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: _useDeviceLocation,
+            icon: const Icon(Icons.my_location_outlined),
+            label: const Text('Use my current location'),
+          ),
           const SizedBox(height: 16),
           if (_message != null) Card(color: theme.colorScheme.errorContainer, child: Padding(padding: const EdgeInsets.all(15), child: Text(_message!))),
           if (_loading) const Padding(padding: EdgeInsets.symmetric(vertical: 60), child: Center(child: CircularProgressIndicator()))
