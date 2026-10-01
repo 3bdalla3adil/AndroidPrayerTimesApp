@@ -111,7 +111,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
 
                    /*
                   DropdownButtonFormField<String>(
-                      initialValue: country,
+                      value: country,
                       decoration: const InputDecoration(labelText: 'Country', border: OutlineInputBorder()),
                      items: prayerCountries
                      .map<DropdownMenuItem<String>>(
@@ -133,7 +133,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
                     ),
                    */
                      DropdownButtonFormField<String>(
-                      initialValue: country,
+                      value: country,
                       decoration: const InputDecoration(
                         labelText: 'Country',
                         border: OutlineInputBorder(),
@@ -158,7 +158,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      initialValue: city,
+                      value: city,
                       decoration: const InputDecoration(labelText: 'City', border: OutlineInputBorder()),
                      items: cities
                      .map<DropdownMenuItem<String>>(
@@ -303,7 +303,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
             secondary: Icon(Icons.notifications_active_outlined, color: theme.colorScheme.primary),
             title: const Text('Prayer reminders'),
             subtitle: const Text('Schedule local reminders for today.'),
-            initialValue: _reminders,
+            value: _reminders,
             onChanged: _toggleReminders,
           )),
         ],
