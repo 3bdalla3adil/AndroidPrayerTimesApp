@@ -128,7 +128,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
                     ),
                    */
                      DropdownButtonFormField<String>(
-                      value: country,
+                      initialValue: country,
                       decoration: const InputDecoration(
                         labelText: 'Country',
                         border: OutlineInputBorder(),
