@@ -1,0 +1,1 @@
+import{surahs,findSurah}from"../lib/quran";test("contains 114 surahs",()=>expect(surahs).toHaveLength(114));test("finds Al-Fatihah",()=>expect(findSurah(1)?.total_verses).toBe(7));
