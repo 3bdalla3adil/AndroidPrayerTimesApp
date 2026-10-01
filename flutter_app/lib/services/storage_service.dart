@@ -33,6 +33,12 @@ class StorageService {
   Future<(String?, String?, int?)> loadPrayerCity() async =>
       (await prefs.getString(_country), await prefs.getString(_city), await prefs.getInt(_method));
 
+  Future<void> clearPrayerCity() async {
+    await prefs.remove(_country);
+    await prefs.remove(_city);
+    await prefs.remove(_method);
+  }
+
   Future<void> saveReaderPosition(int surah, int ayah) async {
     await prefs.setInt(_lastSurah, surah);
     await prefs.setInt(_lastAyah, ayah);
