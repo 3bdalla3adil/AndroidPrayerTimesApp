@@ -3,7 +3,13 @@ import 'package:quran/quran.dart' as quran;
 
 import '../services/storage_service.dart';
 import 'quran_reader_screen.dart';
+/*
+Run flutter analyze --fatal-warnings
+Analyzing flutter_app...                                        
 
+   info • Unnecessary use of multiple underscores. Try using '_' • lib/screens/bookmarks_screen.dart:71:41 • unnecessary_underscores [X]
+  
+*/
 class BookmarksScreen extends StatefulWidget {
   const BookmarksScreen({super.key});
 
@@ -68,7 +74,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
               : ListView.separated(
                   padding: const EdgeInsets.fromLTRB(18, 18, 18, 32),
                   itemCount: _bookmarks.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 9),
+                  separatorBuilder: (_, _) => const SizedBox(height: 9),
                   itemBuilder: (context, index) {
                     final bookmark = _bookmarks[index];
                     final surah = bookmark.$1;
