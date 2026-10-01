@@ -43,7 +43,7 @@ class PrayerService {
 Error: Process completed with exit code 1.
   */
 
-  CalculationMethodParameters _parameters(int method, Coordinates coordinates) {
+  CalculationParameters _parameters(int method, Coordinates coordinates) {
     final params = switch (method) {
       1 => CalculationMethodParameters.karachi(),
       2 => CalculationMethodParameters.northAmerica(),
