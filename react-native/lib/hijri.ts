@@ -1,0 +1,7 @@
+export type HijriDate={day:number;month:number;year:number};
+const months=["Muharram","Safar","Rabi al-Awwal","Rabi al-Thani","Jumada al-Awwal","Jumada al-Thani","Rajab","Sha'ban","Ramadan","Shawwal","Dhu al-Qi'dah","Dhu al-Hijjah"];
+const arMonths=["محرم","صفر","ربيع الأول","ربيع الثاني","جمادى الأولى","جمادى الثانية","رجب","شعبان","رمضان","شوال","ذو القعدة","ذو الحجة"];
+export function gregorianToHijri(date:Date):HijriDate{const jd=Math.floor(date.getTime()/86400000)+2440588;let l=jd-1948440+10632;const n=Math.floor((l-1)/10631);l=l-10631*n+354;const j=Math.floor((10985-l)/5316)*Math.floor(50*l/17719)+Math.floor(l/5670)*Math.floor(43*l/15238);l=l-Math.floor((30-j)/15)*Math.floor(17719*j/50)-Math.floor(j/16)*Math.floor(15238*j/43)+29;const m=Math.floor(24*l/709);const d=l-Math.floor(709*m/24);const y=30*n+j-30;return{day:d,month:m,year:y}}
+export function hijriToGregorian(h:HijriDate){const jd=Math.floor((11*h.year+3)/30)+354*h.year+30*h.month-Math.floor((h.month-1)/2)+h.day-385;return new Date((jd-2440588)*86400000)}
+export function hijriLabel(h:HijriDate,arabic=false){return arabic?h.day+" "+arMonths[h.month-1]+" "+h.year+" هـ":h.day+" "+months[h.month-1]+" "+h.year+" AH"}
+export function islamicEvents(year:number){return[{name:"Islamic New Year",month:1,day:1},{name:"Ashura",month:1,day:10},{name:"Ramadan",month:9,day:1},{name:"Eid al-Fitr",month:10,day:1},{name:"Arafah",month:12,day:9},{name:"Eid al-Adha",month:12,day:10}].map(e=>({...e,date:hijriToGregorian({day:e.day,month:e.month,year})}))}
