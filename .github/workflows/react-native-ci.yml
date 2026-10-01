@@ -1,0 +1,79 @@
+name: React Native CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: react-native
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: react-native/package.json
+      - run: npm install
+      - run: npm run prepare:quran
+      - run: npm run typecheck
+      - run: npx expo export --platform android
+
+  android:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: react-native
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: react-native/package.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v3
+      - run: npm install
+      - run: npm run prepare:quran
+      - run: npx expo prebuild --platform android --no-install
+      - run: chmod +x android/gradlew
+      - run: ./android/gradlew assembleRelease
+      - uses: actions/upload-artifact@v4
+        with:
+          name: react-native-android-release
+          path: react-native/android/app/build/outputs/apk/release/*.apk
+
+  ios-unsigned:
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: react-native
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: react-native/package.json
+      - run: npm install
+      - run: npm run prepare:quran
+      - run: npx expo prebuild --platform ios --no-install
+      - run: pod install
+        working-directory: react-native/ios
+      - run: xcodebuild -workspace ios/QuranSalawat.xcworkspace -scheme QuranSalawat -configuration Release -sdk iphoneos -derivedDataPath build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" DEVELOPMENT_TEAM="" PROVISIONING_PROFILE_SPECIFIER=""
+      - run: mkdir -p artifacts && cd build/Build/Products/Release-iphoneos && zip -r ../../../../artifacts/quran-salawat-ios-unsigned.ipa QuranSalawat.app
+      - uses: actions/upload-artifact@v4
+        with:
+          name: react-native-ios-unsigned
+          path: react-native/artifacts/quran-salawat-ios-unsigned.ipa
