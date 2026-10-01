@@ -108,7 +108,9 @@ class _PrayerScreenState extends State<PrayerScreen> {
                     const SizedBox(height: 6),
                     const Text('Choose a country and city. Prayer times use the city coordinates and its regional calculation method.'),
                     const SizedBox(height: 18),
-                    DropdownButtonFormField<String>(
+
+                   /*
+                  DropdownButtonFormField<String>(
                       initialValue: country,
                       decoration: const InputDecoration(labelText: 'Country', border: OutlineInputBorder()),
                      items: prayerCountries
@@ -124,6 +126,31 @@ class _PrayerScreenState extends State<PrayerScreen> {
                         if (initialValue == null) return;
                         setSheetState(() {
                           country = initialValue;
+                          cities = citiesForCountry(country);
+                          city = cities.first.city;
+                        });
+                      },
+                    ),
+                   */
+                     DropdownButtonFormField<String>(
+                      initialValue: country,
+                      decoration: const InputDecoration(
+                        labelText: 'Country',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: prayerCountries
+                          .map<DropdownMenuItem<String>>(
+                            (item) => DropdownMenuItem<String>(
+                              value: item,
+                              child: Text(item),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        if (value == null) return;
+                    
+                        setSheetState(() {
+                          country = value;
                           cities = citiesForCountry(country);
                           city = cities.first.city;
                         });
