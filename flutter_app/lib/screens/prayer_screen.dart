@@ -7,11 +7,6 @@ import '../models/prayer_entry.dart';
 import '../services/notification_service.dart';
 import '../services/prayer_service.dart';
 import '../services/storage_service.dart';
-/*
- info • 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre. Try replacing the use of the deprecated member with the replacement • lib/screens/prayer_screen.dart:108:23 • deprecated_member_use
-   info • 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre. Try replacing the use of the deprecated member with the replacement • lib/screens/prayer_screen.dart:122:23 • deprecated_member_use
-  
-*/
 class PrayerScreen extends StatefulWidget {
   const PrayerScreen({super.key});
   @override
@@ -111,7 +106,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
 
                    /*
                   DropdownButtonFormField<String>(
-                      value: country,
+                      initialValue: country,
                       decoration: const InputDecoration(labelText: 'Country', border: OutlineInputBorder()),
                      items: prayerCountries
                      .map<DropdownMenuItem<String>>(
@@ -158,7 +153,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      value: city,
+                      initialValue: city,
                       decoration: const InputDecoration(labelText: 'City', border: OutlineInputBorder()),
                      items: cities
                      .map<DropdownMenuItem<String>>(
