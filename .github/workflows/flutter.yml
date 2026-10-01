@@ -125,15 +125,30 @@ jobs:
           project.write_text(text)
           PY
 
-      - name: Build unsigned iOS app
-        run: flutter build ios --release --no-codesign
+      - name: Build iOS device app without code signing
+        run: |
+          set -e
+          rm -rf build/ios
+          xcodebuild \
+            -workspace ios/Runner.xcworkspace \
+            -scheme Runner \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build/ios \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM="" \
+            PROVISIONING_PROFILE_SPECIFIER="" \
+            build
 
       - name: Package unsigned IPA
         run: |
           set -e
           rm -rf Payload app-release-unsigned.ipa
           mkdir -p Payload
-          APP_PATH="build/ios/iphoneos/Runner.app"
+          APP_PATH="build/ios/Build/Products/Release-iphoneos/Runner.app"
           test -d "$APP_PATH"
           cp -R "$APP_PATH" Payload/
           /usr/bin/zip -qry app-release-unsigned.ipa Payload
