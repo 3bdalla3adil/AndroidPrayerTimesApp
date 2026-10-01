@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../services/storage_service.dart';
 import 'calendar_screen.dart';
+import 'bookmarks_screen.dart';
 import 'qibla_screen.dart';
 import 'settings_screen.dart';
 
@@ -30,6 +31,10 @@ class MoreScreen extends StatelessWidget {
           ),
           subtitle: const Text('Used locally for prayer times and Qibla.'),
         )),
+        const SizedBox(height: 24),
+        Text('Quran', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+        const SizedBox(height: 10),
+        _MenuRow(icon: Icons.bookmark_outline, title: 'Saved bookmarks', detail: 'Open the ayahs you saved while reading', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BookmarksScreen()))),
         const SizedBox(height: 24),
         Text('Explore', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
         const SizedBox(height: 10),
