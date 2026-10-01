@@ -37,21 +37,49 @@ class PrayerService {
     tz.setLocalLocation(tz.getLocation(info.identifier));
   }
 
+  CalculationMethodParameters _parameters(int method, Coordinates coordinates) {
+    final params = switch (method) {
+      1 => CalculationMethodParameters.karachi(),
+      2 => CalculationMethodParameters.northAmerica(),
+      3 => CalculationMethodParameters.muslimWorldLeague(),
+      4 => CalculationMethodParameters.ummAlQura(),
+      5 => CalculationMethodParameters.egyptian(),
+      7 => CalculationMethodParameters.tehran(),
+      8 => CalculationMethodParameters.gulf(),
+      9 => CalculationMethodParameters.kuwait(),
+      10 => CalculationMethodParameters.qatar(),
+      11 => CalculationMethodParameters.singapore(),
+      12 => CalculationMethodParameters.moonsightingCommittee(),
+      13 => CalculationMethodParameters.turkey(),
+      16 => CalculationMethodParameters.dubai(),
+      17 => CalculationMethodParameters.jakim(),
+      18 => CalculationMethodParameters.tunisia(),
+      19 => CalculationMethodParameters.algeria(),
+      20 => CalculationMethodParameters.kemenag(),
+      21 => CalculationMethodParameters.morocco(),
+      23 => CalculationMethodParameters.jordan(),
+      _ => CalculationMethodParameters.muslimWorldLeague(),
+    };
+    return params
+      ..madhab = Madhab.shafi
+      ..highLatitudeRule = HighLatitudeRule.recommended(coordinates);
+  }
+
   Future<List<PrayerEntry>> today({bool refreshLocation = false}) async {
     await initializeTimeZone();
     var (lat, lon, _) = await storage.loadLocation();
+    var (_, _, method) = await storage.loadPrayerCity();
 
     if (refreshLocation || lat == null || lon == null) {
       final position = await determinePosition();
       lat = position.latitude;
       lon = position.longitude;
+      method ??= 3;
       await storage.saveLocation(lat, lon, 'Current location');
     }
 
     final coordinates = Coordinates(lat, lon);
-    final params = CalculationMethodParameters.qatar()
-      ..madhab = Madhab.shafi
-      ..highLatitudeRule = HighLatitudeRule.recommended(coordinates);
+    final params = _parameters(method ?? 3, coordinates);
 
     final now = tz.TZDateTime.now(tz.local);
     final calculated = PrayerTimes(
