@@ -36,15 +36,8 @@ class PrayerService {
     final info = await FlutterTimezone.getLocalTimezone();
     tz.setLocalLocation(tz.getLocation(info.identifier));
   }
-  /*
-  error • The method 'algeria' isn't defined for the type 'CalculationMethodParameters'. Try correcting the name to the name of an existing method, or defining a method named 'algeria' • lib/services/prayer_service.dart:57:41 • undefined_method
-
-5 issues found. (ran in 13.2s)
-Error: Process completed with exit code 1.
-  */
-
   CalculationParameters _parameters(int method, Coordinates coordinates) {
-    final params = switch (method) {
+    final CalculationParameters params = switch (method) {
       1 => CalculationMethodParameters.karachi(),
       2 => CalculationMethodParameters.northAmerica(),
       3 => CalculationMethodParameters.muslimWorldLeague(),
@@ -84,7 +77,6 @@ Error: Process completed with exit code 1.
       method ??= 3;
       await storage.saveLocation(lat, lon, 'Current location');
     }
-//   error • The argument type 'CalculationMethodParameters' can't be assigned to the parameter type 'CalculationParameters'.  • lib/services/prayer_service.dart:89:30 • argument_type_not_assignable
     final coordinates = Coordinates(lat, lon);
     final params = _parameters(method ?? 3, coordinates);
 
