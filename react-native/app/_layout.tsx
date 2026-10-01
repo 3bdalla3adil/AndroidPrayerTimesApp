@@ -1,2 +1,2 @@
-import React,{useEffect,useState} from "react";import {Stack} from "expo-router";import {StatusBar} from "expo-status-bar";import {PreferencesProvider} from "../contexts/PreferencesContext";
-export default function Root(){return <PreferencesProvider><StatusBar style="auto"/><Stack screenOptions={{headerShown:false}}><Stack.Screen name="(tabs)"/><Stack.Screen name="reader"/><Stack.Screen name="calendar"/></Stack></PreferencesProvider>}
+import React from"react";import{Stack}from"expo-router";import{StatusBar}from"expo-status-bar";import{PreferencesProvider}from"../contexts/PreferencesContext";
+export default function Root(){return <PreferencesProvider><StatusBar style="auto"/><Stack screenOptions={{headerShown:false}}><Stack.Screen name="(tabs)"/><Stack.Screen name="reader"/><Stack.Screen name="calendar"/><Stack.Screen name="bookmarks"/><Stack.Screen name="settings"/></Stack></PreferencesProvider>}
