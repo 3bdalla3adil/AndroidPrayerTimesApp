@@ -1,1 +1,6 @@
-import{surahs,findSurah}from"../lib/quran";test("contains 114 surahs",()=>expect(surahs).toHaveLength(114));test("finds Al-Fatihah",()=>expect(findSurah(1)?.total_verses).toBe(7));
+import{surahs,findSurah}from"../lib/quran";import{gregorianToHijri,hijriToGregorian}from"../lib/hijri";import{calculatePrayerTimes}from"../lib/prayer";
+test("contains 114 surahs",()=>expect(surahs).toHaveLength(114));
+test("finds Al-Fatihah",()=>expect(findSurah(1)?.total_verses).toBe(7));
+test("finds an ayah",()=>expect(findSurah(2)?.verses[0].id).toBe(1));
+test("Hijri conversion round trips near the input date",()=>{const d=new Date(2026,0,1);const h=gregorianToHijri(d);const back=hijriToGregorian(h);expect(Math.abs(back.getTime()-d.getTime())).toBeLessThan(3*86400000)});
+test("prayer calculation returns five prayers",()=>{const result=calculatePrayerTimes({latitude:25.2854,longitude:51.5310},new Date(2026,0,1),"Qatar","Shafi");expect(result).toHaveLength(5);expect(result.every(x=>x.time instanceof Date)).toBe(true)});
