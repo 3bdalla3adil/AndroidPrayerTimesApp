@@ -68,9 +68,10 @@ class PrayerService {
   Future<List<PrayerEntry>> today({bool refreshLocation = false}) async {
     await initializeTimeZone();
     var (lat, lon, _) = await storage.loadLocation();
-    var (_, _, method) = await storage.loadPrayerCity();
+    final selected = await storage.loadPrayerCity();
+    var method = selected.$3;
 
-    if (refreshLocation || lat == null || lon == null) {
+    if ((lat == null || lon == null) || (refreshLocation && selected.$1 == null)) {
       final position = await determinePosition();
       lat = position.latitude;
       lon = position.longitude;
