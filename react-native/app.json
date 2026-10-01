@@ -1,0 +1,29 @@
+{
+  "expo":{
+    "name":"Quran Salawat",
+    "slug":"quran-salawat",
+    "version":"1.0.0",
+    "orientation":"portrait",
+    "scheme":"quransalawat",
+    "userInterfaceStyle":"automatic",
+    "ios":{
+      "supportsTablet":false,
+      "bundleIdentifier":"com.quransalawat.app",
+      "infoPlist":{
+        "NSLocationWhenInUseUsageDescription":"Allow Quran Salawat to calculate prayer times and Qibla direction.",
+        "UIBackgroundModes":["audio"]
+      }
+    },
+    "android":{
+      "package":"com.quransalawat.app",
+      "permissions":["ACCESS_COARSE_LOCATION","ACCESS_FINE_LOCATION","POST_NOTIFICATIONS","SCHEDULE_EXACT_ALARM","USE_EXACT_ALARM","RECEIVE_BOOT_COMPLETED","VIBRATE","WAKE_LOCK"]
+    },
+    "plugins":[
+      "expo-router",
+      "expo-audio",
+      "expo-notifications",
+      ["expo-location",{"locationWhenInUsePermission":"Allow Quran Salawat to calculate local prayer times and Qibla direction."}]
+    ],
+    "experiments":{"typedRoutes":true}
+  }
+}
