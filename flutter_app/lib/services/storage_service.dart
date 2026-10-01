@@ -4,6 +4,9 @@ class StorageService {
   static const _lat = 'location_lat';
   static const _lon = 'location_lon';
   static const _locationName = 'location_name';
+  static const _country = 'location_country';
+  static const _city = 'location_city';
+  static const _method = 'prayer_calculation_method';
   static const _quranFontSize = 'quran_font_size';
   static const _lastSurah = 'last_surah';
   static const _lastAyah = 'last_ayah';
@@ -19,6 +22,16 @@ class StorageService {
 
   Future<(double?, double?, String?)> loadLocation() async =>
       (await prefs.getDouble(_lat), await prefs.getDouble(_lon), await prefs.getString(_locationName));
+
+  Future<void> savePrayerCity({required String country, required String city, required double lat, required double lon, required int method}) async {
+    await saveLocation(lat, lon, city);
+    await prefs.setString(_country, country);
+    await prefs.setString(_city, city);
+    await prefs.setInt(_method, method);
+  }
+
+  Future<(String?, String?, int?)> loadPrayerCity() async =>
+      (await prefs.getString(_country), await prefs.getString(_city), await prefs.getInt(_method));
 
   Future<void> saveReaderPosition(int surah, int ayah) async {
     await prefs.setInt(_lastSurah, surah);
