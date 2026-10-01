@@ -4,3 +4,9 @@ test("finds Al-Fatihah",()=>expect(findSurah(1)?.total_verses).toBe(7));
 test("finds an ayah",()=>expect(findSurah(2)?.verses[0].id).toBe(1));
 test("Hijri conversion round trips near the input date",()=>{const d=new Date(2026,0,1);const h=gregorianToHijri(d);const back=hijriToGregorian(h);expect(Math.abs(back.getTime()-d.getTime())).toBeLessThan(3*86400000)});
 test("prayer calculation returns five prayers",()=>{const result=calculatePrayerTimes({latitude:25.2854,longitude:51.5310},new Date(2026,0,1),"Qatar","Shafi");expect(result).toHaveLength(5);expect(result.every(x=>x.time instanceof Date)).toBe(true)});
+
+import{pageData,pageOf,allJuzStarts,allHizbStarts,allRubStarts}from"../lib/mushaf";
+test("Madani Mushaf has 604 pages",()=>expect(pageData(1).page).toBe(1));
+test("Al-Fatihah begins on page 1",()=>expect(pageOf(1,1)).toBe(1));
+test("Juz/Hizb/Rub divisions have expected counts",()=>{expect(allJuzStarts()).toHaveLength(30);expect(allHizbStarts()).toHaveLength(60);expect(allRubStarts()).toHaveLength(240)});
+test("page 42 contains Quran content",()=>expect(pageData(42).ayahs.length).toBeGreaterThan(0));
