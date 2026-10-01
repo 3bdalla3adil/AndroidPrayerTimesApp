@@ -7,7 +7,11 @@ import '../models/prayer_entry.dart';
 import '../services/notification_service.dart';
 import '../services/prayer_service.dart';
 import '../services/storage_service.dart';
-
+/*
+ info • 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre. Try replacing the use of the deprecated member with the replacement • lib/screens/prayer_screen.dart:108:23 • deprecated_member_use
+   info • 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre. Try replacing the use of the deprecated member with the replacement • lib/screens/prayer_screen.dart:122:23 • deprecated_member_use
+  
+*/
 class PrayerScreen extends StatefulWidget {
   const PrayerScreen({super.key});
   @override
@@ -105,13 +109,13 @@ class _PrayerScreenState extends State<PrayerScreen> {
                     const Text('Choose a country and city. Prayer times use the city coordinates and its regional calculation method.'),
                     const SizedBox(height: 18),
                     DropdownButtonFormField<String>(
-                      value: country,
+                      initialValue: country,
                       decoration: const InputDecoration(labelText: 'Country', border: OutlineInputBorder()),
-                      items: prayerCountries.map((item) => DropdownMenuItem(value: item, child: Text(item))).toList(),
-                      onChanged: (value) {
-                        if (value == null) return;
+                      items: prayerCountries.map((item) => DropdownMenuItem(initialValue: item, child: Text(item))).toList(),
+                      onChanged: (initialValue) {
+                        if (initialValue == null) return;
                         setSheetState(() {
-                          country = value;
+                          country = initialValue;
                           cities = citiesForCountry(country);
                           city = cities.first.city;
                         });
@@ -119,10 +123,10 @@ class _PrayerScreenState extends State<PrayerScreen> {
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      value: city,
+                      initialValue: city,
                       decoration: const InputDecoration(labelText: 'City', border: OutlineInputBorder()),
-                      items: cities.map((item) => DropdownMenuItem(value: item.city, child: Text(item.city))).toList(),
-                      onChanged: (value) => setSheetState(() => city = value ?? city),
+                      items: cities.map((item) => DropdownMenuItem(initialValue: item.city, child: Text(item.city))).toList(),
+                      onChanged: (initialValue) => setSheetState(() => city = initialValue ?? city),
                     ),
                     const SizedBox(height: 16),
                     SizedBox(
@@ -164,8 +168,8 @@ class _PrayerScreenState extends State<PrayerScreen> {
     }
   }
 
-  Future<void> _toggleReminders(bool value) async {
-    if (!value) {
+  Future<void> _toggleReminders(bool initialValue) async {
+    if (!initialValue) {
       await NotificationService.cancelAll();
       if (mounted) setState(() => _reminders = false);
       return;
@@ -256,7 +260,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
             secondary: Icon(Icons.notifications_active_outlined, color: theme.colorScheme.primary),
             title: const Text('Prayer reminders'),
             subtitle: const Text('Schedule local reminders for today.'),
-            value: _reminders,
+            initialValue: _reminders,
             onChanged: _toggleReminders,
           )),
         ],
