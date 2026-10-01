@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:quran/quran.dart' as quran;
 
@@ -94,6 +95,15 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
   }
 
   Future<void> _savePosition(int ayah) => _storage.saveReaderPosition(widget.surahNumber, ayah);
+
+  Future<void> _copyAyah(int ayah) async {
+    final arabic = quran.getVerse(widget.surahNumber, ayah);
+    await Clipboard.setData(ClipboardData(text: arabic));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Verse $ayah copied to clipboard.')),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -236,6 +246,14 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
                   const Spacer(),
                   IconButton(onPressed: () => _toggleAudio(ayah), icon: Icon(active ? Icons.pause_circle_filled : Icons.play_circle_outline, color: theme.colorScheme.primary)),
                   IconButton(onPressed: () => _toggleBookmark(ayah), icon: Icon(bookmarked ? Icons.bookmark : Icons.bookmark_outline, color: bookmarked ? theme.colorScheme.tertiary : theme.colorScheme.onSurfaceVariant)),
+                  PopupMenuButton<String>(
+                    onSelected: (value) {
+                      if (value == 'copy') _copyAyah(ayah);
+                    },
+                    itemBuilder: (_) => const [
+                      PopupMenuItem(value: 'copy', child: Text('Copy Arabic verse')),
+                    ],
+                  ),
                 ]),
                 const SizedBox(height: 4),
                 Text(arabic, textAlign: TextAlign.right, textDirection: TextDirection.rtl, style: TextStyle(fontSize: _fontSize, height: 1.95, fontFamily: 'serif')),
