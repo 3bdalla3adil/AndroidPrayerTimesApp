@@ -1,0 +1,2 @@
+import * as Location from "expo-location";
+export async function getCurrentLocation(){const p=await Location.requestForegroundPermissionsAsync();if(!p.granted)throw new Error("Location permission is required.");const pos=await Location.getCurrentPositionAsync({accuracy:Location.Accuracy.Balanced});let label="Current location";try{const [place]=await Location.reverseGeocodeAsync({latitude:pos.coords.latitude,longitude:pos.coords.longitude});label=place?.city||place?.region||place?.country||label}catch{}return{latitude:pos.coords.latitude,longitude:pos.coords.longitude,label}}
