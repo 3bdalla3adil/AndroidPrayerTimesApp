@@ -10,3 +10,7 @@ test("Madani Mushaf has 604 pages",()=>expect(pageData(1).page).toBe(1));
 test("Al-Fatihah begins on page 1",()=>expect(pageOf(1,1)).toBe(1));
 test("Juz/Hizb/Rub divisions have expected counts",()=>{expect(allJuzStarts()).toHaveLength(30);expect(allHizbStarts()).toHaveLength(60);expect(allRubStarts()).toHaveLength(240)});
 test("page 42 contains Quran content",()=>expect(pageData(42).ayahs.length).toBeGreaterThan(0));
+import{defaults}from"../lib/storage";import{ayahAudioUrl,availableReciters}from"../lib/audio";
+test("bundled Quran contains 6236 ayahs",()=>expect(surahs.reduce((n,s)=>n+s.verses.length,0)).toBe(6236));
+test("preferences persist complete Quran reader defaults",()=>{expect(defaults.pageBookmarks).toEqual([]);expect(defaults.progress.page).toBe(1);expect(defaults.mushafMode).toBe(true);expect(defaults.reciter).toBe("Alafasy")});
+test("audio exposes the configured reciter and stable ayah URL",()=>{expect(availableReciters().map(x=>x.id)).toContain("Alafasy");expect(ayahAudioUrl(1,1)).toContain("001001.mp3")});
