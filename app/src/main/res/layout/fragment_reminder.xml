@@ -1,6 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/colorPrimaryDark"/>
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:gravity="center_horizontal"
+    android:background="@color/colorPrimaryDark">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="الأذان وتنبيهات الصلاة"
+        android:textSize="26sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:padding="20dp"
+        android:textColor="@color/colorPrimary"/>
+
+    <TextView
+        android:id="@+id/reminder_status"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="سيتم حساب أوقات الصلاة على الجهاز ثم جدولة تنبيه الأذان."
+        android:textSize="17sp"
+        android:gravity="center"
+        android:padding="20dp"/>
+
+    <Button
+        android:id="@+id/schedule_athan"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="تفعيل أذان الصلوات اليوم"
+        android:textSize="18sp"/>
+
+    <Button
+        android:id="@+id/open_quran"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="فتح القرآن الكريم"
+        android:textSize="18sp"/>
+</LinearLayout>
