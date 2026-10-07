@@ -32,7 +32,7 @@ class AdhkarScreen extends StatelessWidget {
                   CupertinoListTile(
                     title: Text(item.$1, textDirection: TextDirection.rtl, textAlign: TextAlign.right,
                       style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w600)),
-                    subtitle: Text(item.$2 + '\nTarget: ' + item.$3.toString()),
+                    subtitle: Text('${item.$2}\nTarget: ${item.$3}'),
                   ),
                 ],
               ),
