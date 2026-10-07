@@ -178,6 +178,31 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     );
   }
 
+  Future<void> _bookmarkAyah(int surah, int ayah) async {
+    final bookmarks = await _storage.loadBookmarks();
+    final exists = bookmarks.any((b) => b.$1 == surah && b.$2 == ayah);
+    if (exists) {
+      bookmarks.removeWhere((b) => b.$1 == surah && b.$2 == ayah);
+    } else {
+      bookmarks.add((surah, ayah));
+    }
+    await _storage.saveBookmarks(bookmarks);
+    if (!mounted) return;
+    await showCupertinoDialog<void>(
+      context: context,
+      builder: (dialogContext) => CupertinoAlertDialog(
+        title: Text(exists ? 'Bookmark removed' : 'Ayah bookmarked'),
+        content: Text('${quran.getSurahName(surah)} • Ayah $ayah'),
+        actions: [
+          CupertinoDialogAction(
+            child: const Text('OK'),
+            onPressed: () => Navigator.pop(dialogContext),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _rememberPage(int index) async {
     if (index < 1) return;
     try {
@@ -358,6 +383,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
                         lineHeight: _lineHeight,
                         showTranslation: _showTranslation,
                         darkPage: _darkPage,
+                        onBookmarkAyah: _bookmarkAyah,
                       );
                     },
                   );
@@ -541,6 +567,7 @@ class _MushafPage extends StatelessWidget {
     required this.lineHeight,
     required this.showTranslation,
     required this.darkPage,
+    required this.onBookmarkAyah,
   });
 
   final int page;
@@ -549,6 +576,7 @@ class _MushafPage extends StatelessWidget {
   final double lineHeight;
   final bool showTranslation;
   final bool darkPage;
+  final Future<void> Function(int surah, int ayah) onBookmarkAyah;
 
   List<Map<String, dynamic>> get verses =>
       ((data['verses'] as List?) ?? const [])
@@ -662,6 +690,15 @@ class _MushafPage extends StatelessWidget {
                                 (verse['ayah_number'] as num?)?.toInt() ?? 0,
                             color: green,
                             darkPage: darkPage,
+                            onTap: () {
+                              final surah =
+                                  (verse['surah_number'] as num?)?.toInt();
+                              final ayah =
+                                  (verse['ayah_number'] as num?)?.toInt();
+                              if (surah != null && ayah != null) {
+                                onBookmarkAyah(surah, ayah);
+                              }
+                            },
                           ),
                         ),
                         if (showTranslation)
@@ -823,16 +860,20 @@ class _AyahMarker extends StatelessWidget {
     required this.number,
     required this.color,
     required this.darkPage,
+    required this.onTap,
   });
 
   final int number;
   final Color color;
   final bool darkPage;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 25,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 25,
       height: 25,
       margin: const EdgeInsets.symmetric(horizontal: 2),
       decoration: BoxDecoration(
@@ -840,8 +881,8 @@ class _AyahMarker extends StatelessWidget {
         border: Border.all(color: color.withValues(alpha: .7), width: 1),
       ),
       alignment: Alignment.center,
-      child: Text(
-        _arabicNumber(number),
+        child: Text(
+          _arabicNumber(number),
         textDirection: TextDirection.rtl,
         style: TextStyle(
           fontFamily: 'serif',
