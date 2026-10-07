@@ -76,8 +76,14 @@ class _FastingScreenState extends State<FastingScreen> {
   Widget build(BuildContext context) {
     final h = _hijri(DateTime.now());
     final isRamadan = h.$2 == 9;
-    final fajr = _prayers.where((p) => p.name == 'Fajr').firstOrNull;
-    final maghrib = _prayers.where((p) => p.name == 'Maghrib').firstOrNull;
+    dynamic findPrayer(String name) {
+      for (final prayer in _prayers) {
+        if (prayer.name == name) return prayer;
+      }
+      return null;
+    }
+    final fajr = findPrayer('Fajr');
+    final maghrib = findPrayer('Maghrib');
     return CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
         middle: const Text('Fasting'),
