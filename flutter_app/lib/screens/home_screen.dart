@@ -56,7 +56,7 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       if (enabled) {
         final count = await _athan.enable();
-        if (mounted) { setState(() => _reminders = true); _dialog('Athan enabled', '${count} prayer notifications scheduled.'); }
+        if (mounted) { setState(() => _reminders = true); _dialog('Athan enabled', '$count prayer notifications scheduled.'); }
       } else {
         await _athan.disable();
         if (mounted) setState(() => _reminders = false);
