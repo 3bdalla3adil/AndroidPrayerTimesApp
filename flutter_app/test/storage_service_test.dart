@@ -28,6 +28,8 @@ void main() {
     await storage.savePrayerTimeAdjustments({'Fajr': 5, 'Isha': -10});
     expect(await storage.loadEnabledPrayerNames(), {'Fajr', 'Isha'});
     expect(await storage.loadPrayerTimeAdjustments(), {'Fajr': 5, 'Isha': -10});
+    await storage.savePrePrayerReminderMinutes(15);
+    expect(await storage.loadPrePrayerReminderMinutes(), 15);
   });
 
   test('reading history is capped and newest entry wins', () async {
