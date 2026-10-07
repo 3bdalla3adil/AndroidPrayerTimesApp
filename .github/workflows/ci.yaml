@@ -88,8 +88,154 @@ jobs:
           set -e
           APK="build/app/outputs/flutter-apk/app-release.apk"
           test -s "$APK"
-          unzip -l "$APK" | grep -E 'res/raw/azan\.mp3$'
-          echo "Android APK contains azan.mp3."
+          echo "Generated Android raw resources:"
+          find android/app/src/main/res/raw -maxdepth 1 -type f -printf '%f %s bytes\\n' | sort
+          echo "APK entries matching Athan:"
+          unzip -l "$APK" | grep -E 'azan|raw/' || true
+          if unzip -l "$APK" | grep -Eq 'res/raw/azan\\.mp3
+      - name: Build release App Bundle
+        run: flutter build appbundle --release
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: salawat-quran-release-apk
+          path: flutter_app/build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: salawat-quran-release-aab
+          path: flutter_app/build/app/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+          retention-days: 30
+
+  build-ios:
+    name: Build iOS unsigned IPA
+    runs-on: macos-latest
+    needs: analyze-and-test
+    defaults:
+      run:
+        working-directory: flutter_app
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Fetch KFGQPC Hafs Quran font
+        run: bash tool/fetch_quran_font.sh
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.47.5
+          cache: true
+
+      - name: Generate iOS platform
+        run: flutter create . --platforms=ios --org "com.salawat_quran" --project-name "salawat_quran"
+
+      - name: Install bundled Athan sound for iOS
+        run: |
+          set -e
+          test -s assets/audio/azan.mp3
+          cp assets/audio/azan.mp3 ios/Runner/azan.mp3
+          gem install xcodeproj --no-document
+          ruby - <<'RUBY'
+          require 'xcodeproj'
+          project_path = 'ios/Runner.xcodeproj'
+          project = Xcodeproj::Project.open(project_path)
+          target = project.targets.find { |t| t.name == 'Runner' }
+          group = project.main_group.find_subpath('Runner', true)
+          file = group.files.find { |f| f.path == 'azan.mp3' }
+          file ||= group.new_file('azan.mp3')
+          phase = target.resources_build_phase
+          phase.add_file_reference(file) unless phase.files.any? { |b| b.file_ref == file }
+          project.save
+          RUBY
+
+      - name: Configure iOS permissions
+        run: |
+          /usr/libexec/PlistBuddy -c "Add :NSLocationWhenInUseUsageDescription string Allow Quran Prayer Companion to use your location for prayer times and Qibla direction." ios/Runner/Info.plist || true
+          /usr/libexec/PlistBuddy -c "Add :NSLocationAlwaysAndWhenInUseUsageDescription string Allow Quran Prayer Companion to use location for prayer times and Qibla direction." ios/Runner/Info.plist || true
+          /usr/libexec/PlistBuddy -c "Add :NSFaceIDUsageDescription string Use Face ID to unlock Quran Prayer Companion." ios/Runner/Info.plist || true
+
+      - name: Generate 604-page offline Mushaf
+        run: bash tool/generate_madinah_mushaf.sh
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Prepare iOS Flutter project
+        run: flutter build ios --config-only --release --no-codesign
+
+      - name: Disable Xcode code signing for CI
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          project = Path("ios/Runner.xcodeproj/project.pbxproj")
+          text = project.read_text()
+          text = text.replace(
+              "buildSettings = {",
+              "buildSettings = {\n\t\t\t\tCODE_SIGNING_ALLOWED = NO;\n\t\t\t\tCODE_SIGNING_REQUIRED = NO;",
+          )
+          project.write_text(text)
+          PY
+
+      - name: Build iOS device app without code signing
+        run: |
+          set -e
+          rm -rf build/ios
+          xcodebuild \
+            -workspace ios/Runner.xcworkspace \
+            -scheme Runner \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build/ios \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM="" \
+            PROVISIONING_PROFILE_SPECIFIER="" \
+            build
+
+      - name: Verify Athan sound is packaged in iOS app
+        run: |
+          set -e
+          APP_PATH="build/ios/Build/Products/Release-iphoneos/Runner.app"
+          test -s "$APP_PATH/azan.mp3"
+          echo "iOS app contains azan.mp3."
+
+      - name: Package unsigned IPA
+        run: |
+          set -e
+          rm -rf Payload app-release-unsigned.ipa
+          mkdir -p Payload
+          APP_PATH="build/ios/Build/Products/Release-iphoneos/Runner.app"
+          test -d "$APP_PATH"
+          cp -R "$APP_PATH" Payload/
+          /usr/bin/zip -qry app-release-unsigned.ipa Payload
+          ls -lh app-release-unsigned.ipa
+
+      - name: Upload unsigned IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: salawat-quran-release-ipa-unsigned
+          path: flutter_app/app-release-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 30
+; then
+            echo "Android APK contains res/raw/azan.mp3."
+          else
+            AAPT2="$(find "$ANDROID_HOME/build-tools" -name aapt2 -type f | sort -V | tail -1)"
+            test -x "$AAPT2"
+            echo "Checking compiled AAPT2 resource table with $AAPT2"
+            "$AAPT2" dump resources "$APK" | grep -Eq 'raw/azan|raw.*azan'
+            echo "Android APK resource table contains raw/azan."
+          fi
 
       - name: Build release App Bundle
         run: flutter build appbundle --release
