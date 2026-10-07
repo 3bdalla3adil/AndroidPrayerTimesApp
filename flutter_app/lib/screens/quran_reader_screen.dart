@@ -29,13 +29,14 @@ class QuranReaderScreen extends StatefulWidget {
 }
 
 class _QuranReaderScreenState extends State<QuranReaderScreen> {
-  static const totalPages = 604;
+  static const totalQuranPages = 604;
+  static const totalReaderPages = totalQuranPages + 1;
 
   final _controller = PageController();
   final _storage = StorageService();
   final _cache = <int, Map<String, dynamic>>{};
 
-  int _page = 1;
+  int _readerPage = 0;
   double _fontSize = 25;
   double _lineHeight = 1.75;
   bool _showTranslation = false;
@@ -62,19 +63,21 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
       final starts =
           (index['surahStartPages'] as Map?)?.cast<String, dynamic>() ?? {};
       final saved = await _storage.loadQuranFontSize();
-      final requested = widget.startingPage ??
+      final requestedQuranPage = widget.startingPage ??
           (starts[widget.surahNumber.toString()] as num?)?.toInt() ??
           1;
+      final requestedReaderPage =
+          requestedQuranPage.clamp(1, totalQuranPages).toInt();
 
       if (!mounted) return;
       setState(() {
-        _page = requested.clamp(1, totalPages);
-        _fontSize = saved.clamp(20, 38);
+        _readerPage = requestedReaderPage;
+        _fontSize = saved.clamp(20, 38).toDouble();
       });
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_controller.hasClients) {
-          _controller.jumpToPage(_page - 1);
+          _controller.jumpToPage(requestedReaderPage);
         }
       });
     } catch (_) {
@@ -109,9 +112,9 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
   }
 
   Future<void> _goToPage(int page) async {
-    if (page < 1 || page > totalPages || !_controller.hasClients) return;
+    if (page < 0 || page >= totalReaderPages || !_controller.hasClients) return;
     await _controller.animateToPage(
-      page - 1,
+      page,
       duration: const Duration(milliseconds: 260),
       curve: Curves.easeOutCubic,
     );
@@ -143,7 +146,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
             onPressed: () {
               final value = int.tryParse(input.text.trim());
               Navigator.pop(dialogContext);
-              if (value != null) _goToPage(value);
+              if (value != null) _goToPage(value.clamp(1, totalQuranPages).toInt());
             },
           ),
         ],
@@ -249,18 +252,21 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
             if (_showToolbar) _ReaderToolbar(
               onJump: _jumpToPage,
               onSettings: _openReaderSettings,
-              page: _page,
-              totalPages: totalPages,
+              page: _readerPage,
+              totalPages: totalReaderPages,
             ),
             Expanded(
               child: PageView.builder(
                 controller: _controller,
                 reverse: true,
-                itemCount: totalPages,
+                itemCount: totalReaderPages,
                 onPageChanged: (index) =>
-                    setState(() => _page = index + 1),
+                    setState(() => _readerPage = index),
                 itemBuilder: (context, index) {
-                  final page = index + 1;
+                  if (index == 0) {
+                    return const _DedicationPage();
+                  }
+                  final page = index;
                   return FutureBuilder<Map<String, dynamic>>(
                     future: _loadPage(page),
                     builder: (context, snapshot) {
@@ -291,10 +297,10 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
               ),
             ),
             _PageControls(
-              page: _page,
-              totalPages: totalPages,
-              onPrevious: () => _goToPage(_page - 1),
-              onNext: () => _goToPage(_page + 1),
+              page: _readerPage,
+              totalPages: totalReaderPages,
+              onPrevious: () => _goToPage(_readerPage - 1),
+              onNext: () => _goToPage(_readerPage + 1),
               onJump: _jumpToPage,
             ),
           ],
@@ -380,6 +386,73 @@ class _ReaderButton extends StatelessWidget {
           Icon(icon, size: 19),
           Text(label, style: const TextStyle(fontSize: 9)),
         ],
+      ),
+    );
+  }
+}
+
+class _DedicationPage extends StatelessWidget {
+  const _DedicationPage();
+
+  static const _lines = <String>[
+    'بارك الله لكما وبارك عليكما',
+    'وجمع بينكما في خير',
+    'سائلين الله لكما السعادة',
+    'في الدارين',
+    'ويرزقكم المحبة والبركة',
+    'والخير والمودة والرحمة',
+    'إهداء إلى عبد الله',
+    'يوم الأحد ١٧/١/٢٠٢٥ من',
+    'والدكم علي عبد الرزاق',
+    'بمناسبة عقد القرآن',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(7, 8, 7, 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF8E9),
+        border: Border.all(color: const Color(0xFFD8C89C), width: 1),
+        boxShadow: const [
+          BoxShadow(blurRadius: 7, offset: Offset(0, 2)),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        bottom: false,
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 44),
+            child: Directionality(
+              textDirection: TextDirection.rtl,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('۞', style: TextStyle(fontFamily: 'serif', fontSize: 22, color: Color(0xFF6F6242))),
+                  const SizedBox(height: 34),
+                  for (var i = 0; i < _lines.length; i++)
+                    Padding(
+                      padding: EdgeInsets.only(bottom: i == _lines.length - 1 ? 0 : 8),
+                      child: Text(
+                        _lines[i],
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontFamily: 'serif',
+                          fontSize: 22,
+                          height: 1.18,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF242019),
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 34),
+                  const Text('۞', style: TextStyle(fontFamily: 'serif', fontSize: 22, color: Color(0xFF6F6242))),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -728,7 +801,7 @@ class _PageControls extends StatelessWidget {
         children: [
           CupertinoButton(
             padding: const EdgeInsets.all(8),
-            onPressed: page > 1 ? onPrevious : null,
+            onPressed: page > 0 ? onPrevious : null,
             child: const Icon(CupertinoIcons.chevron_left),
           ),
           Expanded(
@@ -744,7 +817,7 @@ class _PageControls extends StatelessWidget {
           ),
           CupertinoButton(
             padding: const EdgeInsets.all(8),
-            onPressed: page < totalPages ? onNext : null,
+            onPressed: page < totalPages - 1 ? onNext : null,
             child: const Icon(CupertinoIcons.chevron_right),
           ),
         ],
