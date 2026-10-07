@@ -7,6 +7,10 @@ import '../services/prayer_service.dart';
 import '../services/storage_service.dart';
 import 'quran_screen.dart';
 import 'quran_reader_screen.dart';
+import 'adhkar_screen.dart';
+import 'prayer_screen.dart';
+import 'qibla_screen.dart';
+import 'tasbih_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -66,12 +70,14 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _continueQuran() async {
-    final (surah, ayah) = await StorageService().loadReaderPosition();
+    final storage = StorageService();
+    final (surah, ayah) = await storage.loadReaderPosition();
+    final page = await storage.loadReaderPage();
     if (!mounted) return;
     Navigator.of(context).push(
       CupertinoPageRoute(
         builder: (_) => surah != null
-            ? QuranReaderScreen(surahNumber: surah, startingAyah: ayah ?? 1)
+            ? QuranReaderScreen(surahNumber: surah, startingAyah: ayah ?? 1, startingPage: page)
             : const QuranScreen(),
       ),
     );
@@ -115,6 +121,31 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 18),
                 const Text('Today', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
                 const SizedBox(height: 8),
+                const Text(
+                  'Quick access',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 10),
+                _HomeFeatureGrid(
+                  onQuran: _continueQuran,
+                  onPrayer: () => Navigator.push(
+                    context,
+                    CupertinoPageRoute(builder: (_) => const PrayerScreen()),
+                  ),
+                  onTasbih: () => Navigator.push(
+                    context,
+                    CupertinoPageRoute(builder: (_) => const TasbihScreen()),
+                  ),
+                  onDuaa: () => Navigator.push(
+                    context,
+                    CupertinoPageRoute(builder: (_) => const AdhkarScreen()),
+                  ),
+                  onQibla: () => Navigator.push(
+                    context,
+                    CupertinoPageRoute(builder: (_) => const QiblaScreen()),
+                  ),
+                ),
+                const SizedBox(height: 18),
                 CupertinoListSection.insetGrouped(children: [
                   if (_prayers.isEmpty) const CupertinoListTile(
                     leading: Icon(CupertinoIcons.time), title: Text('Prayer times'),
@@ -166,6 +197,84 @@ class _NextPrayer extends StatelessWidget {
         Text(DateFormat('h:mm a').format(prayer.time), style: const TextStyle(color: CupertinoColors.white, fontSize: 23, fontWeight: FontWeight.w700)),
         Text(c, style: const TextStyle(color: CupertinoColors.white, fontSize: 17)),
       ]),
+    );
+  }
+}
+
+
+class _HomeFeatureGrid extends StatelessWidget {
+  const _HomeFeatureGrid({
+    required this.onQuran,
+    required this.onPrayer,
+    required this.onTasbih,
+    required this.onDuaa,
+    required this.onQibla,
+  });
+
+  final VoidCallback onQuran;
+  final VoidCallback onPrayer;
+  final VoidCallback onTasbih;
+  final VoidCallback onDuaa;
+  final VoidCallback onQibla;
+
+  @override
+  Widget build(BuildContext context) {
+    final items = [
+      ('القرآن الكريم', 'Quran', CupertinoIcons.book_fill, onQuran),
+      ('أوقات الصلاة', 'Prayer', CupertinoIcons.time_solid, onPrayer),
+      ('التسبيح', 'Tasbih', CupertinoIcons.circle_grid_3x3_fill, onTasbih),
+      ('الدعاء والأذكار', 'Duaa', CupertinoIcons.heart_fill, onDuaa),
+      ('القبلة', 'Qibla', CupertinoIcons.compass_fill, onQibla),
+    ];
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: items.length,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 10,
+        mainAxisSpacing: 10,
+        childAspectRatio: 1.28,
+      ),
+      itemBuilder: (context, index) {
+        final item = items[index];
+        return CupertinoButton(
+          padding: EdgeInsets.zero,
+          onPressed: item.$4,
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: CupertinoColors.secondarySystemGroupedBackground.resolveFrom(context),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: CupertinoColors.separator.resolveFrom(context),
+              ),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(item.$3, size: 32),
+                const SizedBox(height: 9),
+                Text(
+                  item.$1,
+                  textAlign: TextAlign.center,
+                  textDirection: TextDirection.rtl,
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  item.$2,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: CupertinoColors.secondaryLabel,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
