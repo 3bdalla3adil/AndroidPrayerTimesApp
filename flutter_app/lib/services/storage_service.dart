@@ -63,6 +63,8 @@ class StorageService {
 
   Future<void> savePrayerCalculationMethod(int method) => prefs.setInt(_method, method);
 
+  Future<int?> loadPrayerCalculationMethod() => prefs.getInt(_method);
+
   Future<int> loadPrayerMadhab() async => await prefs.getInt(_madhab) ?? 0;
 
   Future<void> savePrayerMadhab(int madhab) => prefs.setInt(_madhab, madhab);
