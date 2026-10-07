@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 OUT="$ROOT/assets/quran"
-PAGES="$OUT/pages"
+PAGES="$OUT/pages"\nINDEX="$OUT/page-index.json"
 ZIP="$ROOT/.cache/madinah-mushaf-json.zip"
 mkdir -p "$PAGES" "$(dirname "$ZIP")"
 
@@ -25,7 +25,7 @@ rm -rf "$PAGES"
 mkdir -p "$PAGES"
 cp "$SOURCE"/page-*.json "$PAGES"/
 
-COUNT="$(find "$PAGES" -maxdepth 1 -name 'page-*.json' | wc -l | tr -d ' ')"
+COUNT="$(find "$PAGES" -maxdepth 1 -name 'page-*.json' | wc -l | tr -d ' ')"\n# Flutter asset paths are case-sensitive; fail early if any page is missing.\nfor n in $(seq -w 1 604); do test -f "$PAGES/page-$n.json"; done
 test "$COUNT" -eq 604
 
 python3 - "$PAGES" "$OUT/page-index.json" <<'PY'
