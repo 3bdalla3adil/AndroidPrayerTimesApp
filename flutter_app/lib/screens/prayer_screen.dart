@@ -91,6 +91,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
     var cityIndex = saved.$2 == null
         ? 0
         : cities.indexWhere((city) => city.city == saved.$2);
+    if (!mounted) return;
     if (cityIndex < 0) cityIndex = 0;
 
     final result = await showCupertinoModalPopup<PrayerCity>(
