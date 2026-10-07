@@ -20,6 +20,14 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
     setState(() { _bookmarks = values.reversed.toList(); _loading = false; });
   }
 
+  String _safeVerse(int surah, int ayah) {
+    try {
+      return quran.getVerse(surah, ayah);
+    } catch (_) {
+      return 'Ayah $ayah is unavailable in the bundled text.';
+    }
+  }
+
   Future<void> _remove((int, int) bookmark) async {
     final values = await _storage.loadBookmarks();
     values.removeWhere((b) => b.$1 == bookmark.$1 && b.$2 == bookmark.$2);
@@ -76,7 +84,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
                               leading: const Icon(CupertinoIcons.bookmark_fill),
                               title: Text(quran.getSurahName(bookmark.$1)),
                               subtitle: Text(
-                                'Ayah ${bookmark.$2}: ${quran.getVerse(bookmark.$1, bookmark.$2)}',
+                                'Ayah ${bookmark.$2}: ${_safeVerse(bookmark.$1, bookmark.$2)}',
                                 maxLines: 3,
                                 overflow: TextOverflow.ellipsis,
                                 textDirection: TextDirection.rtl,
