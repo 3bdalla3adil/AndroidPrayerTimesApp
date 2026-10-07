@@ -41,7 +41,7 @@ class _TasbihScreenState extends State<TasbihScreen> {
         context: context,
         builder: (dialogContext) => CupertinoAlertDialog(
           title: const Text('تم الوصول إلى الهدف'),
-          content: Text('ما شاء الله، أكملت $_target تسبيحة.'),
+          content: Text('ما شاء الله، أكملت $_target تسبيحة.\n\nلقد وصلت إلى الهدف المحدد.'),
           actions: [
             CupertinoDialogAction(
               isDefaultAction: true,
