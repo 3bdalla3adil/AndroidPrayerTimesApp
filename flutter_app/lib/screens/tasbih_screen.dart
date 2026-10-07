@@ -208,13 +208,13 @@ class _TasbihScreenState extends State<TasbihScreen> {
                         : null,
                     onTap: () => _setTarget(target),
                   ),
+                CupertinoListTile(
+                  title: const Text('Custom target'),
+                  subtitle: Text('$_target repetitions selected'),
+                  trailing: const CupertinoListTileChevron(),
+                  onTap: _chooseCustomTarget,
+                ),
               ],
-              CupertinoListTile(
-                title: const Text('Custom target'),
-                subtitle: Text('$_target repetitions selected'),
-                trailing: const CupertinoListTileChevron(),
-                onTap: _chooseCustomTarget,
-              ),
             ),
             CupertinoListSection.insetGrouped(
               children: [
