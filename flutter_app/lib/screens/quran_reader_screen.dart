@@ -167,7 +167,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
       context: context,
       builder: (dialogContext) => CupertinoAlertDialog(
         title: Text(exists ? 'Bookmark removed' : 'Ayah bookmarked'),
-        content: Text(quran.getSurahName(surah) + ' • Ayah ' + ayah.toString()),
+        content: Text('${quran.getSurahName(surah)} • Ayah $ayah'),
         actions: [
           CupertinoDialogAction(
             child: const Text('OK'),
