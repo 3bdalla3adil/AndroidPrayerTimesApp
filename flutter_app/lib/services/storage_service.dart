@@ -101,6 +101,12 @@ class StorageService {
   Future<bool> loadAthanRemindersEnabled() async => await prefs.getBool(_athanReminders) ?? false;
   Future<void> saveAthanRemindersEnabled(bool enabled) => prefs.setBool(_athanReminders, enabled);
 
+  Future<int> loadPrePrayerReminderMinutes() async =>
+      (await prefs.getInt(_preReminderMinutes) ?? 0).clamp(0, 30);
+
+  Future<void> savePrePrayerReminderMinutes(int minutes) =>
+      prefs.setInt(_preReminderMinutes, minutes.clamp(0, 30));
+
   Future<Set<String>> loadEnabledPrayerNames() async {
     final saved = await prefs.getStringList(_athanPrayers);
     if (saved == null) return prayerNames.toSet();
