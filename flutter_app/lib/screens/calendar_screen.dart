@@ -190,7 +190,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                           return DecoratedBox(
                             decoration: BoxDecoration(
                               color: isToday
-                                  ? CupertinoColors.activeBlue.withOpacity(.14)
+                                  ? CupertinoColors.activeBlue.withValues(alpha: .14)
                                   : null,
                               border: Border.all(
                                 color: isToday
@@ -238,8 +238,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 ),
               ],
             ),
-            const CupertinoListSection.insetGrouped(
-              header: Text('CALENDAR ACCURACY'),
+            CupertinoListSection.insetGrouped(
+              header: const Text('CALENDAR ACCURACY'),
               children: [
                 CupertinoListTile(
                   leading: Icon(CupertinoIcons.info),
