@@ -1,3 +1,4 @@
+for n in $(seq -w 1 604); do test -f "$PAGES/page-$n.json" || exit 1; done
 #!/usr/bin/env bash
 set -euo pipefail
 
@@ -25,8 +26,6 @@ rm -rf "$PAGES"
 mkdir -p "$PAGES"
 cp "$SOURCE"/page-*.json "$PAGES"/
 
-COUNT="$(find "$PAGES" -maxdepth 1 -name 'page-*.json' | wc -l | tr -d ' ')"\n# Flutter asset paths are case-sensitive; fail early if any page is missing.\nfor n in $(seq -w 1 604); do test -f "$PAGES/page-$n.json"; done
-test "$COUNT" -eq 604
 
 python3 - "$PAGES" "$OUT/page-index.json" <<'PY'
 import json, pathlib, sys
