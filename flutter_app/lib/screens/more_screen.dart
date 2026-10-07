@@ -66,7 +66,7 @@ class MoreScreen extends StatelessWidget {
             ),
             CupertinoListSection.insetGrouped(
               children: [
-                CupertinoListTile(
+                const CupertinoListTile(
                   leading: Icon(CupertinoIcons.lock_shield),
                   title: Text('Offline-first'),
                   subtitle: Text('Prayer calculations, Quran and Qibla work on-device.'),
