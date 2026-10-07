@@ -103,12 +103,16 @@ for name in ("android/app/build.gradle", "android/app/build.gradle.kts"):
 PY
 
 # 2b. Install the bundled Athan recording as an Android notification sound.
+bash tool/fetch_athan_sounds.sh
 mkdir -p android/app/src/main/res/raw
 cp -f assets/audio/azan.mp3 android/app/src/main/res/raw/azan.mp3
+cp -f assets/audio/azan_madinah.mp3 android/app/src/main/res/raw/azan_madinah.mp3
+cp -f assets/audio/azan_dubai.mp3 android/app/src/main/res/raw/azan_dubai.mp3
+cp -f assets/audio/azan_fajr_madinah.mp3 android/app/src/main/res/raw/azan_fajr_madinah.mp3
 cat > android/app/src/main/res/raw/keep.xml <<'XML'
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools"
-    tools:keep="@raw/azan" />
+    tools:keep="@raw/azan,@raw/azan_madinah,@raw/azan_dubai,@raw/azan_fajr_madinah" />
 XML
 
 # 3. Add runtime permissions required by prayer, Qibla, notifications and exact scheduling.
