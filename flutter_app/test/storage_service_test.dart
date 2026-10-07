@@ -7,12 +7,14 @@ import 'package:salawat_quran/services/storage_service.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  late StorageService storage;
+
   setUp(() {
     SharedPreferencesAsyncPlatform.instance = InMemorySharedPreferencesAsync.empty();
+    storage = StorageService();
   });
 
   test('corrupt bookmarks are ignored instead of throwing', () async {
-    final storage = StorageService();
     await storage.prefs.setStringList('quran_bookmarks', const [
       '1:1',
       'bad-value',
@@ -23,7 +25,6 @@ void main() {
   });
 
   test('prayer preferences persist safely', () async {
-    final storage = StorageService();
     await storage.saveEnabledPrayerNames(const ['Fajr', 'Isha']);
     await storage.savePrayerTimeAdjustments({'Fajr': 5, 'Isha': -10});
     expect(await storage.loadEnabledPrayerNames(), {'Fajr', 'Isha'});
@@ -33,7 +34,6 @@ void main() {
   });
 
   test('reading history is capped and newest entry wins', () async {
-    final storage = StorageService();
     for (var i = 1; i <= 25; i++) {
       await storage.addReadingHistory(1, i);
     }
