@@ -230,7 +230,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             value: _enabledPrayers.contains(prayer),
                             onChanged: _loading ? null : (value) => _togglePrayer(prayer, value),
                           ),
-                          onLongPress: _loading ? null : () => _chooseAdjustment(prayer),
+                          onTap: _loading ? null : () => _chooseAdjustment(prayer),
                         ),
                       const CupertinoListTile(
                         leading: Icon(CupertinoIcons.info_circle),
