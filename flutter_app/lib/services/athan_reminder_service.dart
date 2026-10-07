@@ -56,7 +56,7 @@ class AthanReminderService {
           id: NotificationService.prayerIdBase + day * 10 + i,
           prayerName: prayer.name,
           time: prayer.time,
-          soundId: soundId,
+          soundId: NotificationService.soundForPrayer(prayer.name, soundId),
         );
         if (scheduled) count++;
 
