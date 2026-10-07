@@ -1,10 +1,13 @@
+import 'dart:math' as math;
+
 import 'package:adhan_dart/adhan_dart.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_device_compass/flutter_device_compass.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter_compass/flutter_compass.dart';
 import 'package:geolocator/geolocator.dart';
 
 class QiblaScreen extends StatefulWidget {
   const QiblaScreen({super.key});
+
   @override
   State<QiblaScreen> createState() => _QiblaScreenState();
 }
@@ -29,7 +32,10 @@ class _QiblaScreenState extends State<QiblaScreen> {
         throw StateError('Location permission was not granted.');
       }
 
-      final position = await Geolocator.getCurrentPosition();
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings:
+            const LocationSettings(accuracy: LocationAccuracy.high),
+      );
       final qibla = Qibla.qibla(
         Coordinates(position.latitude, position.longitude),
       );
@@ -59,73 +65,111 @@ class _QiblaScreenState extends State<QiblaScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Qibla direction')),
-      body: StreamBuilder<CompassEvent>(
-        stream: FlutterCompass.events,
-        builder: (context, snapshot) {
-          final heading = snapshot.data?.heading;
-          final relative = heading == null ? 0.0 : relativeHeading(heading);
+    final accent = CupertinoColors.activeGreen.resolveFrom(context);
+    return CupertinoPageScaffold(
+      navigationBar: const CupertinoNavigationBar(
+        middle: Text('Qibla direction'),
+      ),
+      child: SafeArea(
+        child: StreamBuilder<CompassEvent>(
+          stream: FlutterCompass.events,
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return Center(child: Text('Compass error: ${snapshot.error}'));
+            }
 
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
+            final heading = snapshot.data?.heading;
+            final relative =
+                heading == null ? 0.0 : relativeHeading(heading);
+
+            return SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(24, 28, 24, 110),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
+                  const Text(
                     'القبلة',
                     textDirection: TextDirection.rtl,
-                    style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
-                  ),
-                  const SizedBox(height: 30),
-                  Container(
-                    width: 250,
-                    height: 250,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Theme.of(context).colorScheme.primary,
-                        width: 3,
-                      ),
-                    ),
-                    child: AnimatedRotation(
-                      turns: relative / 360,
-                      duration: const Duration(milliseconds: 180),
-                      child: Icon(
-                        Icons.navigation,
-                        size: 170,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
+                    style: TextStyle(
+                      fontSize: 34,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 10),
                   Text(
                     heading == null
                         ? 'Waiting for compass sensor…'
                         : 'Turn the arrow toward the Qibla',
-                    style: Theme.of(context).textTheme.titleMedium,
+                    textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 8),
-                  Text(status, textAlign: TextAlign.center),
+                  const SizedBox(height: 28),
+                  Container(
+                    width: 260,
+                    height: 260,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: CupertinoColors.systemGroupedBackground
+                          .resolveFrom(context),
+                      border: Border.all(color: accent, width: 3),
+                      boxShadow: [
+                        BoxShadow(
+                          color: CupertinoColors.systemGrey
+                              .resolveFrom(context)
+                              .withValues(alpha: .2),
+                          blurRadius: 14,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        const Positioned(
+                          top: 16,
+                          child: Text(
+                            'N',
+                            style: TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                        Transform.rotate(
+                          angle: relative * math.pi / 180,
+                          child: Icon(
+                            CupertinoIcons.arrow_up_circle_fill,
+                            size: 150,
+                            color: accent,
+                          ),
+                        ),
+                        Positioned(
+                          bottom: 18,
+                          child: Text(
+                            qiblaBearing == null
+                                ? '—'
+                                : '${qiblaBearing!.toStringAsFixed(1)}°',
+                            style: const TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   const SizedBox(height: 24),
-                  FilledButton.icon(
+                  Text(status, textAlign: TextAlign.center),
+                  const SizedBox(height: 18),
+                  CupertinoButton.filled(
                     onPressed: calculate,
-                    icon: const Icon(Icons.my_location),
-                    label: const Text('Calculate Qibla'),
+                    child: const Text('Calculate Qibla'),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 12),
                   const Text(
                     'Keep the phone flat. If the heading is unstable, calibrate the compass.',
                     textAlign: TextAlign.center,
                   ),
                 ],
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
