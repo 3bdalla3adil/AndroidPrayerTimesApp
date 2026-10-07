@@ -1,11 +1,12 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
+
+import 'package:flutter/cupertino.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 
 import '../models/prayer_entry.dart';
+import '../services/notification_service.dart';
 import '../services/prayer_service.dart';
 import '../services/storage_service.dart';
-import '../services/notification_service.dart';
 import 'quran_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -16,205 +17,200 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final service = PrayerService(StorageService());
-  List<PrayerEntry> prayers = [];
-  String location = 'Finding your location…';
-  String? error;
-  Timer? timer;
-  DateTime now = DateTime.now();
+  final _service = PrayerService(StorageService());
+  List<PrayerEntry> _prayers = const [];
+  DateTime _now = DateTime.now();
+  String _location = 'Current location';
+  String? _error;
+  Timer? _timer;
 
   @override
   void initState() {
     super.initState();
-    load();
-    timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) setState(() => now = DateTime.now());
+    _load();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() => _now = DateTime.now());
     });
   }
 
   @override
   void dispose() {
-    timer?.cancel();
+    _timer?.cancel();
     super.dispose();
   }
 
-  Future<void> load({bool refresh = false}) async {
+  Future<void> _load() async {
     try {
-      final data = await service.today(refreshLocation: refresh);
+      final prayers = await _service.today();
+      final location = await StorageService().loadLocation();
       if (!mounted) return;
       setState(() {
-        prayers = data;
-        error = null;
-        location = 'Current location';
+        _prayers = prayers;
+        _location = location.$3 ?? 'Current location';
+        _error = null;
       });
     } catch (e) {
-      if (!mounted) return;
-      setState(() => error = e.toString().replaceFirst('Bad state: ', ''));
+      if (mounted) {
+        setState(() => _error = e.toString().replaceFirst('Bad state: ', ''));
+      }
     }
   }
 
-  Future<void> _scheduleReminders() async {
-    await NotificationService.cancelAll();
-
-    for (var i = 0; i < prayers.length; i++) {
-      await NotificationService.schedulePrayer(
-        id: 100 + i,
-        prayerName: prayers[i].name,
-        time: prayers[i].time,
-      );
-    }
-
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Prayer reminders scheduled.')),
-    );
-  }
-
-  PrayerEntry? get nextPrayer {
-    for (final prayer in prayers) {
-      if (prayer.time.isAfter(now)) return prayer;
+  PrayerEntry? get _next {
+    for (final prayer in _prayers) {
+      if (prayer.time.isAfter(_now)) return prayer;
     }
     return null;
   }
 
-  Duration get countdown {
-    final next = nextPrayer;
-    return next == null ? Duration.zero : next.time.difference(now);
-  }
-
-  String formatDuration(Duration value) {
-    return '${value.inHours.toString().padLeft(2, '0')}:'
-        '${(value.inMinutes % 60).toString().padLeft(2, '0')}:'
-        '${(value.inSeconds % 60).toString().padLeft(2, '0')}';
+  Future<void> _schedule() async {
+    await NotificationService.cancelAll();
+    for (var i = 0; i < _prayers.length; i++) {
+      await NotificationService.schedulePrayer(
+        id: 100 + i,
+        prayerName: _prayers[i].name,
+        time: _prayers[i].time,
+      );
+    }
+    if (!mounted) return;
+    showCupertinoDialog<void>(
+      context: context,
+      builder: (_) => const CupertinoAlertDialog(
+        title: Text('Prayer reminders'),
+        content: Text('Local reminders are scheduled on this device.'),
+        actions: [CupertinoDialogAction(child: Text('OK'))],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final next = nextPrayer;
+    final next = _next;
 
-    return RefreshIndicator(
-      onRefresh: () => load(refresh: true),
-      child: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 56, 20, 32),
+    return CupertinoPageScaffold(
+      navigationBar: CupertinoNavigationBar(
+        middle: const Text('Salawat'),
+        trailing: CupertinoButton(
+          padding: EdgeInsets.zero,
+          onPressed: _load,
+          child: const Icon(CupertinoIcons.refresh),
+        ),
+      ),
+      child: SafeArea(
+        child: CustomScrollView(
+          slivers: [
+            CupertinoSliverRefreshControl(onRefresh: _load),
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 18, 16, 110),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  const Text(
+                    'السلام عليكم',
+                    textDirection: TextDirection.rtl,
+                    style: TextStyle(fontSize: 29, fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(DateFormat('EEEE, d MMMM y').format(_now)),
+                  Text(_location, style: const TextStyle(color: CupertinoColors.secondaryLabel)),
+                  const SizedBox(height: 18),
+                  if (_error != null)
+                    CupertinoListSection.insetGrouped(
+                      children: [
+                        CupertinoListTile(
+                          leading: const Icon(CupertinoIcons.exclamationmark_triangle),
+                          title: const Text('Prayer times unavailable'),
+                          subtitle: Text(_error!),
+                        ),
+                      ],
+                    ),
+                  if (next != null) _NextPrayer(prayer: next, now: _now),
+                  const SizedBox(height: 18),
+                  const Text('Today', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 8),
+                  CupertinoListSection.insetGrouped(
+                    children: [
+                      for (final prayer in _prayers)
+                        CupertinoListTile(
+                          leading: const Icon(CupertinoIcons.time),
+                          title: Text(prayer.name),
+                          subtitle: Text(prayer.arabicName, textDirection: TextDirection.rtl),
+                          trailing: Text(
+                            DateFormat('h:mm a').format(prayer.time),
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                    ],
+                  ),
+                  CupertinoListSection.insetGrouped(
+                    children: [
+                      CupertinoListTile(
+                        leading: const Icon(CupertinoIcons.book),
+                        title: const Text('Continue Quran'),
+                        subtitle: const Text('Offline Mushaf'),
+                        trailing: const CupertinoListTileChevron(),
+                        onTap: () => Navigator.of(context).push(
+                          CupertinoPageRoute(builder: (_) => const QuranScreen()),
+                        ),
+                      ),
+                      CupertinoListTile(
+                        leading: const Icon(CupertinoIcons.bell),
+                        title: const Text('Athan reminders'),
+                        subtitle: const Text('Schedule local prayer alerts'),
+                        trailing: CupertinoButton(
+                          padding: EdgeInsets.zero,
+                          onPressed: _schedule,
+                          child: const Text('Enable'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ]),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NextPrayer extends StatelessWidget {
+  const _NextPrayer({required this.prayer, required this.now});
+
+  final PrayerEntry prayer;
+  final DateTime now;
+
+  String countdown() {
+    final d = prayer.time.difference(now);
+    if (d.isNegative) return '00:00:00';
+    return d.inHours.toString().padLeft(2, '0') +
+        ':' +
+        (d.inMinutes % 60).toString().padLeft(2, '0') +
+        ':' +
+        (d.inSeconds % 60).toString().padLeft(2, '0');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: CupertinoColors.activeGreen.resolveFrom(context),
+        borderRadius: BorderRadius.circular(22),
+      ),
+      child: Column(
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'السلام عليكم',
-                      style: theme.textTheme.headlineSmall
-                          ?.copyWith(fontWeight: FontWeight.w800),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(DateFormat('EEEE, d MMMM').format(now)),
-                    Text(location, style: theme.textTheme.bodySmall),
-                  ],
-                ),
-              ),
-              IconButton(
-                onPressed: () => load(refresh: true),
-                icon: const Icon(Icons.my_location),
-                tooltip: 'Update location',
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          if (error != null)
-            Card(
-              color: theme.colorScheme.errorContainer,
-              child: Padding(
-                padding: const EdgeInsets.all(18),
-                child: Text(error!),
-              ),
-            ),
-          if (error == null && next != null)
-            Card(
-              color: theme.colorScheme.primaryContainer,
-              child: Padding(
-                padding: const EdgeInsets.all(22),
-                child: Column(
-                  children: [
-                    Text(
-                      'NEXT PRAYER',
-                      style: theme.textTheme.labelLarge
-                          ?.copyWith(letterSpacing: 1.4),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      next.arabicName,
-                      textDirection: TextDirection.rtl,
-                      style: theme.textTheme.displaySmall
-                          ?.copyWith(fontWeight: FontWeight.w800),
-                    ),
-                    Text(next.name, style: theme.textTheme.titleMedium),
-                    const SizedBox(height: 8),
-                    Text(
-                      DateFormat('h:mm a').format(next.time),
-                      style: theme.textTheme.headlineMedium
-                          ?.copyWith(fontWeight: FontWeight.w800),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      formatDuration(countdown),
-                      style: theme.textTheme.titleLarge,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          const SizedBox(height: 18),
+          const Text('NEXT PRAYER', style: TextStyle(color: CupertinoColors.white, letterSpacing: 1.4)),
+          const SizedBox(height: 8),
           Text(
-            'Today',
-            style: theme.textTheme.titleLarge
-                ?.copyWith(fontWeight: FontWeight.w800),
+            prayer.arabicName,
+            textDirection: TextDirection.rtl,
+            style: const TextStyle(color: CupertinoColors.white, fontSize: 31, fontWeight: FontWeight.w700),
           ),
-          const SizedBox(height: 10),
-          ...prayers.map(
-            (p) => Card(
-              margin: const EdgeInsets.only(bottom: 10),
-              child: ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: theme.colorScheme.secondaryContainer,
-                  child: const Icon(Icons.access_time),
-                ),
-                title: Text(
-                  p.name,
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
-                subtitle: Text(
-                  p.arabicName,
-                  textDirection: TextDirection.rtl,
-                ),
-                trailing: Text(
-                  DateFormat('h:mm a').format(p.time),
-                  style: theme.textTheme.titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.menu_book),
-              title: const Text('Continue Quran reading'),
-              subtitle: const Text('Pick up where you left off'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const QuranScreen()),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          FilledButton.icon(
-            onPressed: prayers.isEmpty ? null : _scheduleReminders,
-            icon: const Icon(Icons.notifications_active_outlined),
-            label: const Text('Schedule prayer reminders'),
-          ),
+          Text(prayer.name, style: const TextStyle(color: CupertinoColors.white)),
+          const SizedBox(height: 8),
+          Text(DateFormat('h:mm a').format(prayer.time), style: const TextStyle(color: CupertinoColors.white, fontSize: 23, fontWeight: FontWeight.w700)),
+          Text(countdown(), style: const TextStyle(color: CupertinoColors.white, fontSize: 17)),
         ],
       ),
     );
