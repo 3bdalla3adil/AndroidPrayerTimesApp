@@ -249,15 +249,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await _refreshSchedules();
   }
 
-  Future<void> _testAthan() async {
+  Future<void> _testAthan({bool fajr = false}) async {
     try {
-      await NotificationService.scheduleTestAthan(soundId: _athanSound);
+      if (fajr) {
+        await NotificationService.scheduleTestFajrAthan();
+      } else {
+        await NotificationService.scheduleTestAthan(soundId: _athanSound);
+      }
       if (!mounted) return;
       await showCupertinoDialog<void>(
         context: context,
         builder: (dialogContext) => CupertinoAlertDialog(
-          title: const Text('Athan test scheduled'),
-          content: const Text('The Athan notification will trigger in about 5 seconds. Keep the device audio enabled.'),
+          title: Text(fajr ? 'Fajr Athan test scheduled' : 'Athan test scheduled'),
+          content: const Text('The notification will trigger in about 5 seconds. Keep the device audio enabled.'),
           actions: [
             CupertinoDialogAction(
               onPressed: () => Navigator.pop(dialogContext),
@@ -471,6 +475,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         title: const Text('Test Athan sound'),
                         subtitle: const Text('Play the selected Athan through the same notification path used for prayer time.'),
                         onTap: _loading ? null : _testAthan,
+                      ),
+                      CupertinoListTile(
+                        leading: const Icon(CupertinoIcons.sunrise_fill),
+                        title: const Text('Test Fajr Athan'),
+                        subtitle: const Text('Test the dedicated Madinah Fajr Athan used automatically at Fajr.'),
+                        onTap: _loading ? null : () => _testAthan(fajr: true),
                       ),
                     ],
                   ),
