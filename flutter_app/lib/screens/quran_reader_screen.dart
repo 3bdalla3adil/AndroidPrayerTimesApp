@@ -68,11 +68,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
       final savedLineHeight = await _storage.loadQuranLineHeight();
       final savedTranslation = await _storage.loadQuranShowTranslation();
       final savedDarkPage = await _storage.loadQuranDarkPage();
-      final savedReaderPage = await _storage.loadReaderPage();
       var requestedQuranPage = widget.startingPage ??
-          (savedReaderPage != null && savedReaderPage >= 1 && savedReaderPage <= totalQuranPages
-              ? savedReaderPage
-              : null) ??
           (starts[widget.surahNumber.toString()] as num?)?.toInt() ??
           1;
 
@@ -686,6 +682,12 @@ class _MushafPageState extends State<_MushafPage> {
       ((verses.first['ayah_number'] as num?)?.toInt() ?? 0) == 1;
 
   bool get _hasBasmala => _startsSurah && _firstSurah != 9;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _restoreHighlight());
+  }
 
   @override
   Widget build(BuildContext context) {
