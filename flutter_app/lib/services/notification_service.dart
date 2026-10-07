@@ -10,8 +10,13 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
 
   static const int _prayerIdBase = 1000;
+  static const String _channelId = 'athan_prayer_channel';
+
+  static bool _initialized = false;
 
   static Future<void> initialize() async {
+    if (_initialized) return;
+
     tz_data.initializeTimeZones();
     final info = await FlutterTimezone.getLocalTimezone();
     tz.setLocalLocation(tz.getLocation(info.identifier));
@@ -31,25 +36,28 @@ class NotificationService {
 
     await _plugin.initialize(
       settings: settings,
-      onDidReceiveNotificationResponse: (_) {},
+      onDidReceiveNotificationResponse: _onNotificationResponse,
     );
 
-    await _plugin
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestNotificationsPermission();
+    final android = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    await android?.requestNotificationsPermission();
+    await android?.requestExactAlarmsPermission();
 
-    await _plugin
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestExactAlarmsPermission();
+    _initialized = true;
+  }
+
+  static void _onNotificationResponse(NotificationResponse response) {
+    // Keep the callback lightweight. The prayer screen can react to the
+    // notification through the app lifecycle when it is opened.
   }
 
   static const AndroidNotificationDetails _androidDetails =
       AndroidNotificationDetails(
-    'athan_prayer_channel',
+    _channelId,
     'Athan & Prayer Times',
-    channelDescription: 'Automatic notifications at the five daily prayer times',
+    channelDescription:
+        'Automatic notifications at the five daily prayer times',
     importance: Importance.max,
     priority: Priority.high,
     playSound: true,
@@ -70,11 +78,18 @@ class NotificationService {
     iOS: _iosDetails,
   );
 
+  static Future<void> _ensureInitialized() async {
+    if (!_initialized) {
+      await initialize();
+    }
+  }
+
   static Future<void> show({
     required int id,
     required String title,
     required String body,
   }) async {
+    await _ensureInitialized();
     await _plugin.show(
       id: id,
       title: title,
@@ -83,12 +98,15 @@ class NotificationService {
     );
   }
 
-  /// Schedule the next occurrence and repeat at the same local time daily.
+  /// Schedule the prayer at its next occurrence and repeat every day at the
+  /// same local clock time.
   static Future<void> schedulePrayer({
     required int id,
     required String prayerName,
     required DateTime time,
   }) async {
+    await _ensureInitialized();
+
     final now = tz.TZDateTime.now(tz.local);
     var scheduled = tz.TZDateTime(
       tz.local,
@@ -103,20 +121,36 @@ class NotificationService {
       scheduled = scheduled.add(const Duration(days: 1));
     }
 
-    await _plugin.zonedSchedule(
-      id: id,
-      title: 'Athan — $prayerName',
-      body: 'It is time for $prayerName prayer.',
-      scheduledDate: scheduled,
-      notificationDetails: _details,
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      matchDateTimeComponents: DateTimeComponents.time,
-    );
+    try {
+      await _plugin.zonedSchedule(
+        id: id,
+        title: 'Athan — $prayerName',
+        body: 'It is time for $prayerName prayer.',
+        scheduledDate: scheduled,
+        notificationDetails: _details,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        matchDateTimeComponents: DateTimeComponents.time,
+      );
+    } on Exception {
+      // Some Android devices do not grant exact-alarm access. Keep reminders
+      // functional with the inexact OS scheduler instead of disabling Athan.
+      await _plugin.zonedSchedule(
+        id: id,
+        title: 'Athan — $prayerName',
+        body: 'It is time for $prayerName prayer.',
+        scheduledDate: scheduled,
+        notificationDetails: _details,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        matchDateTimeComponents: DateTimeComponents.time,
+      );
+    }
   }
 
   static Future<void> scheduleDailyPrayers(
     List<({String name, DateTime time})> prayers,
   ) async {
+    await _ensureInitialized();
+
     for (var i = 0; i < prayers.length; i++) {
       await schedulePrayer(
         id: _prayerIdBase + i,
@@ -127,13 +161,24 @@ class NotificationService {
   }
 
   static Future<void> cancelPrayerReminders() async {
+    await _ensureInitialized();
     for (var i = 0; i < 5; i++) {
       await _plugin.cancel(id: _prayerIdBase + i);
     }
   }
 
-  static Future<void> cancel(int id) => _plugin.cancel(id: id);
-  static Future<void> cancelAll() => _plugin.cancelAll();
-  static Future<List<PendingNotificationRequest>> pending() =>
-      _plugin.pendingNotificationRequests();
+  static Future<void> cancel(int id) async {
+    await _ensureInitialized();
+    await _plugin.cancel(id: id);
+  }
+
+  static Future<void> cancelAll() async {
+    await _ensureInitialized();
+    await _plugin.cancelAll();
+  }
+
+  static Future<List<PendingNotificationRequest>> pending() async {
+    await _ensureInitialized();
+    return _plugin.pendingNotificationRequests();
+  }
 }
