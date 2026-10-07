@@ -99,7 +99,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     // Keep the adjacent page warm for instant swiping.
     for (final adjacent in [page - 1, page + 1]) {
       if (adjacent >= 1 &&
-          adjacent <= totalPages &&
+          adjacent <= totalQuranPages &&
           !_cache.containsKey(adjacent)) {
         _loadPage(adjacent).ignore();
       }
@@ -118,7 +118,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
   }
 
   void _jumpToPage() {
-    final input = TextEditingController(text: '$_page');
+    final input = TextEditingController(text: '${_readerPage == 0 ? 1 : _readerPage}');
     showCupertinoDialog<void>(
       context: context,
       builder: (dialogContext) => CupertinoAlertDialog(
@@ -227,7 +227,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
               style: TextStyle(fontWeight: FontWeight.w700),
             ),
             Text(
-              'صفحة $_page من $totalPages',
+              _readerPage == 0 ? 'صفحة الإهداء' : 'صفحة $_readerPage من $totalQuranPages',
               style: const TextStyle(fontSize: 11),
             ),
           ],
