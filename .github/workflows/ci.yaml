@@ -24,6 +24,15 @@ jobs:
       - name: Generate 604-page offline Mushaf
         run: bash tool/generate_madinah_mushaf.sh
 
+      - name: Fetch KFGQPC Hafs Quran font
+        run: bash tool/fetch_quran_font.sh
+
+      - name: Fetch KFGQPC Hafs Quran font
+        run: bash tool/fetch_quran_font.sh
+
+      - name: Fetch KFGQPC Hafs Quran font
+        run: bash tool/fetch_quran_font.sh
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
