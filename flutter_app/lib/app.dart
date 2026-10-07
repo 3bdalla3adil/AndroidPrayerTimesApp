@@ -6,9 +6,7 @@ import 'screens/prayer_screen.dart';
 import 'screens/qibla_screen.dart';
 import 'screens/quran_screen.dart';
 import 'services/biometric_service.dart';
-import 'services/biometric_service.dart';
 import 'services/notification_service.dart';
-import 'services/storage_service.dart';
 import 'services/storage_service.dart';
 
 class RootShell extends StatefulWidget {
@@ -20,11 +18,6 @@ class RootShell extends StatefulWidget {
 
 class _RootShellState extends State<RootShell> with WidgetsBindingObserver {
   late final CupertinoTabController _controller;
-  final _storage = StorageService();
-  final _biometric = BiometricService();
-  bool _authenticating = false;
-  bool _securityReady = false;
-  bool _unlocked = true;
   final _storage = StorageService();
   final _biometric = BiometricService();
 
@@ -51,9 +44,12 @@ class _RootShellState extends State<RootShell> with WidgetsBindingObserver {
   }
 
   Future<void> _authenticateIfRequired() async {
-    if (_authenticating) return;
+    if (_authenticating || !mounted) return;
     final enabled = await _storage.loadBiometricLockEnabled();
-    if (!enabled || !mounted) return;
+    if (!mounted || !enabled) {
+      if (mounted && _locked) setState(() => _locked = false);
+      return;
+    }
     setState(() => _locked = true);
     await _authenticate();
   }
@@ -61,12 +57,24 @@ class _RootShellState extends State<RootShell> with WidgetsBindingObserver {
   Future<void> _authenticate() async {
     if (_authenticating || !mounted) return;
     setState(() => _authenticating = true);
-    final ok = await _biometric.authenticate();
-    if (!mounted) return;
-    setState(() {
-      _authenticating = false;
-      _locked = !ok;
-    });
+    try {
+      final available = await _biometric.isAvailable();
+      if (!mounted) return;
+      if (!available) {
+        setState(() => _authenticating = false);
+        return;
+      }
+      final ok = await _biometric.authenticate();
+      if (!mounted) return;
+      setState(() {
+        _authenticating = false;
+        _locked = !ok;
+      });
+    } catch (_) {
+      if (mounted) {
+        setState(() => _authenticating = false);
+      }
+    }
   }
 
   @override
