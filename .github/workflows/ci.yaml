@@ -113,6 +113,7 @@ jobs:
       - name: Configure iOS permissions and background audio
         run: |
           /usr/libexec/PlistBuddy -c "Add :NSLocationWhenInUseUsageDescription string Allow Quran Prayer Companion to use your location for prayer times and Qibla direction." ios/Runner/Info.plist || true
+          /usr/libexec/PlistBuddy -c "Add :NSLocationAlwaysAndWhenInUseUsageDescription string Allow Quran Prayer Companion to use location for prayer times and Qibla direction." ios/Runner/Info.plist || true
           /usr/libexec/PlistBuddy -c "Add :UIBackgroundModes array" ios/Runner/Info.plist || true
           /usr/libexec/PlistBuddy -c "Add :UIBackgroundModes:0 string audio" ios/Runner/Info.plist || true
 
