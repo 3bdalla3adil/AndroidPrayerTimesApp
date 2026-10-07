@@ -12,11 +12,16 @@ class PrayerService {
 
   final StorageService storage;
 
+  static Future<void> initialize() async {
+    tz_data.initializeTimeZones();
+    final info = await FlutterTimezone.getLocalTimezone();
+    tz.setLocalLocation(tz.getLocation(info.identifier));
+  }
+
   Future<Position> determinePosition() async {
     if (!await Geolocator.isLocationServiceEnabled()) {
       throw StateError('Location services are disabled.');
     }
-
     var permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
@@ -25,19 +30,13 @@ class PrayerService {
         permission == LocationPermission.deniedForever) {
       throw StateError('Location permission was not granted.');
     }
-
     return Geolocator.getCurrentPosition(
       locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
     );
   }
 
-  Future<void> initializeTimeZone() async {
-    tz_data.initializeTimeZones();
-    final info = await FlutterTimezone.getLocalTimezone();
-    tz.setLocalLocation(tz.getLocation(info.identifier));
-  }
   CalculationParameters _parameters(int method, Coordinates coordinates) {
-    final CalculationParameters params = switch (method) {
+    final params = switch (method) {
       1 => CalculationMethodParameters.karachi(),
       2 => CalculationMethodParameters.northAmerica(),
       3 => CalculationMethodParameters.muslimWorldLeague(),
@@ -53,7 +52,6 @@ class PrayerService {
       16 => CalculationMethodParameters.dubai(),
       17 => CalculationMethodParameters.singapore(),
       18 => CalculationMethodParameters.tunisia(),
-      //19 => CalculationMethodParameters.algeria(), // Error
       20 => CalculationMethodParameters.indonesian(),
       21 => CalculationMethodParameters.morocco(),
       23 => CalculationMethodParameters.muslimWorldLeague(),
@@ -65,21 +63,20 @@ class PrayerService {
   }
 
   Future<List<PrayerEntry>> today({bool refreshLocation = false}) async {
-    await initializeTimeZone();
     var (lat, lon, _) = await storage.loadLocation();
     final selected = await storage.loadPrayerCity();
     var method = selected.$3;
 
-    if ((lat == null || lon == null) || (refreshLocation && selected.$1 == null)) {
+    if (lat == null || lon == null || (refreshLocation && selected.$1 == null)) {
       final position = await determinePosition();
       lat = position.latitude;
       lon = position.longitude;
       method ??= 3;
       await storage.saveLocation(lat, lon, 'Current location');
     }
+
     final coordinates = Coordinates(lat, lon);
     final params = _parameters(method ?? 3, coordinates);
-
     final now = tz.TZDateTime.now(tz.local);
     final calculated = PrayerTimes(
       coordinates: coordinates,
@@ -88,14 +85,14 @@ class PrayerService {
       precision: false,
     );
 
-    DateTime localize(DateTime value) => tz.TZDateTime.from(value, tz.local);
+    DateTime local(DateTime value) => tz.TZDateTime.from(value, tz.local);
 
     return [
-      PrayerEntry(name: 'Fajr', arabicName: 'الفجر', time: localize(calculated.fajr)),
-      PrayerEntry(name: 'Dhuhr', arabicName: 'الظهر', time: localize(calculated.dhuhr)),
-      PrayerEntry(name: 'Asr', arabicName: 'العصر', time: localize(calculated.asr)),
-      PrayerEntry(name: 'Maghrib', arabicName: 'المغرب', time: localize(calculated.maghrib)),
-      PrayerEntry(name: 'Isha', arabicName: 'العشاء', time: localize(calculated.isha)),
+      PrayerEntry(name: 'Fajr', arabicName: 'الفجر', time: local(calculated.fajr)),
+      PrayerEntry(name: 'Dhuhr', arabicName: 'الظهر', time: local(calculated.dhuhr)),
+      PrayerEntry(name: 'Asr', arabicName: 'العصر', time: local(calculated.asr)),
+      PrayerEntry(name: 'Maghrib', arabicName: 'المغرب', time: local(calculated.maghrib)),
+      PrayerEntry(name: 'Isha', arabicName: 'العشاء', time: local(calculated.isha)),
     ];
   }
 }
