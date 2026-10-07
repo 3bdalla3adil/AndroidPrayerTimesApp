@@ -77,6 +77,14 @@ jobs:
       - name: Build release APK
         run: flutter build apk --release
 
+      - name: Verify Athan sound is packaged in APK
+        run: |
+          set -e
+          APK="build/app/outputs/flutter-apk/app-release.apk"
+          test -s "$APK"
+          unzip -l "$APK" | grep -E 'res/raw/azan\.mp3$'
+          echo "Android APK contains azan.mp3."
+
       - name: Build release App Bundle
         run: flutter build appbundle --release
 
@@ -105,7 +113,7 @@ jobs:
         working-directory: flutter_app
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -181,6 +189,13 @@ jobs:
             DEVELOPMENT_TEAM="" \
             PROVISIONING_PROFILE_SPECIFIER="" \
             build
+
+      - name: Verify Athan sound is packaged in iOS app
+        run: |
+          set -e
+          APP_PATH="build/ios/Build/Products/Release-iphoneos/Runner.app"
+          test -s "$APP_PATH/azan.mp3"
+          echo "iOS app contains azan.mp3."
 
       - name: Package unsigned IPA
         run: |
