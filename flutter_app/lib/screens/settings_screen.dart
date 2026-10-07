@@ -68,7 +68,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         leading: const Icon(CupertinoIcons.bell_fill),
                         title: const Text('Athan reminders'),
                         subtitle: Text(_reminders
-                            ? _scheduled.toString() + ' notifications scheduled for the next 12 days.'
+                            ? '$_scheduled notifications scheduled for the next 12 days.'
                             : 'Schedule local prayer notifications automatically.'),
                         trailing: CupertinoSwitch(value: _reminders, onChanged: _loading ? null : _toggle),
                       ),
