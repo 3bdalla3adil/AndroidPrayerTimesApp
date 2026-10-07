@@ -12,6 +12,9 @@ class StorageService {
   static const _lastAyah = 'last_ayah';
   static const _bookmarks = 'quran_bookmarks';
   static const _athanReminders = 'athan_reminders_enabled';
+  static const _tasbihCount = 'tasbih_count';
+  static const _tasbihTarget = 'tasbih_target';
+  static const _madhab = 'prayer_madhab';
 
   final SharedPreferencesAsync prefs = SharedPreferencesAsync();
 
@@ -49,6 +52,20 @@ class StorageService {
       (await prefs.getInt(_lastSurah), await prefs.getInt(_lastAyah));
 
   Future<void> saveQuranFontSize(double size) => prefs.setDouble(_quranFontSize, size);
+
+  Future<(int, int)> loadTasbih() async =>
+      (await prefs.getInt(_tasbihCount) ?? 0, await prefs.getInt(_tasbihTarget) ?? 33);
+
+  Future<void> saveTasbih(int count, int target) async {
+    await prefs.setInt(_tasbihCount, count);
+    await prefs.setInt(_tasbihTarget, target);
+  }
+
+  Future<void> savePrayerCalculationMethod(int method) => prefs.setInt(_method, method);
+
+  Future<int> loadPrayerMadhab() async => await prefs.getInt(_madhab) ?? 0;
+
+  Future<void> savePrayerMadhab(int madhab) => prefs.setInt(_madhab, madhab);
 
   Future<double> loadQuranFontSize() async => await prefs.getDouble(_quranFontSize) ?? 28;
 
