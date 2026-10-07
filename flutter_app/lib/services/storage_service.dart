@@ -68,7 +68,7 @@ class StorageService {
   }
 
   Future<void> saveBookmarks(List<(int, int)> bookmarks) async =>
-      prefs.setStringList(_bookmarks, bookmarks.map((b) => '\${b.\$1}:\${b.\$2}').toList());
+      prefs.setStringList(_bookmarks, bookmarks.map((b) => '${b.$1}:${b.$2}').toList());
 
   Future<bool> loadAthanRemindersEnabled() async =>
       await prefs.getBool(_athanReminders) ?? true;
