@@ -204,7 +204,7 @@ for name in ("android/app/build.gradle", "android/app/build.gradle.kts"):
                 count=1,
             )
     else:
-        pattern = r"(getByName\\(\\"release\\"\\)\\s*\\{)"
+        pattern = r'(getByName\("release"\)\s*\{)'
         if "isShrinkResources = false" not in s:
             s = re.sub(
                 pattern,
