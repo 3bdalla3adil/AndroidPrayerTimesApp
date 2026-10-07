@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:quran/quran.dart' as quran;
 
@@ -559,7 +560,7 @@ class _DedicationPage extends StatelessWidget {
   }
 }
 
-class _MushafPage extends StatelessWidget {
+class _MushafPage extends StatefulWidget {
   const _MushafPage({
     required this.page,
     required this.data,
@@ -577,9 +578,49 @@ class _MushafPage extends StatelessWidget {
   final bool showTranslation;
   final bool darkPage;
   final Future<void> Function(int surah, int ayah) onBookmarkAyah;
+  @override
+  State<_MushafPage> createState() => _MushafPageState();
+}
+
+class _MushafPageState extends State<_MushafPage> {
+  final Map<String, TapGestureRecognizer> _ayahRecognizers = {};
+  String? _highlightedAyah;
+
+  @override
+  void dispose() {
+    for (final recognizer in _ayahRecognizers.values) {
+      recognizer.dispose();
+    }
+    super.dispose();
+  }
+
+  TapGestureRecognizer _recognizerFor(String key, VoidCallback onTap) {
+    final existing = _ayahRecognizers[key];
+    if (existing != null) return existing;
+    final recognizer = TapGestureRecognizer()..onTap = onTap;
+    _ayahRecognizers[key] = recognizer;
+    return recognizer;
+  }
+
+  String _ayahKey(Map<String, dynamic> verse) {
+    final surah = (verse['surah_number'] as num?)?.toInt() ?? 0;
+    final ayah = (verse['ayah_number'] as num?)?.toInt() ?? 0;
+    return '$surah:$ayah';
+  }
+
+  bool _isHighlighted(Map<String, dynamic> verse) =>
+      _highlightedAyah == _ayahKey(verse);
+
+  void _toggleHighlight(Map<String, dynamic> verse) {
+    final key = _ayahKey(verse);
+    setState(() {
+      _highlightedAyah = _highlightedAyah == key ? null : key;
+    });
+  }
+
 
   List<Map<String, dynamic>> get verses =>
-      ((data['verses'] as List?) ?? const [])
+      ((widget.data['verses'] as List?) ?? const [])
           .whereType<Map>()
           .map((item) => item.cast<String, dynamic>())
           .toList();
@@ -606,16 +647,16 @@ class _MushafPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final pageBg = darkPage
+    final pageBg = widget.darkPage
         ? const Color(0xFF17211C)
         : const Color(0xFFFFFDF5);
-    final ink = darkPage
+    final ink = widget.darkPage
         ? const Color(0xFFECE8D9)
         : const Color(0xFF1B241E);
-    final green = darkPage
+    final green = widget.darkPage
         ? const Color(0xFF9CC8A8)
         : const Color(0xFF356B49);
-    final border = darkPage
+    final border = widget.darkPage
         ? const Color(0xFF50675A)
         : const Color(0xFFB8A66A);
 
@@ -638,7 +679,7 @@ class _MushafPage extends StatelessWidget {
           child: Column(
             children: [
               _PageOrnament(
-                page: page,
+                page: widget.page,
                 color: green,
                 border: border,
               ),
@@ -659,7 +700,7 @@ class _MushafPage extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontFamily: 'serif',
-                    fontSize: fontSize - 2,
+                    fontSize: widget.fontSize - 2,
                     height: 1.5,
                     color: ink,
                     fontWeight: FontWeight.w600,
@@ -677,10 +718,23 @@ class _MushafPage extends StatelessWidget {
                           text: '${_verseText(verse)} ',
                           style: TextStyle(
                             fontFamily: 'serif',
-                            fontSize: fontSize,
-                            height: lineHeight,
-                            color: ink,
+                            fontSize: widget.fontSize,
+                            height: widget.lineHeight,
+                            color: _isHighlighted(verse)
+                                ? (widget.darkPage
+                                    ? const Color(0xFFFFD54F)
+                                    : const Color(0xFF0B7A53))
+                                : ink,
+                            backgroundColor: _isHighlighted(verse)
+                                ? (widget.darkPage
+                                    ? const Color(0x334CAF50)
+                                    : const Color(0x332E8B57))
+                                : null,
                             fontWeight: FontWeight.w500,
+                          ),
+                          recognizer: _recognizerFor(
+                            _ayahKey(verse),
+                            () => _toggleHighlight(verse),
                           ),
                         ),
                         WidgetSpan(
@@ -689,19 +743,19 @@ class _MushafPage extends StatelessWidget {
                             number:
                                 (verse['ayah_number'] as num?)?.toInt() ?? 0,
                             color: green,
-                            darkPage: darkPage,
+                            darkPage: widget.darkPage,
                             onTap: () {
                               final surah =
                                   (verse['surah_number'] as num?)?.toInt();
                               final ayah =
                                   (verse['ayah_number'] as num?)?.toInt();
                               if (surah != null && ayah != null) {
-                                onBookmarkAyah(surah, ayah);
+                                widget.onBookmarkAyah(surah, ayah);
                               }
                             },
                           ),
                         ),
-                        if (showTranslation)
+                        if (widget.showTranslation)
                           TextSpan(
                             text:
                                 '\n${_translation(verse)}\n',
@@ -709,7 +763,7 @@ class _MushafPage extends StatelessWidget {
                               fontFamily: 'serif',
                               fontSize: 13,
                               height: 1.45,
-                              color: darkPage
+                              color: widget.darkPage
                                   ? const Color(0xFFB9C5BD)
                                   : const Color(0xFF657269),
                             ),
@@ -727,7 +781,7 @@ class _MushafPage extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                '$page',
+                '$widget.page',
                 style: TextStyle(
                   fontSize: 11,
                   color: green,
@@ -750,6 +804,47 @@ class _MushafPage extends StatelessWidget {
     } catch (_) {
       return '';
     }
+  }
+}
+class _AyahMarker extends StatelessWidget {
+  const _AyahMarker({
+    required this.number,
+    required this.color,
+    required this.darkPage,
+    required this.onTap,
+  });
+
+  final int number;
+  final Color color;
+  final bool darkPage;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        width: 25,
+        height: 25,
+        margin: const EdgeInsets.symmetric(horizontal: 2),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: color.withValues(alpha: .7), width: 1),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          _arabicNumber(number),
+          textDirection: TextDirection.rtl,
+          style: TextStyle(
+            fontFamily: 'serif',
+            fontSize: 9,
+            color: darkPage ? const Color(0xFFE6E0C8) : color,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
   }
 }
 
