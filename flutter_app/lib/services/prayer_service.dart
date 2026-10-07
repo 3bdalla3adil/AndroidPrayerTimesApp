@@ -78,7 +78,7 @@ class PrayerService {
       await storage.saveLocation(lat, lon, 'Current location');
     }
 
-    return (lat, lon, method ?? 3);
+    return (lat, lon, method);
   }
 
   Future<List<PrayerEntry>> forDate(
