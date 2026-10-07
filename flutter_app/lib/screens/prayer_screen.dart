@@ -147,22 +147,18 @@ class _PrayerScreenState extends State<PrayerScreen> {
   }
 
   Future<void> _toggleReminders(bool enabled) async {
-    if (!enabled) {
-      await NotificationService.cancelAll();
-      if (mounted) setState(() => _reminders = false);
-      return;
-    }
     try {
-      for (var i = 0; i < _prayers.length; i++) {
-        await NotificationService.schedulePrayer(
-          id: 100 + i,
-          prayerName: _prayers[i].name,
-          time: _prayers[i].time,
-        );
+      if (enabled) {
+        await _athan.enable();
+        if (mounted) setState(() => _reminders = true);
+      } else {
+        await _athan.disable();
+        if (mounted) setState(() => _reminders = false);
       }
-      if (mounted) setState(() => _reminders = true);
     } catch (e) {
-      if (mounted) setState(() => _message = e.toString());
+      if (mounted) {
+        setState(() => _message = e.toString().replaceFirst('Bad state: ', ''));
+      }
     }
   }
 
