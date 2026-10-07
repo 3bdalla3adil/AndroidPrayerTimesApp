@@ -85,6 +85,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
       (await StorageService().loadPrayerCity()).$1 ?? prayerCountries.first,
     );
     if (countryIndex < 0) countryIndex = 0;
+    if (!mounted) return;
 
     var country = prayerCountries[countryIndex];
     var cities = citiesForCountry(country);
