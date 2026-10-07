@@ -28,11 +28,6 @@ class _QuranReaderScreenState extends State<QuranReaderScreen>{
     final d=jsonDecode(await rootBundle.loadString('assets/quran/pages/page-${p.toString().padLeft(3,'0')}.json')) as Map<String,dynamic>;
     cache[p]=d;return d;
   }
-  List<Map<String,dynamic>> _verses(Map<String,dynamic>d)=>((d['verses']as List?)??const[]).whereType<Map>().map((v)=>v.cast<String,dynamic>()).toList();
-  String _text(Map<String,dynamic>v){
-    final s=((v['words']as List?)??const[]).whereType<Map>().map((w)=>(w['text']??'').toString()).where((x)=>x.isNotEmpty).join(' ');
-    return s.isEmpty?(v['text']??'').toString():s;
-  }
   Future<void> _go(int p)async{if(p<1||p>totalPages||!pc.hasClients)return;await pc.animateToPage(p-1,duration:const Duration(milliseconds:250),curve:Curves.easeOut);}
   void _jump(){final c=TextEditingController(text:'${page}');showDialog<void>(context:context,builder:(x)=>AlertDialog(
     title:const Text('الانتقال إلى صفحة'),content:TextField(controller:c,keyboardType:TextInputType.number),
@@ -55,7 +50,11 @@ class _QuranReaderScreenState extends State<QuranReaderScreen>{
       Expanded(child:PageView.builder(controller:pc,reverse:true,itemCount:totalPages,onPageChanged:(p)=>setState(()=>page=p+1),itemBuilder:(c,i)=>FutureBuilder<Map<String,dynamic>>(future:_data(i+1),builder:(c,s)=>s.hasData?_Page(page:i+1,data:s.data!,fontSize:fontSize,lineSpacing:lineSpacing,translation:translation,tajweed:tajweed):const Center(child:CircularProgressIndicator())))),
       SafeArea(top:false,child:Row(children:[IconButton(onPressed:page>1?()=>_go(page-1):null,icon:const Icon(Icons.chevron_left)),Expanded(child:Center(child:InkWell(onTap:_jump,child:Text('${page} / ${totalPages}',style:const TextStyle(fontWeight:FontWeight.w800)))),IconButton(onPressed:page<totalPages?()=>_go(page+1):null,icon:const Icon(Icons.chevron_right))]))
     ]));}
-}
+      SafeArea(top:false, child: Row(children:[
+        IconButton(onPressed:page>1 ? ()=>_go(page-1) : null, icon:const Icon(Icons.chevron_left)),
+        Expanded(child:Center(child:InkWell(onTap:_jump,child:Padding(padding:const EdgeInsets.all(8),child:Text('$'+'{page} / $'+'{totalPages}',style:const TextStyle(fontWeight:FontWeight.w800)))))),
+        IconButton(onPressed:page<totalPages ? ()=>_go(page+1) : null, icon:const Icon(Icons.chevron_right)),
+      ]))
 
 class _Tool extends StatelessWidget{
   const _Tool(this.icon,this.label,this.onTap,{this.active=false});final IconData icon;final String label;final VoidCallback onTap;final bool active;
