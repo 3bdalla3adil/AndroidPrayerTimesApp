@@ -35,3 +35,4 @@ flutter:
   assets:
     - assets/quran/pages/
     - assets/quran/page-index.json
+    - assets/audio/azan.mp3
