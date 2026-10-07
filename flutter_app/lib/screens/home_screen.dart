@@ -5,7 +5,7 @@ import 'package:intl/intl.dart' hide TextDirection;
 import 'package:timezone/timezone.dart' as tz;
 
 import '../models/prayer_entry.dart';
-import '../services/notification_service.dart';
+import '../services/athan_reminder_service.dart';
 import '../services/prayer_service.dart';
 import '../services/storage_service.dart';
 import 'quran_screen.dart';
@@ -19,6 +19,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final _service = PrayerService(StorageService());
+  late final AthanReminderService _athan;
   List<PrayerEntry> _prayers = const [];
   DateTime _now = DateTime.now();
   String _location = 'Current location';
@@ -28,6 +29,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _athan = AthanReminderService(_service, StorageService());
     _load();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() => _now = DateTime.now());
@@ -44,11 +46,17 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final prayers = await _service.today();
       final location = await StorageService().loadLocation();
+      final reminders = await StorageService().loadAthanRemindersEnabled();
       if (!mounted) return;
       setState(() {
         _prayers = prayers;
         _location = location.$3 ?? 'Current location';
+        _reminders = reminders;
         _error = null;
+      });
+      await _athan.sync(refreshLocation: refresh);
+      return;
+    } catch (e) {
       });
     } catch (e) {
       if (mounted) {
@@ -64,58 +72,37 @@ class _HomeScreenState extends State<HomeScreen> {
     return null;
   }
 
-  Future<void> _schedule() async {
+  Future<void> _toggleReminders(bool enabled) async {
     try {
-      await NotificationService.cancelAll();
-
-      // Schedule seven days ahead so the app does not need to be opened
-      // every morning. Android's boot receiver will restore these alarms
-      // after a device reboot.
-      final today = tz.TZDateTime.now(tz.local);
-      for (var dayOffset = 0; dayOffset < 7; dayOffset++) {
-        final date = today.add(Duration(days: dayOffset));
-        final prayers = await _service.forDate(date);
-
-        for (var i = 0; i < prayers.length; i++) {
-          await NotificationService.schedulePrayer(
-            id: 1000 + (dayOffset * 10) + i,
-            prayerName: prayers[i].name,
-            time: prayers[i].time,
-          );
+      if (enabled) {
+        final count = await _athan.enable();
+        if (mounted) {
+          setState(() => _reminders = true);
+          _dialog('Athan enabled', '$count prayer notifications scheduled.');
         }
+      } else {
+        await _athan.disable();
+        if (mounted) setState(() => _reminders = false);
       }
-
-      final pending = await NotificationService.pendingCount();
-      if (!mounted) return;
-      showCupertinoDialog<void>(
-        context: context,
-        builder: (_) => CupertinoAlertDialog(
-          title: const Text('Athan reminders'),
-          content: Text('$pending prayer alarms are scheduled for 7 days.'),
-          actions: [
-            CupertinoDialogAction(
-              child: const Text('OK'),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ],
-        ),
-      );
     } catch (e) {
-      if (!mounted) return;
-      showCupertinoDialog<void>(
-        context: context,
-        builder: (_) => CupertinoAlertDialog(
-          title: const Text('Could not schedule Athan'),
-          content: Text(e.toString().replaceFirst('Bad state: ', '')),
-          actions: [
-            CupertinoDialogAction(
-              child: const Text('OK'),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ],
-        ),
-      );
+      if (mounted) _dialog('Athan setup failed', e.toString());
     }
+  }
+
+  void _dialog(String title, String message) {
+    showCupertinoDialog<void>(
+      context: context,
+      builder: (_) => CupertinoAlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          CupertinoDialogAction(
+            child: const Text('OK'),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -200,12 +187,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       CupertinoListTile(
                         leading: const Icon(CupertinoIcons.bell),
                         title: const Text('Athan reminders'),
-                        subtitle: const Text('Schedule local prayer alerts'),
-                        trailing: CupertinoButton(
-                          padding: EdgeInsets.zero,
-                          onPressed: _schedule,
-                          child: const Text('Enable'),
-                        ),
+                        subtitle: const Text('Plays the bundled Athan at prayer time'),
+                        trailing: CupertinoSwitch(value: _reminders, onChanged: _toggleReminders),
                       ),
                     ],
                   ),
