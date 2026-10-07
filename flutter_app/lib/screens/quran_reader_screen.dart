@@ -44,7 +44,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen>{
       Text('تباعد الأسطر: ${lineSpacing.toStringAsFixed(2)}'),Slider(min:1.4,max:2.4,value:lineSpacing,onChanged:(v){set(()=>lineSpacing=v);setState((){});}),
       SwitchListTile(value:translation,onChanged:(v){set(()=>translation=v);setState((){});},title:const Text('عرض الترجمة')),
       SwitchListTile(value:tajweed,onChanged:(v){set(()=>tajweed=v);setState((){});},title:const Text('ألوان التجويد')),
-    ])));
+    ]))));
   }
   @override Widget build(BuildContext context){final t=Theme.of(context);return Scaffold(
     appBar:AppBar(leading:IconButton(onPressed:()=>Navigator.pop(context),icon:const Icon(Icons.arrow_back_ios_new,size:19)),
