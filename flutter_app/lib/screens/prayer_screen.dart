@@ -85,54 +85,99 @@ class _PrayerScreenState extends State<PrayerScreen> {
   }
 
   Future<void> _chooseCity() async {
-    final countryController = FixedExtentScrollController();
-    var countryIndex = prayerCountries.indexOf(
-      (await StorageService().loadPrayerCity()).$1 ?? prayerCountries.first,
-    );
-    if (countryIndex < 0) countryIndex = 0;
-    if (!mounted) return;
-
-    var country = prayerCountries[countryIndex];
+    final saved = await StorageService().loadPrayerCity();
+    var country = saved.$1 ?? prayerCountries.first;
     var cities = citiesForCountry(country);
-    var cityIndex = 0;
+    var cityIndex = saved.$2 == null
+        ? 0
+        : cities.indexWhere((city) => city.city == saved.$2);
+    if (cityIndex < 0) cityIndex = 0;
 
     final result = await showCupertinoModalPopup<PrayerCity>(
       context: context,
-      builder: (_) => Container(
-        height: 390,
-        color: CupertinoColors.systemBackground.resolveFrom(context),
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                CupertinoButton(
-                  child: const Text('Cancel'),
-                  onPressed: () => Navigator.pop(context),
-                ),
-                const Text('Prayer location', style: TextStyle(fontWeight: FontWeight.w700)),
-                CupertinoButton(
-                  child: const Text('Done'),
-                  onPressed: () => Navigator.pop(context, cities[cityIndex]),
-                ),
-              ],
-            ),
-            Expanded(
-              child: CupertinoPicker(
-                itemExtent: 44,
-                onSelectedItemChanged: (index) {
-                  countryIndex = index;
-                  country = prayerCountries[index];
-                  cities = citiesForCountry(country);
-                  cityIndex = 0;
-                },
-                scrollController: countryController,
-                children: prayerCountries.map(Text.new).toList(),
+      builder: (popupContext) {
+        var selectedCountry = country;
+        var selectedCities = cities;
+        var selectedCityIndex = cityIndex;
+
+        return StatefulBuilder(
+          builder: (context, setModalState) => Container(
+            height: 430,
+            color: CupertinoColors.systemBackground.resolveFrom(context),
+            child: SafeArea(
+              top: false,
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      CupertinoButton(
+                        child: const Text('Cancel'),
+                        onPressed: () => Navigator.pop(popupContext),
+                      ),
+                      const Text(
+                        'Prayer location',
+                        style: TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      CupertinoButton(
+                        child: const Text('Done'),
+                        onPressed: () => Navigator.pop(
+                          popupContext,
+                          selectedCities[selectedCityIndex],
+                        ),
+                      ),
+                    ],
+                  ),
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: CupertinoPicker(
+                            itemExtent: 44,
+                            scrollController: FixedExtentScrollController(
+                              initialItem: prayerCountries.indexOf(selectedCountry),
+                            ),
+                            onSelectedItemChanged: (index) {
+                              final nextCountry = prayerCountries[index];
+                              final nextCities = citiesForCountry(nextCountry);
+                              setModalState(() {
+                                selectedCountry = nextCountry;
+                                selectedCities = nextCities;
+                                selectedCityIndex = 0;
+                              });
+                            },
+                            children: [
+                              for (final item in prayerCountries) Center(
+                                child: Text(item),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Expanded(
+                          child: CupertinoPicker(
+                            itemExtent: 44,
+                            scrollController: FixedExtentScrollController(
+                              initialItem: selectedCityIndex,
+                            ),
+                            onSelectedItemChanged: (index) {
+                              setModalState(() => selectedCityIndex = index);
+                            },
+                            children: [
+                              for (final city in selectedCities) Center(
+                                child: Text(city.city),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
 
     if (result == null) return;
