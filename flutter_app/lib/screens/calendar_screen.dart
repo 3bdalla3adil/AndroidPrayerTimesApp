@@ -10,7 +10,7 @@ class CalendarScreen extends StatelessWidget {
     final days = (jd - _islamicEpoch).floor();
     final year = ((30 * days + 10646) ~/ 10631);
     final month = ((days - _islamicToJulian(year, 1, 1) + 1) / 29.5).floor() + 1;
-    final safeMonth = month.clamp(1, 12);
+    final safeMonth = month.clamp(1, 12).toInt();
     final dayOfMonth = days - _islamicToJulian(year, safeMonth, 1) + 1;
     return (year, safeMonth, dayOfMonth);
   }
