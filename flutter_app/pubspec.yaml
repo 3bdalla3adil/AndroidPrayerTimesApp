@@ -42,3 +42,6 @@ flutter:
     - assets/quran/pages/
     - assets/quran/page-index.json
     - assets/audio/azan.mp3
+    - assets/audio/azan_madinah.mp3
+    - assets/audio/azan_dubai.mp3
+    - assets/audio/azan_fajr_madinah.mp3
