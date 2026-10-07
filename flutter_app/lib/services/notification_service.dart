@@ -99,8 +99,13 @@ class NotificationService {
     }
   }
 
-  static Future<int> pendingCount() async =>
-      (await _plugin.pendingNotificationRequests()).length;
+  static Future<int> pendingCount() async {
+    await initialize();
+    return (await _plugin.pendingNotificationRequests()).length;
+  }
 
-  static Future<void> cancelAll() => _plugin.cancelAll();
+  static Future<void> cancelAll() async {
+    await initialize();
+    await _plugin.cancelAll();
+  }
 }
