@@ -11,6 +11,7 @@ class StorageService {
   static const _lastSurah = 'last_surah';
   static const _lastAyah = 'last_ayah';
   static const _bookmarks = 'quran_bookmarks';
+  static const _athanReminders = 'athan_reminders_enabled';
 
   final SharedPreferencesAsync prefs = SharedPreferencesAsync();
 
@@ -23,7 +24,13 @@ class StorageService {
   Future<(double?, double?, String?)> loadLocation() async =>
       (await prefs.getDouble(_lat), await prefs.getDouble(_lon), await prefs.getString(_locationName));
 
-  Future<void> savePrayerCity({required String country, required String city, required double lat, required double lon, required int method}) async {
+  Future<void> savePrayerCity({
+    required String country,
+    required String city,
+    required double lat,
+    required double lon,
+    required int method,
+  }) async {
     await saveLocation(lat, lon, city);
     await prefs.setString(_country, country);
     await prefs.setString(_city, city);
@@ -42,6 +49,7 @@ class StorageService {
   Future<void> saveReaderPosition(int surah, int ayah) async {
     await prefs.setInt(_lastSurah, surah);
     await prefs.setInt(_lastAyah, ayah);
+
   }
 
   Future<(int?, int?)> loadReaderPosition() async =>
@@ -60,5 +68,11 @@ class StorageService {
   }
 
   Future<void> saveBookmarks(List<(int, int)> bookmarks) async =>
-      prefs.setStringList(_bookmarks, bookmarks.map((b) => '${b.$1}:${b.$2}').toList());
+      prefs.setStringList(_bookmarks, bookmarks.map((b) => '\${b.\$1}:\${b.\$2}').toList());
+
+  Future<bool> loadAthanRemindersEnabled() async =>
+      await prefs.getBool(_athanReminders) ?? true;
+
+  Future<void> saveAthanRemindersEnabled(bool enabled) =>
+      prefs.setBool(_athanReminders, enabled);
 }
