@@ -5,6 +5,7 @@ import 'package:intl/intl.dart' hide TextDirection;
 import '../models/prayer_city.dart';
 import '../models/prayer_entry.dart';
 import '../services/notification_service.dart';
+import '../services/athan_reminder_service.dart';
 import '../services/prayer_service.dart';
 import '../services/storage_service.dart';
 class PrayerScreen extends StatefulWidget {
@@ -15,6 +16,7 @@ class PrayerScreen extends StatefulWidget {
 
 class _PrayerScreenState extends State<PrayerScreen> {
   final _service = PrayerService(StorageService());
+  late final AthanReminderService _athanService;
   List<PrayerEntry> _prayers = const [];
   DateTime _now = DateTime.now();
   String? _location;
@@ -28,6 +30,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
   @override
   void initState() {
     super.initState();
+    _athanService = AthanReminderService(_service, StorageService());
     _load();
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() => _now = DateTime.now());
@@ -55,6 +58,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
         _message = null;
         _loading = false;
       });
+      await _athanService.sync();
     } catch (error) {
       if (!mounted) return;
       setState(() {
@@ -206,21 +210,21 @@ class _PrayerScreenState extends State<PrayerScreen> {
     }
   }
 
-  Future<void> _toggleReminders(bool initialValue) async {
-    if (!initialValue) {
-      await NotificationService.cancelAll();
-      if (mounted) setState(() => _reminders = false);
-      return;
-    }
-    if (_prayers.isEmpty) {
-      setState(() => _message = 'Set your location before enabling prayer reminders.');
-      return;
-    }
+  Future<void> _toggleReminders(bool enabled) async {
     try {
-      for (var i = 0; i < _prayers.length; i++) {
-        await NotificationService.schedulePrayer(id: 100 + i, prayerName: _prayers[i].name, time: _prayers[i].time);
+      if (enabled) {
+        await _athanService.enable();
+      } else {
+        await _athanService.disable();
       }
-      if (mounted) setState(() { _reminders = true; _message = 'Prayer reminders scheduled.'; });
+      if (mounted) {
+        setState(() {
+          _reminders = enabled;
+          _message = enabled
+              ? 'Automatic Athan reminders enabled.'
+              : 'Athan reminders disabled.';
+        });
+      }
     } catch (error) {
       if (mounted) setState(() => _message = error.toString());
     }
