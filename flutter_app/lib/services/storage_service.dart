@@ -8,6 +8,9 @@ class StorageService {
   static const _city = 'location_city';
   static const _method = 'prayer_calculation_method';
   static const _quranFontSize = 'quran_font_size';
+  static const _quranLineHeight = 'quran_line_height';
+  static const _quranShowTranslation = 'quran_show_translation';
+  static const _quranDarkPage = 'quran_dark_page';
   static const _lastSurah = 'last_surah';
   static const _lastAyah = 'last_ayah';
   static const _bookmarks = 'quran_bookmarks';
@@ -75,6 +78,12 @@ class StorageService {
   Future<int> loadPrayerMadhab() async => await prefs.getInt(_madhab) ?? 0;
   Future<void> savePrayerMadhab(int madhab) => prefs.setInt(_madhab, madhab);
   Future<double> loadQuranFontSize() async => await prefs.getDouble(_quranFontSize) ?? 28;
+  Future<void> saveQuranLineHeight(double value) => prefs.setDouble(_quranLineHeight, value);
+  Future<double> loadQuranLineHeight() async => await prefs.getDouble(_quranLineHeight) ?? 1.75;
+  Future<void> saveQuranShowTranslation(bool value) => prefs.setBool(_quranShowTranslation, value);
+  Future<bool> loadQuranShowTranslation() async => await prefs.getBool(_quranShowTranslation) ?? false;
+  Future<void> saveQuranDarkPage(bool value) => prefs.setBool(_quranDarkPage, value);
+  Future<bool> loadQuranDarkPage() async => await prefs.getBool(_quranDarkPage) ?? false;
 
   Future<List<(int, int)>> loadBookmarks() async {
     final values = await prefs.getStringList(_bookmarks) ?? const [];
