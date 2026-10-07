@@ -116,36 +116,40 @@ public class QuranReaderActivity extends AppCompatActivity {
 
     private void render(JSONObject root) {
         verses.removeAllViews();
-        JSONObject data = root.optJSONObject("data");
-        JSONArray ayahs = data == null ? null : data.optJSONArray("ayahs");
-
+        JSONArray ayahs = root.optJSONArray("verses");
         if (ayahs == null || ayahs.length() == 0) {
             title.setText("القرآن الكريم");
             return;
         }
 
-        String surahName = ayahs.optJSONObject(0)
-                .optJSONObject("surah")
-                .optString("name", "القرآن الكريم");
-        title.setText(surahName);
+        String firstHeader = findFirstSurahHeader(root);
+        title.setText(firstHeader.isEmpty() ? "القرآن الكريم" : firstHeader);
 
         int lastSurah = -1;
         for (int i = 0; i < ayahs.length(); i++) {
             JSONObject ayah = ayahs.optJSONObject(i);
             if (ayah == null) continue;
 
-            JSONObject surah = ayah.optJSONObject("surah");
-            int surahNumber = surah == null ? 0 : surah.optInt("number", 0);
-            String name = surah == null ? "" : surah.optString("name", "");
-            int verseNumber = ayah.optInt("numberInSurah", 0);
-            String text = ayah.optString("text", "").trim();
+            int surahNumber = ayah.optInt("surah_number", 0);
+            int verseNumber = ayah.optInt("ayah_number", 0);
+            JSONArray words = ayah.optJSONArray("words");
+            StringBuilder text = new StringBuilder();
+            if (words != null) {
+                for (int w = 0; w < words.length(); w++) {
+                    JSONObject word = words.optJSONObject(w);
+                    if (word != null) {
+                        if (text.length() > 0) text.append(' ');
+                        text.append(word.optString("text", ""));
+                    }
+                }
+            }
 
-            if (surahNumber != lastSurah && !TextUtils.isEmpty(name)) {
-                addSurahHeader(name);
+            if (surahNumber != lastSurah) {
+                addSurahHeader(findSurahName(root, surahNumber));
                 lastSurah = surahNumber;
             }
 
-            if (!text.isEmpty()) {
+            if (text.length() > 0) {
                 TextView verse = new TextView(this);
                 verse.setText(String.format(Locale.getDefault(),
                         "%s  ﴿%d﴾", text, verseNumber));
@@ -161,6 +165,32 @@ public class QuranReaderActivity extends AppCompatActivity {
         }
 
         if (page == TOTAL_PAGES) addKhatmDua();
+    }
+
+    private String findFirstSurahHeader(JSONObject root) {
+        JSONArray lines = root.optJSONArray("lines");
+        if (lines == null) return "";
+        for (int i = 0; i < lines.length(); i++) {
+            JSONObject line = lines.optJSONObject(i);
+            if (line != null && "surah-header".equals(line.optString("type"))) {
+                return line.optString("text", "");
+            }
+        }
+        return "";
+    }
+
+    private String findSurahName(JSONObject root, int surahNumber) {
+        JSONArray lines = root.optJSONArray("lines");
+        if (lines != null) {
+            for (int i = 0; i < lines.length(); i++) {
+                JSONObject line = lines.optJSONObject(i);
+                if (line != null && "surah-header".equals(line.optString("type"))) {
+                    String name = line.optString("text", "");
+                    if (!name.isEmpty()) return name;
+                }
+            }
+        }
+        return "سورة " + surahNumber;
     }
 
     private void addSurahHeader(String name) {
