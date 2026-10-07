@@ -157,6 +157,7 @@ jobs:
         run: |
           /usr/libexec/PlistBuddy -c "Add :NSLocationWhenInUseUsageDescription string Allow Quran Prayer Companion to use your location for prayer times and Qibla direction." ios/Runner/Info.plist || true
           /usr/libexec/PlistBuddy -c "Add :NSLocationAlwaysAndWhenInUseUsageDescription string Allow Quran Prayer Companion to use location for prayer times and Qibla direction." ios/Runner/Info.plist || true
+          /usr/libexec/PlistBuddy -c "Add :NSFaceIDUsageDescription string Use Face ID to unlock Quran Prayer Companion." ios/Runner/Info.plist || true
 
       - name: Generate 604-page offline Mushaf
         run: bash tool/generate_madinah_mushaf.sh
