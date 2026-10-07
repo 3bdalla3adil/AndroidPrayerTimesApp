@@ -5,6 +5,7 @@ import 'calendar_screen.dart';
 import 'qibla_screen.dart';
 import 'settings_screen.dart';
 import 'tasbih_screen.dart';
+import 'adhkar_screen.dart';
 
 class MoreScreen extends StatelessWidget {
   const MoreScreen({super.key});
@@ -38,6 +39,16 @@ class MoreScreen extends StatelessWidget {
                   onTap: () => Navigator.push(
                     context,
                     CupertinoPageRoute(builder: (_) => const TasbihScreen()),
+                  ),
+                ),
+                CupertinoListTile(
+                  leading: const Icon(CupertinoIcons.bookmark),
+                  title: const Text('Daily Adhkar'),
+                  subtitle: const Text('Offline remembrance collection'),
+                  trailing: const CupertinoListTileChevron(),
+                  onTap: () => Navigator.push(
+                    context,
+                    CupertinoPageRoute(builder: (_) => const AdhkarScreen()),
                   ),
                 ),
                 CupertinoListTile(
