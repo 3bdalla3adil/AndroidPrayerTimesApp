@@ -36,12 +36,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final enabled = await _storage.loadAthanRemindersEnabled();
     final count = await NotificationService.pendingCount();
     final city = await _storage.loadPrayerCity();
+    final savedMethod = await _storage.loadPrayerCalculationMethod();
     final madhab = await _storage.loadPrayerMadhab();
     if (!mounted) return;
     setState(() {
       _reminders = enabled;
       _scheduled = count;
-      _method = city.$3 ?? 3;
+      _method = savedMethod ?? city.$3 ?? 3;
       _madhab = madhab;
       _loading = false;
     });
