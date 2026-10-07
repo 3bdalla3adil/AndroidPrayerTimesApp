@@ -72,13 +72,26 @@ tasks.register("generateQuranPageAssets") {
             def name = String.format("%03d.json", page)
             def target = new File(quranPagesDir, name)
             if (!target.exists() || target.length() < 100) {
-                def url = new URL("https://api.alquran.cloud/v1/page/" + page + "/quran-uthmani")
-                def connection = url.openConnection()
-                connection.connectTimeout = 20000
-                connection.readTimeout = 60000
-                connection.setRequestProperty("User-Agent", "AndroidPrayerTimesApp-QuranBuilder/2.1")
-                target.withOutputStream { output ->
-                    connection.inputStream.withCloseable { input -> input.transferTo(output) }
+                def url = new URL("https://cdn.jsdelivr.net/gh/ouryhamdalaye/madinah-mushaf-json@main/pages/page-" + name)
+                Exception last = null
+                (1..4).each { attempt ->
+                    if (target.exists() && target.length() >= 100) return
+                    try {
+                        def connection = url.openConnection()
+                        connection.connectTimeout = 20000
+                        connection.readTimeout = 60000
+                        connection.setRequestProperty("User-Agent", "AndroidPrayerTimesApp-QuranBuilder/2.1")
+                        connection.setRequestProperty("Accept", "application/json")
+                        target.withOutputStream { output ->
+                            connection.inputStream.withCloseable { input -> input.transferTo(output) }
+                        }
+                    } catch (Exception e) {
+                        last = e
+                        if (attempt < 4) Thread.sleep(1000L * attempt)
+                    }
+                }
+                if (!target.exists() || target.length() < 100) {
+                    throw new IOException("Unable to download Quran page " + page + ": " + last)
                 }
             }
             def json = new groovy.json.JsonSlurper().parse(target)
