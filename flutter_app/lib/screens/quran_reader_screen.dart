@@ -64,6 +64,9 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
       final starts =
           (index['surahStartPages'] as Map?)?.cast<String, dynamic>() ?? {};
       final saved = await _storage.loadQuranFontSize();
+      final savedLineHeight = await _storage.loadQuranLineHeight();
+      final savedTranslation = await _storage.loadQuranShowTranslation();
+      final savedDarkPage = await _storage.loadQuranDarkPage();
       var requestedQuranPage = widget.startingPage ??
           (starts[widget.surahNumber.toString()] as num?)?.toInt() ??
           1;
@@ -97,6 +100,9 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
       setState(() {
         _readerPage = requestedReaderPage;
         _fontSize = saved.clamp(20, 38).toDouble();
+        _lineHeight = savedLineHeight.clamp(1.35, 2.15).toDouble();
+        _showTranslation = savedTranslation;
+        _darkPage = savedDarkPage;
       });
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -279,21 +285,29 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
               min: 1.35,
               max: 2.15,
               value: _lineHeight,
-              onChanged: (value) => setState(() => _lineHeight = value),
+              onChanged: (value) {
+                setState(() => _lineHeight = value);
+                _storage.saveQuranLineHeight(value);
+              },
             ),
             CupertinoListTile(
               title: const Text('الترجمة الإنجليزية'),
               trailing: CupertinoSwitch(
                 value: _showTranslation,
-                onChanged: (value) =>
-                    setState(() => _showTranslation = value),
+                onChanged: (value) {
+                  setState(() => _showTranslation = value);
+                  _storage.saveQuranShowTranslation(value);
+                },
               ),
             ),
             CupertinoListTile(
               title: const Text('صفحة داكنة'),
               trailing: CupertinoSwitch(
                 value: _darkPage,
-                onChanged: (value) => setState(() => _darkPage = value),
+                onChanged: (value) {
+                  setState(() => _darkPage = value);
+                  _storage.saveQuranDarkPage(value);
+                },
               ),
             ),
           ],
@@ -701,6 +715,7 @@ class _MushafPageState extends State<_MushafPage> {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontFamily: 'serif',
+                    fontFamilyFallback: const ['Noto Naskh Arabic', 'Arial'],
                     fontSize: widget.fontSize - 2,
                     height: 1.5,
                     color: ink,
@@ -719,6 +734,7 @@ class _MushafPageState extends State<_MushafPage> {
                           text: '${_verseText(verse)} ',
                           style: TextStyle(
                             fontFamily: 'serif',
+                            fontFamilyFallback: const ['Noto Naskh Arabic', 'Arial'],
                             fontSize: widget.fontSize,
                             height: widget.lineHeight,
                             color: _isHighlighted(verse)
@@ -922,6 +938,7 @@ class _SurahHeader extends StatelessWidget {
             textDirection: TextDirection.rtl,
             style: TextStyle(
               fontFamily: 'serif',
+              fontFamilyFallback: const ['Noto Naskh Arabic', 'Arial'],
               fontSize: 21,
               color: color,
               fontWeight: FontWeight.w700,
