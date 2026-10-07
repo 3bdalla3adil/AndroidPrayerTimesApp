@@ -18,7 +18,7 @@ class _QuranScreenState extends State<QuranScreen> {
     final all = List.generate(quran.totalSurahCount, (i) => i + 1);
     if (query.isEmpty) return all;
     return all.where((number) {
-      final text = quran.getSurahName(number) + ' ' + quran.getSurahNameArabic(number);
+      final text = '${quran.getSurahName(number)} ${quran.getSurahNameArabic(number)}';
       return text.toLowerCase().contains(query) || number.toString() == query;
     }).toList();
   }
@@ -47,10 +47,7 @@ class _QuranScreenState extends State<QuranScreen> {
                           leading: _NumberBadge(number: number),
                           title: Text(quran.getSurahName(number)),
                           subtitle: Text(
-                            quran.getPlaceOfRevelation(number) +
-                                ' • ' +
-                                quran.getVerseCount(number).toString() +
-                                ' verses',
+                            '${quran.getPlaceOfRevelation(number)} • ${quran.getVerseCount(number)} verses',
                           ),
                           trailing: Text(
                             quran.getSurahNameArabic(number),
