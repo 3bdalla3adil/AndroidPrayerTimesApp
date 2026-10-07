@@ -5,7 +5,6 @@ import 'package:intl/intl.dart' hide TextDirection;
 import '../models/prayer_entry.dart';
 import '../services/prayer_service.dart';
 import '../services/storage_service.dart';
-import '../services/notification_service.dart';
 import '../services/athan_reminder_service.dart';
 import 'quran_screen.dart';
 
