@@ -41,20 +41,66 @@ class _QuranReaderScreenState extends State<QuranReaderScreen>{
       SwitchListTile(value:tajweed,onChanged:(v){set(()=>tajweed=v);setState((){});},title:const Text('ألوان التجويد')),
     ]))));
   }
-  @override Widget build(BuildContext context){final t=Theme.of(context);return Scaffold(
-    appBar:AppBar(leading:IconButton(onPressed:()=>Navigator.pop(context),icon:const Icon(Icons.arrow_back_ios_new,size:19)),
-      title:Column(children:[const Text('القرآن الكريم',style:TextStyle(fontSize:17,fontWeight:FontWeight.w800)),Text('صفحة ${page} من ${totalPages}',style:TextStyle(fontSize:11,color:t.colorScheme.onSurfaceVariant))]),centerTitle:true,
-      actions:[IconButton(onPressed:_jump,icon:const Icon(Icons.find_in_page_outlined)),IconButton(onPressed:()=>setState(()=>toolbar=!toolbar),icon:Icon(toolbar?Icons.visibility_off_outlined:Icons.visibility_outlined))]),
-    body:Column(children:[
-      if(toolbar)Row(children:[_Tool(Icons.text_fields,'Aa',_settings),_Tool(Icons.palette_outlined,'تجويد',()=>setState(()=>tajweed=!tajweed),active:tajweed),const Spacer(),IconButton(onPressed:_settings,icon:const Icon(Icons.tune))]),
-      Expanded(child:PageView.builder(controller:pc,reverse:true,itemCount:totalPages,onPageChanged:(p)=>setState(()=>page=p+1),itemBuilder:(c,i)=>FutureBuilder<Map<String,dynamic>>(future:_data(i+1),builder:(c,s)=>s.hasData?_Page(page:i+1,data:s.data!,fontSize:fontSize,lineSpacing:lineSpacing,translation:translation,tajweed:tajweed):const Center(child:CircularProgressIndicator())))),
-      SafeArea(top:false,child:Row(children:[IconButton(onPressed:page>1?()=>_go(page-1):null,icon:const Icon(Icons.chevron_left)),Expanded(child:Center(child:InkWell(onTap:_jump,child:Text('${page} / ${totalPages}',style:const TextStyle(fontWeight:FontWeight.w800)))),IconButton(onPressed:page<totalPages?()=>_go(page+1):null,icon:const Icon(Icons.chevron_right))]))
-    ]));}
-      SafeArea(top:false, child: Row(children:[
-        IconButton(onPressed:page>1 ? ()=>_go(page-1) : null, icon:const Icon(Icons.chevron_left)),
-        Expanded(child:Center(child:InkWell(onTap:_jump,child:Padding(padding:const EdgeInsets.all(8),child:Text('$'+'{page} / $'+'{totalPages}',style:const TextStyle(fontWeight:FontWeight.w800)))))),
-        IconButton(onPressed:page<totalPages ? ()=>_go(page+1) : null, icon:const Icon(Icons.chevron_right)),
-      ]))
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context);
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.arrow_back_ios_new, size: 19)),
+        title: Column(children: [
+          const Text('القرآن الكريم', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+          Text('صفحة ${page} من ${totalPages}', style: TextStyle(fontSize: 11, color: t.colorScheme.onSurfaceVariant)),
+        ]),
+        centerTitle: true,
+        actions: [
+          IconButton(onPressed: _jump, icon: const Icon(Icons.find_in_page_outlined)),
+          IconButton(onPressed: () => setState(() => toolbar = !toolbar), icon: Icon(toolbar ? Icons.visibility_off_outlined : Icons.visibility_outlined)),
+        ],
+      ),
+      body: Column(children: [
+        if (toolbar)
+          Row(children: [
+            _Tool(Icons.text_fields, 'Aa', _settings),
+            _Tool(Icons.palette_outlined, 'تجويد', () => setState(() => tajweed = !tajweed), active: tajweed),
+            const Spacer(),
+            IconButton(onPressed: _settings, icon: const Icon(Icons.tune)),
+          ]),
+        Expanded(
+          child: PageView.builder(
+            controller: pc,
+            reverse: true,
+            itemCount: totalPages,
+            onPageChanged: (p) => setState(() => page = p + 1),
+            itemBuilder: (c, i) => FutureBuilder<Map<String, dynamic>>(
+              future: _data(i + 1),
+              builder: (c, s) => s.hasData
+                  ? _Page(page: i + 1, data: s.data!, fontSize: fontSize, lineSpacing: lineSpacing, translation: translation, tajweed: tajweed)
+                  : const Center(child: CircularProgressIndicator()),
+            ),
+          ),
+        ),
+        SafeArea(
+          top: false,
+          child: Row(children: [
+            IconButton(onPressed: page > 1 ? () => _go(page - 1) : null, icon: const Icon(Icons.chevron_left)),
+            Expanded(
+              child: Center(
+                child: InkWell(
+                  onTap: _jump,
+                  child: Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Text('${page} / ${totalPages}', style: const TextStyle(fontWeight: FontWeight.w800)),
+                  ),
+                ),
+              ),
+            ),
+            IconButton(onPressed: page < totalPages ? () => _go(page + 1) : null, icon: const Icon(Icons.chevron_right)),
+          ]),
+        ),
+      ]),
+    );
+  }
+}
 
 class _Tool extends StatelessWidget{
   const _Tool(this.icon,this.label,this.onTap,{this.active=false});final IconData icon;final String label;final VoidCallback onTap;final bool active;
