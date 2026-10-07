@@ -31,7 +31,7 @@ void main() {
 
     // CupertinoTabBar displays the selected tab's label. Verify that
     // navigation to Quran works rather than expecting both labels at once.
-    await tester.tap(find.byIcon(CupertinoIcons.book));
+    await tester.tap(find.byKey(const ValueKey('quran-tab')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
     expect(find.text('Quran'), findsOneWidget);
