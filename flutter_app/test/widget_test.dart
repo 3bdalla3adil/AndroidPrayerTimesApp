@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
@@ -27,6 +28,12 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
 
     expect(find.text('Home'), findsOneWidget);
+
+    // CupertinoTabBar displays the selected tab's label. Verify that
+    // navigation to Quran works rather than expecting both labels at once.
+    await tester.tap(find.byIcon(CupertinoIcons.book));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
     expect(find.text('Quran'), findsOneWidget);
   });
 }
