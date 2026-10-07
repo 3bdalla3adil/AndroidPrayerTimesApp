@@ -67,7 +67,9 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
           (starts[widget.surahNumber.toString()] as num?)?.toInt() ??
           1;
       final requestedReaderPage =
-          requestedQuranPage.clamp(1, totalQuranPages).toInt();
+          widget.startingPage == null && widget.surahNumber == 1
+              ? 0
+              : requestedQuranPage.clamp(1, totalQuranPages).toInt();
 
       if (!mounted) return;
       setState(() {
