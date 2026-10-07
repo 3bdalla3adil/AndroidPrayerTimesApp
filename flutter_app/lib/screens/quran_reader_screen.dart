@@ -950,46 +950,6 @@ String _arabicNumber(int value) {
       .join();
 }
 
-class _AyahMarker extends StatelessWidget {
-  const _AyahMarker({
-    required this.number,
-    required this.color,
-    required this.darkPage,
-    required this.onTap,
-  });
-
-  final int number;
-  final Color color;
-  final bool darkPage;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 25,
-      height: 25,
-      margin: const EdgeInsets.symmetric(horizontal: 2),
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(color: color.withValues(alpha: .7), width: 1),
-      ),
-      alignment: Alignment.center,
-        child: Text(
-          _arabicNumber(number),
-        textDirection: TextDirection.rtl,
-        style: TextStyle(
-          fontFamily: 'serif',
-          fontSize: 9,
-          color: darkPage ? const Color(0xFFE6E0C8) : color,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-}
-
 class _PageControls extends StatelessWidget {
   const _PageControls({
     required this.page,
