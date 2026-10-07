@@ -21,6 +21,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Map<String, int> _adjustments = {};
   int _preReminderMinutes = 0;
   String _athanSound = 'default';
+  double _quranFontSize = 28;
+  bool _quranTranslation = false;
+  bool _quranDarkPage = false;
+  int _tasbihTarget = 33;
 
   static const _methods = <int, String>{
     1: 'Karachi', 2: 'North America (ISNA)', 3: 'Muslim World League',
@@ -47,6 +51,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final adjustments = await _storage.loadPrayerTimeAdjustments();
     final preReminderMinutes = await _storage.loadPrePrayerReminderMinutes();
     final athanSound = await _storage.loadAthanSound();
+    final quranFontSize = await _storage.loadQuranFontSize();
+    final quranTranslation = await _storage.loadQuranShowTranslation();
+    final quranDarkPage = await _storage.loadQuranDarkPage();
+    final tasbih = await _storage.loadTasbih();
     if (!mounted) return;
     setState(() {
       _reminders = enabled;
@@ -57,6 +65,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _adjustments = adjustments;
       _preReminderMinutes = preReminderMinutes;
       _athanSound = NotificationService.soundLabels.containsKey(athanSound) ? athanSound : 'default';
+      _quranFontSize = quranFontSize.clamp(20, 38).toDouble();
+      _quranTranslation = quranTranslation;
+      _quranDarkPage = quranDarkPage;
+      _tasbihTarget = tasbih.$2;
       _loading = false;
     });
   }
@@ -119,6 +131,69 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await _storage.savePrayerTimeAdjustments(next);
     if (mounted) setState(() => _adjustments = next);
     await _refreshSchedules();
+  }
+
+  Future<void> _chooseQuranFontSize() async {
+    final selected = await showCupertinoModalPopup<double>(
+      context: context,
+      builder: (context) => CupertinoActionSheet(
+        title: const Text('حجم خط المصحف'),
+        message: const Text('اختر حجمًا واضحًا للنص العربي العثماني.'),
+        actions: [
+          for (final value in const [20.0, 22.0, 24.0, 26.0, 28.0, 30.0, 32.0, 34.0, 36.0, 38.0])
+            CupertinoActionSheetAction(
+              onPressed: () => Navigator.pop(context, value),
+              child: Text(value.round().toString()),
+            ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('إلغاء'),
+        ),
+      ),
+    );
+    if (selected == null) return;
+    await _storage.saveQuranFontSize(selected);
+    if (mounted) setState(() => _quranFontSize = selected);
+  }
+
+  Future<void> _chooseTasbihTarget() async {
+    final controller = TextEditingController(text: _tasbihTarget.toString());
+    final selected = await showCupertinoDialog<int>(
+      context: context,
+      builder: (dialogContext) => CupertinoAlertDialog(
+        title: const Text('هدف التسبيح'),
+        content: Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: CupertinoTextField(
+            controller: controller,
+            keyboardType: TextInputType.number,
+            textAlign: TextAlign.center,
+            placeholder: '33 أو 99 أو أي رقم حتى 10000',
+          ),
+        ),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('إلغاء'),
+          ),
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            onPressed: () {
+              final value = int.tryParse(controller.text.trim());
+              if (value != null && value >= 1 && value <= 10000) {
+                Navigator.pop(dialogContext, value);
+              }
+            },
+            child: const Text('حفظ'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (selected == null) return;
+    await _storage.saveTasbih(0, selected);
+    if (mounted) setState(() => _tasbihTarget = selected);
   }
 
   Future<void> _chooseAthanSound() async {
@@ -368,6 +443,54 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         title: const Text('Test Athan sound'),
                         subtitle: const Text('Play the selected Athan through the same notification path used for prayer time.'),
                         onTap: _loading ? null : _testAthan,
+                      ),
+                    ],
+                  ),
+                  CupertinoListSection.insetGrouped(
+                    header: const Text('QURAN / MUSHAF'),
+                    children: [
+                      CupertinoListTile(
+                        leading: const Icon(CupertinoIcons.textformat_size),
+                        title: const Text('Arabic / Uthmani font size'),
+                        subtitle: Text(_quranFontSize.round().toString() + ' pt'),
+                        trailing: const CupertinoListTileChevron(),
+                        onTap: _loading ? null : _chooseQuranFontSize,
+                      ),
+                      CupertinoListTile(
+                        leading: const Icon(CupertinoIcons.globe),
+                        title: const Text('English translation'),
+                        subtitle: const Text('Show translation below each ayah'),
+                        trailing: CupertinoSwitch(
+                          value: _quranTranslation,
+                          onChanged: _loading ? null : (value) async {
+                            await _storage.saveQuranShowTranslation(value);
+                            if (mounted) setState(() => _quranTranslation = value);
+                          },
+                        ),
+                      ),
+                      CupertinoListTile(
+                        leading: const Icon(CupertinoIcons.moon),
+                        title: const Text('Dark Mushaf page'),
+                        subtitle: const Text('Use a dark reading page'),
+                        trailing: CupertinoSwitch(
+                          value: _quranDarkPage,
+                          onChanged: _loading ? null : (value) async {
+                            await _storage.saveQuranDarkPage(value);
+                            if (mounted) setState(() => _quranDarkPage = value);
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  CupertinoListSection.insetGrouped(
+                    header: const Text('TASBIH'),
+                    children: [
+                      CupertinoListTile(
+                        leading: const Icon(CupertinoIcons.circle),
+                        title: const Text('Tasbih target'),
+                        subtitle: Text(_tasbihTarget.toString() + ' repetitions; alert appears when the goal is reached.'),
+                        trailing: const CupertinoListTileChevron(),
+                        onTap: _loading ? null : _chooseTasbihTarget,
                       ),
                     ],
                   ),
