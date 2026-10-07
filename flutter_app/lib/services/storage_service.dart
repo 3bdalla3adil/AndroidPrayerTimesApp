@@ -11,6 +11,7 @@ class StorageService {
   static const _lastSurah = 'last_surah';
   static const _lastAyah = 'last_ayah';
   static const _bookmarks = 'quran_bookmarks';
+  static const _athanReminders = 'athan_reminders_enabled';
 
   final SharedPreferencesAsync prefs = SharedPreferencesAsync();
 
@@ -61,4 +62,10 @@ class StorageService {
 
   Future<void> saveBookmarks(List<(int, int)> bookmarks) async =>
       prefs.setStringList(_bookmarks, bookmarks.map((b) => '${b.$1}:${b.$2}').toList());
+
+  Future<bool> loadAthanRemindersEnabled() async =>
+      await prefs.getBool(_athanReminders) ?? false;
+
+  Future<void> saveAthanRemindersEnabled(bool enabled) =>
+      prefs.setBool(_athanReminders, enabled);
 }
