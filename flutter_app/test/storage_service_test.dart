@@ -68,5 +68,4 @@ void main() {
     await storage.saveBiometricLockEnabled(false);
     expect(await storage.loadBiometricLockEnabled(), isFalse);
   });
-  });
 }
