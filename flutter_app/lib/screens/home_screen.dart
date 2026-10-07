@@ -64,23 +64,57 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _schedule() async {
-    await NotificationService.cancelAll();
-    for (var i = 0; i < _prayers.length; i++) {
-      await NotificationService.schedulePrayer(
-        id: 100 + i,
-        prayerName: _prayers[i].name,
-        time: _prayers[i].time,
+    try {
+      await NotificationService.cancelAll();
+
+      // Schedule seven days ahead so the app does not need to be opened
+      // every morning. Android's boot receiver will restore these alarms
+      // after a device reboot.
+      final today = tz.TZDateTime.now(tz.local);
+      for (var dayOffset = 0; dayOffset < 7; dayOffset++) {
+        final date = today.add(Duration(days: dayOffset));
+        final prayers = await _service.forDate(date);
+
+        for (var i = 0; i < prayers.length; i++) {
+          await NotificationService.schedulePrayer(
+            id: 1000 + (dayOffset * 10) + i,
+            prayerName: prayers[i].name,
+            time: prayers[i].time,
+          );
+        }
+      }
+
+      final pending = await NotificationService.pendingCount();
+      if (!mounted) return;
+      showCupertinoDialog<void>(
+        context: context,
+        builder: (_) => CupertinoAlertDialog(
+          title: const Text('Athan reminders'),
+          content: Text('$pending prayer alarms are scheduled for 7 days.'),
+          actions: [
+            CupertinoDialogAction(
+              child: const Text('OK'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      showCupertinoDialog<void>(
+        context: context,
+        builder: (_) => CupertinoAlertDialog(
+          title: const Text('Could not schedule Athan'),
+          content: Text(e.toString().replaceFirst('Bad state: ', '')),
+          actions: [
+            CupertinoDialogAction(
+              child: const Text('OK'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
+        ),
       );
     }
-    if (!mounted) return;
-    showCupertinoDialog<void>(
-      context: context,
-      builder: (_) => const CupertinoAlertDialog(
-        title: Text('Prayer reminders'),
-        content: Text('Local reminders are scheduled on this device.'),
-        actions: [CupertinoDialogAction(child: Text('OK'))],
-      ),
-    );
   }
 
   @override
