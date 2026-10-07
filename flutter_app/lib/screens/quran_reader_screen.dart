@@ -122,6 +122,58 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     );
   }
 
+  Future<void> _bookmarkCurrentPage() async {
+    if (_readerPage < 1) return;
+    final data = await _loadPage(_readerPage);
+    final verses = ((data['verses'] as List?) ?? const [])
+        .whereType<Map>()
+        .map((item) => item.cast<String, dynamic>())
+        .toList();
+    if (verses.isEmpty) return;
+    final surah = (verses.first['surah_number'] as num?)?.toInt();
+    final ayah = (verses.first['ayah_number'] as num?)?.toInt();
+    if (surah == null || ayah == null) return;
+    final bookmarks = await _storage.loadBookmarks();
+    final exists = bookmarks.any((b) => b.$1 == surah && b.$2 == ayah);
+    if (exists) {
+      bookmarks.removeWhere((b) => b.$1 == surah && b.$2 == ayah);
+    } else {
+      bookmarks.add((surah, ayah));
+    }
+    await _storage.saveBookmarks(bookmarks);
+    if (!mounted) return;
+    await showCupertinoDialog<void>(
+      context: context,
+      builder: (dialogContext) => CupertinoAlertDialog(
+        title: Text(exists ? 'Bookmark removed' : 'Ayah bookmarked'),
+        content: Text(quran.getSurahName(surah) + ' • Ayah ' + ayah.toString()),
+        actions: [
+          CupertinoDialogAction(
+            child: const Text('OK'),
+            onPressed: () => Navigator.pop(dialogContext),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _rememberPage(int index) async {
+    if (index < 1) return;
+    try {
+      final data = await _loadPage(index);
+      final verses = ((data['verses'] as List?) ?? const [])
+          .whereType<Map>()
+          .map((item) => item.cast<String, dynamic>())
+          .toList();
+      if (verses.isEmpty) return;
+      final surah = (verses.first['surah_number'] as num?)?.toInt();
+      final ayah = (verses.first['ayah_number'] as num?)?.toInt();
+      if (surah != null && ayah != null) {
+        await _storage.saveReaderPosition(surah, ayah);
+      }
+    } catch (_) {}
+  }
+
   void _jumpToPage() {
     final input = TextEditingController(text: '${_readerPage == 0 ? 1 : _readerPage}');
     showCupertinoDialog<void>(
@@ -244,6 +296,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
             if (_showToolbar) _ReaderToolbar(
               onJump: _jumpToPage,
               onSettings: _openReaderSettings,
+              onBookmark: _bookmarkCurrentPage,
               page: _readerPage,
               totalPages: totalReaderPages,
             ),
@@ -252,8 +305,10 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
                 controller: _controller,
                 reverse: true,
                 itemCount: totalReaderPages,
-                onPageChanged: (index) =>
-                    setState(() => _readerPage = index),
+                onPageChanged: (index) {
+                setState(() => _readerPage = index);
+                _rememberPage(index);
+              },
                 itemBuilder: (context, index) {
                   if (index == 0) {
                     return const _DedicationPage();
@@ -306,12 +361,14 @@ class _ReaderToolbar extends StatelessWidget {
   const _ReaderToolbar({
     required this.onJump,
     required this.onSettings,
+    required this.onBookmark,
     required this.page,
     required this.totalPages,
   });
 
   final VoidCallback onJump;
   final VoidCallback onSettings;
+  final VoidCallback onBookmark;
   final int page;
   final int totalPages;
 
@@ -340,6 +397,11 @@ class _ReaderToolbar extends StatelessWidget {
             icon: CupertinoIcons.slider_horizontal_3,
             label: 'المظهر',
             onPressed: onSettings,
+          ),
+          _ReaderButton(
+            icon: CupertinoIcons.bookmark,
+            label: 'حفظ',
+            onPressed: page > 0 ? onBookmark : () {},
           ),
           const Spacer(),
           Text(
