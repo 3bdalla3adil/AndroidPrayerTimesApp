@@ -110,6 +110,24 @@ jobs:
       - name: Generate iOS platform
         run: flutter create . --platforms=ios --org "com.salawat_quran" --project-name "salawat_quran"
 
+      - name: Install bundled Athan sound for iOS
+        run: |
+          set -e
+          cp assets/audio/azan.mp3 ios/Runner/azan.mp3
+          gem install xcodeproj --no-document
+          ruby - <<'RUBY'
+          require 'xcodeproj'
+          project_path = 'ios/Runner.xcodeproj'
+          project = Xcodeproj::Project.open(project_path)
+          target = project.targets.find { |t| t.name == 'Runner' }
+          group = project.main_group.find_subpath('Runner', true)
+          file = group.files.find { |f| f.path == 'azan.mp3' }
+          file ||= group.new_file('azan.mp3')
+          phase = target.resources_build_phase
+          phase.add_file_reference(file) unless phase.files.any? { |b| b.file_ref == file }
+          project.save
+          RUBY
+
       - name: Configure iOS permissions and background audio
         run: |
           /usr/libexec/PlistBuddy -c "Add :NSLocationWhenInUseUsageDescription string Allow Quran Prayer Companion to use your location for prayer times and Qibla direction." ios/Runner/Info.plist || true
