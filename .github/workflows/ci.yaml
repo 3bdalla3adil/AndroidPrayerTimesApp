@@ -58,6 +58,9 @@ jobs:
       - name: Bootstrap Android project
         run: bash tool/bootstrap_android.sh
 
+      - name: Generate 604-page offline Mushaf
+        run: bash tool/generate_madinah_mushaf.sh
+
       - name: Get dependencies
         run: flutter pub get
 
@@ -109,6 +112,9 @@ jobs:
           /usr/libexec/PlistBuddy -c "Add :NSLocationWhenInUseUsageDescription string Allow Quran Prayer Companion to use your location for prayer times and Qibla direction." ios/Runner/Info.plist || true
           /usr/libexec/PlistBuddy -c "Add :UIBackgroundModes array" ios/Runner/Info.plist || true
           /usr/libexec/PlistBuddy -c "Add :UIBackgroundModes:0 string audio" ios/Runner/Info.plist || true
+
+      - name: Generate 604-page offline Mushaf
+        run: bash tool/generate_madinah_mushaf.sh
 
       - name: Get dependencies
         run: flutter pub get
