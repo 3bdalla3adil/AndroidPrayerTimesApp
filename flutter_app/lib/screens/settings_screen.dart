@@ -452,7 +452,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       CupertinoListTile(
                         leading: const Icon(CupertinoIcons.textformat_size),
                         title: const Text('Arabic / Uthmani font size'),
-                        subtitle: Text(_quranFontSize.round().toString() + ' pt'),
+                        subtitle: Text('${_quranFontSize.round()} pt'),
                         trailing: const CupertinoListTileChevron(),
                         onTap: _loading ? null : _chooseQuranFontSize,
                       ),
@@ -488,7 +488,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       CupertinoListTile(
                         leading: const Icon(CupertinoIcons.circle),
                         title: const Text('Tasbih target'),
-                        subtitle: Text(_tasbihTarget.toString() + ' repetitions; alert appears when the goal is reached.'),
+                        subtitle: Text('$_tasbihTarget repetitions; alert appears when the goal is reached.'),
                         trailing: const CupertinoListTileChevron(),
                         onTap: _loading ? null : _chooseTasbihTarget,
                       ),
