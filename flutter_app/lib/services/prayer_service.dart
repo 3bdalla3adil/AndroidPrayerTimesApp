@@ -62,12 +62,16 @@ class PrayerService {
       ..highLatitudeRule = HighLatitudeRule.recommended(coordinates);
   }
 
-  Future<List<PrayerEntry>> today({bool refreshLocation = false}) async {
+  Future<(double, double, int)> _locationAndMethod({
+    bool refreshLocation = false,
+  }) async {
     var (lat, lon, _) = await storage.loadLocation();
     final selected = await storage.loadPrayerCity();
     var method = selected.$3;
 
-    if (lat == null || lon == null || (refreshLocation && selected.$1 == null)) {
+    if (lat == null ||
+        lon == null ||
+        (refreshLocation && selected.$1 == null)) {
       final position = await determinePosition();
       lat = position.latitude;
       lon = position.longitude;
@@ -75,12 +79,28 @@ class PrayerService {
       await storage.saveLocation(lat, lon, 'Current location');
     }
 
+    return (lat, lon, method ?? 3);
+  }
+
+  Future<List<PrayerEntry>> forDate(
+    DateTime date, {
+    bool refreshLocation = false,
+  }) async {
+    final (lat, lon, method) =
+        await _locationAndMethod(refreshLocation: refreshLocation);
+
     final coordinates = Coordinates(lat, lon);
-    final params = _parameters(method ?? 3, coordinates);
-    final now = tz.TZDateTime.now(tz.local);
+    final params = _parameters(method, coordinates);
+    final localDate = tz.TZDateTime(
+      tz.local,
+      date.year,
+      date.month,
+      date.day,
+    );
+
     final calculated = PrayerTimes(
       coordinates: coordinates,
-      date: now,
+      date: localDate,
       calculationParameters: params,
       precision: false,
     );
@@ -94,5 +114,12 @@ class PrayerService {
       PrayerEntry(name: 'Maghrib', arabicName: 'المغرب', time: local(calculated.maghrib)),
       PrayerEntry(name: 'Isha', arabicName: 'العشاء', time: local(calculated.isha)),
     ];
+  }
+
+  Future<List<PrayerEntry>> today({bool refreshLocation = false}) {
+    return forDate(
+      tz.TZDateTime.now(tz.local),
+      refreshLocation: refreshLocation,
+    );
   }
 }
