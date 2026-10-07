@@ -5,8 +5,8 @@ import 'screens/more_screen.dart';
 import 'screens/prayer_screen.dart';
 import 'screens/qibla_screen.dart';
 import 'screens/quran_screen.dart';
-import 'services/notification_service.dart';
 import 'services/biometric_service.dart';
+import 'services/notification_service.dart';
 import 'services/storage_service.dart';
 
 class RootShell extends StatefulWidget {
@@ -20,6 +20,7 @@ class _RootShellState extends State<RootShell> with WidgetsBindingObserver {
   late final CupertinoTabController _controller;
   final _storage = StorageService();
   final _biometric = BiometricService();
+
   bool _locked = false;
   bool _authenticating = false;
 
@@ -82,37 +83,40 @@ class _RootShellState extends State<RootShell> with WidgetsBindingObserver {
       children: [
         CupertinoTabScaffold(
           controller: _controller,
-      tabBar: CupertinoTabBar(
-        items: const [
-          BottomNavigationBarItem(icon: Icon(CupertinoIcons.house), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(CupertinoIcons.book), label: 'Quran'),
-          BottomNavigationBarItem(icon: Icon(CupertinoIcons.time), label: 'Prayer'),
-          BottomNavigationBarItem(icon: Icon(CupertinoIcons.compass), label: 'Qibla'),
-          BottomNavigationBarItem(icon: Icon(CupertinoIcons.ellipsis_circle), label: 'More'),
-        ],
-      ),
-      tabBuilder: (context, index) {
-        final pages = <Widget>[
-          const HomeScreen(),
-          const QuranScreen(),
-          const PrayerScreen(),
-          const QiblaScreen(),
-          const MoreScreen(),
-        ];
-        return CupertinoTabView(builder: (_) => pages[index]);
-      },
-    );
-  }
-}
-
-class SalawatQuranApp extends StatelessWidget {
-  const SalawatQuranApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const CupertinoApp(
-      debugShowCheckedModeBanner: false,
-      home: RootShell(),
+          tabBar: CupertinoTabBar(
+            items: const [
+              BottomNavigationBarItem(
+                icon: Icon(CupertinoIcons.house),
+                label: 'Home',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(CupertinoIcons.book),
+                label: 'Quran',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(CupertinoIcons.time),
+                label: 'Prayer',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(CupertinoIcons.compass),
+                label: 'Qibla',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(CupertinoIcons.ellipsis_circle),
+                label: 'More',
+              ),
+            ],
+          ),
+          tabBuilder: (context, index) {
+            final pages = <Widget>[
+              const HomeScreen(),
+              const QuranScreen(),
+              const PrayerScreen(),
+              const QiblaScreen(),
+              const MoreScreen(),
+            ];
+            return CupertinoTabView(builder: (_) => pages[index]);
+          },
         ),
         if (_locked)
           Positioned.fill(
@@ -127,7 +131,10 @@ class SalawatQuranApp extends StatelessWidget {
                       const SizedBox(height: 16),
                       const Text(
                         'App locked',
-                        style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       const Text('Authenticate to continue.'),
@@ -135,7 +142,9 @@ class SalawatQuranApp extends StatelessWidget {
                       CupertinoButton.filled(
                         onPressed: _authenticating ? null : _authenticate,
                         child: Text(
-                          _authenticating ? 'Waiting…' : 'Unlock with biometrics',
+                          _authenticating
+                              ? 'Waiting…'
+                              : 'Unlock with biometrics',
                         ),
                       ),
                     ],
@@ -145,6 +154,18 @@ class SalawatQuranApp extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+class SalawatQuranApp extends StatelessWidget {
+  const SalawatQuranApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const CupertinoApp(
+      debugShowCheckedModeBanner: false,
+      home: RootShell(),
     );
   }
 }
