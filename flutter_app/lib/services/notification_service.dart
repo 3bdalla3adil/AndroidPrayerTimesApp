@@ -11,6 +11,7 @@ class NotificationService {
 
   static const _channelId = 'athan_prayer_channel_v2';
   static const int prayerIdBase = 1000;
+  static const int maxScheduledPrayerIds = 120;
   static bool _initialized = false;
 
   static Future<void> initialize() async {
@@ -18,6 +19,7 @@ class NotificationService {
     tz_data.initializeTimeZones();
     final info = await FlutterTimezone.getLocalTimezone();
     tz.setLocalLocation(tz.getLocation(info.identifier));
+
     const ios = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
@@ -32,13 +34,14 @@ class NotificationService {
     final androidPlugin = _plugin
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>();
-
     await androidPlugin?.requestNotificationsPermission();
     await androidPlugin?.requestExactAlarmsPermission();
 
     await _plugin
-        .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
+        .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin>()
         ?.requestPermissions(alert: true, badge: true, sound: true);
+
     _initialized = true;
   }
 
@@ -68,7 +71,8 @@ class NotificationService {
     iOS: _ios,
   );
 
-  static Future<void> schedulePrayer({
+  /// Returns true only when a future notification was actually scheduled.
+  static Future<bool> schedulePrayer({
     required int id,
     required String prayerName,
     required DateTime time,
@@ -78,7 +82,7 @@ class NotificationService {
     final now = tz.TZDateTime.now(tz.local);
 
     if (!scheduled.isAfter(now.add(const Duration(seconds: 2)))) {
-      return;
+      return false;
     }
 
     await _plugin.zonedSchedule(
@@ -90,11 +94,12 @@ class NotificationService {
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       payload: 'prayer:$prayerName',
     );
+    return true;
   }
 
   static Future<void> cancelPrayerReminders() async {
     await initialize();
-    for (var i = 0; i < 70; i++) {
+    for (var i = 0; i < maxScheduledPrayerIds; i++) {
       await _plugin.cancel(id: prayerIdBase + i);
     }
   }
