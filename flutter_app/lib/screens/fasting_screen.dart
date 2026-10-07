@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 
+import '../models/prayer_entry.dart';
 import '../services/prayer_service.dart';
 import '../services/storage_service.dart';
 
@@ -13,7 +14,7 @@ class FastingScreen extends StatefulWidget {
 
 class _FastingScreenState extends State<FastingScreen> {
   final _prayerService = PrayerService(StorageService());
-  List<dynamic> _prayers = const [];
+  List<PrayerEntry> _prayers = const [];
   bool _loading = true;
   String? _error;
 
@@ -76,7 +77,7 @@ class _FastingScreenState extends State<FastingScreen> {
   Widget build(BuildContext context) {
     final h = _hijri(DateTime.now());
     final isRamadan = h.$2 == 9;
-    dynamic findPrayer(String name) {
+    PrayerEntry? findPrayer(String name) {
       for (final prayer in _prayers) {
         if (prayer.name == name) return prayer;
       }
