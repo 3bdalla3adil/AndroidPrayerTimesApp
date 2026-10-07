@@ -1,6 +1,7 @@
 import 'dart:ui' as ui;
 
 import 'package:flutter/cupertino.dart';
+import 'package:hijri_core/hijri_core.dart';
 import 'package:intl/intl.dart';
 
 class CalendarScreen extends StatefulWidget {
@@ -28,39 +29,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
   }
 
   (int year, int month, int day) _hijri(DateTime date) {
-    final jd = _gregorianToJulian(date.year, date.month, date.day);
-    final days = (jd - _islamicEpoch).floor();
-    final year = ((30 * days + 10646) ~/ 10631);
-    final month =
-        ((days - _islamicToJulian(year, 1, 1) + 1) / 29.5).floor() + 1;
-    final safeMonth = month.clamp(1, 12).toInt();
-    final dayOfMonth = days - _islamicToJulian(year, safeMonth, 1) + 1;
-    return (year, safeMonth, dayOfMonth);
-  }
-
-  double _gregorianToJulian(int year, int month, int day) {
-    var y = year;
-    var m = month;
-    if (m <= 2) {
-      y--;
-      m += 12;
+    final converted = toHijri(DateTime.utc(date.year, date.month, date.day));
+    if (converted == null) {
+      throw StateError('Unable to convert Gregorian date to Hijri.');
     }
-    final a = y ~/ 100;
-    final b = 2 - a + a ~/ 4;
-    return (365.25 * (y + 4716)).floorToDouble() +
-        (30.6001 * (m + 1)).floorToDouble() +
-        day +
-        b -
-        1524.5;
+    return (converted.hy, converted.hm, converted.hd);
   }
-
-  int _islamicToJulian(int year, int month, int day) =>
-      (day +
-              (29.5 * (month - 1)).ceil() +
-              (year - 1) * 354 +
-              ((3 + 11 * year) / 30).floor() -
-              1)
-          .floor();
 
   String _arabic(int value) {
     const western = '0123456789';
