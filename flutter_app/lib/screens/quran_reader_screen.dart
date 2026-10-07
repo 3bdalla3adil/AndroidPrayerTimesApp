@@ -122,7 +122,7 @@ class _Page extends StatelessWidget{
         if(translation)TextSpan(text:'\\n${_translation(v)}\\n',style:TextStyle(fontSize:13,height:1.5,color:t.colorScheme.onSurfaceVariant))
       ]]),textDirection:TextDirection.rtl,textAlign:TextAlign.right) else if(page==604)const _Dua(),
       if(page==604)const _Dua(),if(tajweed)Padding(padding:const EdgeInsets.only(top:12),child:Text('ألوان التجويد تُطبق عند توفر العلامات في البيانات.',style:TextStyle(fontSize:10)))
-    ]))); }
+    ])))); }
   String _translation(Map<String,dynamic>v){try{return quran.getVerseTranslation((v['surah_number']as num).toInt(),(v['ayah_number']as num).toInt());}catch(_){return '';}}
 }
 
