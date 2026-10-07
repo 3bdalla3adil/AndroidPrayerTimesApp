@@ -217,6 +217,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
       final ayah = (verses.first['ayah_number'] as num?)?.toInt();
       if (surah != null && ayah != null) {
         await _storage.saveReaderPosition(surah, ayah);
+        await _storage.addReadingHistory(surah, ayah);
       }
     } catch (_) {}
   }
