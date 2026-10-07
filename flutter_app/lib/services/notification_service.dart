@@ -16,6 +16,7 @@ class NotificationService {
   static const int prePrayerIdBase = 2000;
   static const int maxScheduledPrayerIds = 120;
   static bool _initialized = false;
+  static bool _exactAlarmReady = true;
   static final ValueNotifier<String?> lastPayload = ValueNotifier<String?>(null);
 
   // Only sounds whose files are actually bundled are exposed here.
@@ -61,7 +62,14 @@ class NotificationService {
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>();
     await androidPlugin?.requestNotificationsPermission();
-    await androidPlugin?.requestExactAlarmsPermission();
+    if (androidPlugin != null) {
+      final exact = await androidPlugin.canScheduleExactNotifications();
+      if (exact != true) {
+        await androidPlugin.requestExactAlarmsPermission();
+      }
+      _exactAlarmReady =
+          await androidPlugin.canScheduleExactNotifications() ?? false;
+    }
 
     await _plugin
         .resolvePlatformSpecificImplementation<
@@ -107,6 +115,21 @@ class NotificationService {
     );
   }
 
+  /// Returns whether Android can currently deliver exact scheduled alarms.
+  /// On iOS this remains true; iOS handles the scheduled notification itself.
+  static bool get exactAlarmReady => _exactAlarmReady;
+
+  static Future<bool> refreshExactAlarmPermission() async {
+    await initialize();
+    final androidPlugin = _plugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
+    if (androidPlugin == null) return true;
+    _exactAlarmReady =
+        await androidPlugin.canScheduleExactNotifications() ?? false;
+    return _exactAlarmReady;
+  }
+
   /// Returns true only when a future notification was actually scheduled.
   static Future<bool> schedulePrayer({
     required int id,
@@ -115,6 +138,11 @@ class NotificationService {
     String soundId = _defaultSoundId,
   }) async {
     await initialize();
+    if (!_exactAlarmReady) {
+      throw StateError(
+        'Exact alarms are not enabled. Please allow Alarms & reminders for this app in Android Settings.',
+      );
+    }
     final scheduled = tz.TZDateTime.from(time, tz.local);
     final now = tz.TZDateTime.now(tz.local);
 
