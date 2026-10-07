@@ -569,21 +569,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     ],
                   ),
-                  CupertinoListSection.insetGrouped(
-                    header: const Text('PRIVACY & OFFLINE'),
-                    children: const [
-                      CupertinoListTile(
-                        leading: Icon(CupertinoIcons.lock),
-                        title: Text('No account'),
-                        subtitle: Text('No login or cloud profile is required.'),
-                      ),
-                      CupertinoListTile(
-                        leading: Icon(CupertinoIcons.wifi_slash),
-                        title: Text('Offline Quran'),
-                        subtitle: Text('The 604-page Mushaf is bundled in the app.'),
-                      ),
-                    ],
-                  ),
                 ],
               ),
       ),
