@@ -50,7 +50,6 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
   void initState() {
     super.initState();
     _loadInitialPage();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _restoreHighlight());
   }
 
   @override
@@ -895,7 +894,7 @@ class _AyahMarker extends StatelessWidget {
           _arabicNumber(number),
           textDirection: TextDirection.rtl,
           style: TextStyle(
-            fontFamily: _QuranReaderScreenState.kQuranFont,
+            fontFamily: kQuranFont,
             fontSize: 9,
             color: darkPage ? const Color(0xFFE6E0C8) : color,
             fontWeight: FontWeight.w600,
