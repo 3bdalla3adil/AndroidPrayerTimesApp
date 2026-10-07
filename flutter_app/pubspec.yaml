@@ -1,10 +1,10 @@
 name: salawat_quran
-description: A modern offline-first Muslim companion with prayer times, Quran reading, Qibla and calendars.
+description: Offline-first Muslim companion rebuilt in Flutter with a Cupertino-first iOS UI.
 publish_to: "none"
-version: 1.0.0+1
+version: 2.0.0+1
 
 environment:
-  sdk: ">=3.9.0 <4.0.0"
+  sdk: ">=3.10.0 <4.0.0"
   flutter: ">=3.47.0"
 
 dependencies:
@@ -14,29 +14,22 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.8
   adhan_dart: ^2.0.1
-  geolocator: ^14.0.2
-  #quran_data_dart: ^1.7.1
+  geolocator: ^14.1.1
   quran: ^1.2.3
   shared_preferences: ^2.5.5
   flutter_local_notifications: ^22.3.1
   timezone: ^0.11.1
   flutter_timezone: ^5.1.0
-  flutter_device_compass: ^2.2.0
+  flutter_compass: ^0.8.1
   intl: ^0.20.2
-  http: ^1.6.0
-  just_audio: ^0.10.6
-  audio_service: ^0.18.19
-  flutter_cache_manager: ^3.4.5
-  path_provider: ^2.1.5
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
-  shared_preferences_platform_interface: ^2.4.0
 
 flutter:
-  uses-material-design: true
+  uses-material-design: false
   generate: true
   assets:
     - assets/quran/pages/
