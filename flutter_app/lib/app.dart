@@ -28,6 +28,14 @@ class RootShell extends StatelessWidget {
 }
 
 
-class SalawatQuranApp extends RootShell {
+class SalawatQuranApp extends StatelessWidget {
   const SalawatQuranApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const CupertinoApp(
+      debugShowCheckedModeBanner: false,
+      home: RootShell(),
+    );
+  }
 }
