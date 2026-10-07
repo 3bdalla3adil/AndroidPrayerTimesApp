@@ -29,6 +29,8 @@ android {
 }
 
 def quranAssetsDir = file("src/main/assets/quran")
+def quranPagesDir = file("src/main/assets/quran/pages")
+def quranPageMeta = file("src/main/assets/quran/page-index.json")
 
 tasks.register("generateQuranAssets") {
     outputs.dir(quranAssetsDir)
@@ -60,7 +62,42 @@ tasks.register("generateQuranAssets") {
     }
 }
 
+tasks.register("generateQuranPageAssets") {
+    outputs.dir(quranPagesDir)
+    outputs.file(quranPageMeta)
+    doLast {
+        quranPagesDir.mkdirs()
+        def starts = [:]
+        (1..604).each { page ->
+            def name = String.format("%03d.json", page)
+            def target = new File(quranPagesDir, name)
+            if (!target.exists() || target.length() < 100) {
+                def url = new URL("https://api.alquran.cloud/v1/page/" + page + "/quran-uthmani")
+                def connection = url.openConnection()
+                connection.connectTimeout = 20000
+                connection.readTimeout = 60000
+                connection.setRequestProperty("User-Agent", "AndroidPrayerTimesApp-QuranBuilder/2.1")
+                target.withOutputStream { output ->
+                    connection.inputStream.withCloseable { input -> input.transferTo(output) }
+                }
+            }
+            def json = new groovy.json.JsonSlurper().parse(target)
+            def ayahs = json?.data?.ayahs ?: []
+            ayahs.each { ayah ->
+                def surah = ayah?.surah?.number ?: 0
+                if (surah > 0 && !starts.containsKey(surah)) {
+                    starts[surah] = page
+                }
+            }
+        }
+        quranPageMeta.text = groovy.json.JsonOutput.prettyPrint(
+                groovy.json.JsonOutput.toJson([totalPages: 604, surahStartPages: starts])
+        )
+    }
+}
+
 preBuild.dependsOn(generateQuranAssets)
+preBuild.dependsOn(generateQuranPageAssets)
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
