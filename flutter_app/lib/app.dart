@@ -23,6 +23,8 @@ class _RootShellState extends State<RootShell> with WidgetsBindingObserver {
   final _storage = StorageService();
   final _biometric = BiometricService();
   bool _authenticating = false;
+  bool _securityReady = false;
+  bool _unlocked = true;
   final _storage = StorageService();
   final _biometric = BiometricService();
 
