@@ -5,7 +5,7 @@ import 'package:intl/intl.dart' hide TextDirection;
 
 import '../models/prayer_city.dart';
 import '../models/prayer_entry.dart';
-import '../services/notification_service.dart';
+import '../services/athan_reminder_service.dart';
 import '../services/prayer_service.dart';
 import '../services/storage_service.dart';
 
@@ -18,6 +18,7 @@ class PrayerScreen extends StatefulWidget {
 
 class _PrayerScreenState extends State<PrayerScreen> {
   final _service = PrayerService(StorageService());
+  late final AthanReminderService _athan;
   List<PrayerEntry> _prayers = const [];
   DateTime _now = DateTime.now();
   String _location = 'Location not set';
@@ -28,6 +29,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
   @override
   void initState() {
     super.initState();
+    _athan = AthanReminderService(_service, StorageService());
     _load();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() => _now = DateTime.now());
@@ -44,12 +46,15 @@ class _PrayerScreenState extends State<PrayerScreen> {
     try {
       final prayers = await _service.today(refreshLocation: refresh);
       final location = await StorageService().loadLocation();
+      final reminders = await StorageService().loadAthanRemindersEnabled();
       if (!mounted) return;
       setState(() {
         _prayers = prayers;
         _location = location.$3 ?? 'Current location';
+        _reminders = reminders;
         _message = null;
       });
+      await _athan.sync(refreshLocation: refresh);
     } catch (e) {
       if (mounted) {
         setState(() => _message = e.toString().replaceFirst('Bad state: ', ''));
@@ -232,7 +237,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
                 CupertinoListTile(
                   leading: const Icon(CupertinoIcons.bell),
                   title: const Text('Athan reminders'),
-                  subtitle: const Text('Local notifications; no server required'),
+                  subtitle: const Text('Plays the bundled Athan at each prayer time'),
                   trailing: CupertinoSwitch(
                     value: _reminders,
                     onChanged: _toggleReminders,
