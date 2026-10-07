@@ -23,10 +23,19 @@ class _QuranReaderScreenState extends State<QuranReaderScreen>{
     if(!mounted)return; setState((){page=p.clamp(1,totalPages);fontSize=saved;});
     WidgetsBinding.instance.addPostFrameCallback((_){if(pc.hasClients)pc.jumpToPage(page-1);});
   }
-  Future<Map<String,dynamic>> _data(int p)async{
-    if(cache[p]!=null)return cache[p]!;
-    final d=jsonDecode(await rootBundle.loadString('assets/quran/pages/page-${p.toString().padLeft(3,'0')}.json')) as Map<String,dynamic>;
-    cache[p]=d;return d;
+  Future<Map<String,dynamic>> _data(int p) async {
+    if (cache[p] != null) return cache[p]!;
+    final path = 'assets/quran/pages/page-\\${p.toString().padLeft(3, '0')}.json';
+    try {
+      final raw = await rootBundle.loadString(path);
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map) throw const FormatException('Invalid Quran page JSON');
+      final data = decoded.cast<String, dynamic>();
+      cache[p] = data;
+      return data;
+    } catch (e) {
+      throw StateError('Unable to load Quran page $p from $path: $e');
+    }
   }
   Future<void> _go(int p)async{if(p<1||p>totalPages||!pc.hasClients)return;await pc.animateToPage(p-1,duration:const Duration(milliseconds:250),curve:Curves.easeOut);}
   void _jump(){final c=TextEditingController(text:'${page}');showDialog<void>(context:context,builder:(x)=>AlertDialog(
@@ -73,9 +82,34 @@ class _QuranReaderScreenState extends State<QuranReaderScreen>{
             onPageChanged: (p) => setState(() => page = p + 1),
             itemBuilder: (c, i) => FutureBuilder<Map<String, dynamic>>(
               future: _data(i + 1),
-              builder: (c, s) => s.hasData
-                  ? _Page(page: i + 1, data: s.data!, fontSize: fontSize, lineSpacing: lineSpacing, translation: translation, tajweed: tajweed)
-                  : const Center(child: CircularProgressIndicator()),
+              builder: (c, s) {
+                if (s.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (s.hasError) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(mainAxisSize: MainAxisSize.min, children: [
+                        const Icon(Icons.menu_book_outlined, size: 48),
+                        const SizedBox(height: 12),
+                        const Text('تعذر تحميل صفحة القرآن', textAlign: TextAlign.center),
+                        const SizedBox(height: 8),
+                        Text('صفحة ${i + 1}', style: const TextStyle(fontWeight: FontWeight.w700)),
+                        const SizedBox(height: 12),
+                        FilledButton.icon(
+                          onPressed: () {
+                            setState(() {});
+                          },
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('إعادة المحاولة'),
+                        ),
+                      ]),
+                    ),
+                  );
+                }
+                return _Page(page: i + 1, data: s.data!, fontSize: fontSize, lineSpacing: lineSpacing, translation: translation, tajweed: tajweed);
+              },
             ),
           ),
         ),
