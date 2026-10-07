@@ -30,6 +30,7 @@ class QuranReaderScreen extends StatefulWidget {
 }
 
 class _QuranReaderScreenState extends State<QuranReaderScreen> {
+  static const _quranFont = 'KFGQPC HAFS Uthmanic Script';
   static const totalQuranPages = 604;
   static const totalReaderPages = totalQuranPages + 1;
 
@@ -714,8 +715,8 @@ class _MushafPageState extends State<_MushafPage> {
                   textDirection: TextDirection.rtl,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontFamily: 'serif',
-                    fontFamilyFallback: const ['Noto Naskh Arabic', 'Arial'],
+                    fontFamily: _quranFont,
+                    fontFamilyFallback: const ['Noto Naskh Arabic', 'Arial', 'serif'],
                     fontSize: widget.fontSize - 2,
                     height: 1.5,
                     color: ink,
@@ -733,8 +734,8 @@ class _MushafPageState extends State<_MushafPage> {
                         TextSpan(
                           text: '${_verseText(verse)} ',
                           style: TextStyle(
-                            fontFamily: 'serif',
-                            fontFamilyFallback: const ['Noto Naskh Arabic', 'Arial'],
+                            fontFamily: _quranFont,
+                            fontFamilyFallback: const ['Noto Naskh Arabic', 'Arial', 'serif'],
                             fontSize: widget.fontSize,
                             height: widget.lineHeight,
                             color: _isHighlighted(verse)
@@ -854,7 +855,7 @@ class _AyahMarker extends StatelessWidget {
           _arabicNumber(number),
           textDirection: TextDirection.rtl,
           style: TextStyle(
-            fontFamily: 'serif',
+            fontFamily: _QuranReaderScreenState._quranFont,
             fontSize: 9,
             color: darkPage ? const Color(0xFFE6E0C8) : color,
             fontWeight: FontWeight.w600,
@@ -937,8 +938,8 @@ class _SurahHeader extends StatelessWidget {
             arabic,
             textDirection: TextDirection.rtl,
             style: TextStyle(
-              fontFamily: 'serif',
-              fontFamilyFallback: const ['Noto Naskh Arabic', 'Arial'],
+              fontFamily: _QuranReaderScreenState._quranFont,
+              fontFamilyFallback: const ['Noto Naskh Arabic', 'Arial', 'serif'],
               fontSize: 21,
               color: color,
               fontWeight: FontWeight.w700,
