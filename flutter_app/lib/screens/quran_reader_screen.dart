@@ -370,7 +370,7 @@ class _ReaderButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return CupertinoButton(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-      minimumSize: 0,
+      minimumSize: const Size(0, 0),
       onPressed: onPressed,
       child: Column(
         mainAxisSize: MainAxisSize.min,
