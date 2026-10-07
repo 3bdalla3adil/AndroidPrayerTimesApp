@@ -67,6 +67,7 @@ class AthanReminderService {
             prayerName: '${prayer.name} in $preMinutes min',
             time: preTime,
             soundId: soundId,
+            withSound: false,
           );
           if (preScheduled) count++;
         }
