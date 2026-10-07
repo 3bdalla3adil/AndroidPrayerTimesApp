@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:intl/intl.dart' hide TextDirection;
+import 'package:timezone/timezone.dart' as tz;
 
 import '../models/prayer_entry.dart';
 import '../services/notification_service.dart';
@@ -217,11 +218,7 @@ class _NextPrayer extends StatelessWidget {
   String countdown() {
     final d = prayer.time.difference(now);
     if (d.isNegative) return '00:00:00';
-    return d.inHours.toString().padLeft(2, '0') +
-        ':' +
-        (d.inMinutes % 60).toString().padLeft(2, '0') +
-        ':' +
-        (d.inSeconds % 60).toString().padLeft(2, '0');
+    return '${d.inHours.toString().padLeft(2, '0')}:${(d.inMinutes % 60).toString().padLeft(2, '0')}:${(d.inSeconds % 60).toString().padLeft(2, '0')}';
   }
 
   @override
