@@ -6,6 +6,7 @@ import '../services/athan_reminder_service.dart';
 import '../services/prayer_service.dart';
 import '../services/storage_service.dart';
 import 'quran_screen.dart';
+import 'quran_reader_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -64,6 +65,18 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (e) { if (mounted) _dialog('Athan setup failed', e.toString()); }
   }
 
+  Future<void> _continueQuran() async {
+    final (surah, ayah) = await StorageService().loadReaderPosition();
+    if (!mounted) return;
+    Navigator.of(context).push(
+      CupertinoPageRoute(
+        builder: (_) => surah != null
+            ? QuranReaderScreen(surahNumber: surah, startingAyah: ayah ?? 1)
+            : const QuranScreen(),
+      ),
+    );
+  }
+
   void _dialog(String title, String message) => showCupertinoDialog<void>(
     context: context,
     builder: (_) => CupertinoAlertDialog(
@@ -116,7 +129,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   CupertinoListTile(
                     leading: const Icon(CupertinoIcons.book), title: const Text('Continue Quran'),
                     subtitle: const Text('Offline Mushaf'), trailing: const CupertinoListTileChevron(),
-                    onTap: () => Navigator.of(context).push(CupertinoPageRoute(builder: (_) => const QuranScreen())),
+                    onTap: _continueQuran,
                   ),
                   CupertinoListTile(
                     leading: const Icon(CupertinoIcons.bell), title: const Text('Athan reminders'),
