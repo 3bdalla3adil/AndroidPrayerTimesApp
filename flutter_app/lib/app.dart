@@ -45,7 +45,7 @@ class _RootShellState extends State<RootShell> {
   Widget build(BuildContext context) {
     return CupertinoTabScaffold(
       controller: _controller,
-      tabBar: const CupertinoTabBar(
+      tabBar: CupertinoTabBar(
         items: [
           BottomNavigationBarItem(icon: Icon(CupertinoIcons.house), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(CupertinoIcons.book), label: 'Quran'),
@@ -55,7 +55,7 @@ class _RootShellState extends State<RootShell> {
         ],
       ),
       tabBuilder: (context, index) {
-        const pages = <Widget>[
+        final pages = <Widget>[
           HomeScreen(),
           QuranScreen(),
           PrayerScreen(),
