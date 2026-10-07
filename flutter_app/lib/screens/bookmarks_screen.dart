@@ -76,7 +76,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
                               leading: const Icon(CupertinoIcons.bookmark_fill),
                               title: Text(quran.getSurahName(bookmark.$1)),
                               subtitle: Text(
-                                'Ayah ' + bookmark.$2.toString() + ': ' + quran.getVerse(bookmark.$1, bookmark.$2),
+                                'Ayah ${bookmark.$2}: ${quran.getVerse(bookmark.$1, bookmark.$2)}',
                                 maxLines: 3,
                                 overflow: TextOverflow.ellipsis,
                                 textDirection: TextDirection.rtl,
