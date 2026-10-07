@@ -101,7 +101,6 @@ permissions = [
     "android.permission.ACCESS_FINE_LOCATION",
     "android.permission.POST_NOTIFICATIONS",
     "android.permission.SCHEDULE_EXACT_ALARM",
-    "android.permission.USE_EXACT_ALARM",
     "android.permission.RECEIVE_BOOT_COMPLETED",
     "android.permission.VIBRATE",
     "android.permission.WAKE_LOCK",
@@ -112,6 +111,35 @@ for permission in permissions:
         s = s.replace("<manifest ", "<manifest ", 1)
         pos = s.find(">") + 1
         s = s[:pos] + "\n" + tag + s[pos:]
+p.write_text(s)
+PY
+
+# Scheduled notification receivers let the OS deliver pending prayer reminders
+# after a device reboot or app update.
+python3 - <<'PY'
+from pathlib import Path
+p = Path("android/app/src/main/AndroidManifest.xml")
+s = p.read_text()
+receivers = '''
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"
+            android:exported="false" />
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+        </receiver>
+'''
+if "ScheduledNotificationReceiver" not in s:
+    application_end = s.rfind("</application>")
+    if application_end == -1:
+        raise SystemExit("ERROR: Android application tag not found.")
+    s = s[:application_end] + receivers + s[application_end:]
 p.write_text(s)
 PY
 
