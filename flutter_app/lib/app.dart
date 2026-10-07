@@ -12,7 +12,7 @@ class RootShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CupertinoTabScaffold(
-      tabBar: const CupertinoTabBar(items: [
+      tabBar: CupertinoTabBar(items: [
         BottomNavigationBarItem(icon: Icon(CupertinoIcons.house), label: 'Home'),
         BottomNavigationBarItem(icon: Icon(CupertinoIcons.book), label: 'Quran'),
         BottomNavigationBarItem(icon: Icon(CupertinoIcons.time), label: 'Prayer'),
@@ -20,7 +20,7 @@ class RootShell extends StatelessWidget {
         BottomNavigationBarItem(icon: Icon(CupertinoIcons.ellipsis_circle), label: 'More'),
       ]),
       tabBuilder: (context, index) {
-        const pages = <Widget>[HomeScreen(), QuranScreen(), PrayerScreen(), QiblaScreen(), MoreScreen()];
+        final pages = <Widget>[const HomeScreen(), const QuranScreen(), const PrayerScreen(), const QiblaScreen(), const MoreScreen()];
         return CupertinoTabView(builder: (_) => pages[index]);
       },
     );
