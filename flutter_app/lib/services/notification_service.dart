@@ -10,7 +10,7 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
 
   static const int _prayerIdBase = 1000;
-  static const String _channelId = 'athan_prayer_channel';
+  static const String _channelId = 'athan_prayer_channel_v2';
 
   static bool _initialized = false;
 
@@ -61,6 +61,7 @@ class NotificationService {
     importance: Importance.max,
     priority: Priority.high,
     playSound: true,
+    sound: RawResourceAndroidNotificationSound('azan'),
     enableVibration: true,
     category: AndroidNotificationCategory.alarm,
     visibility: NotificationVisibility.public,
