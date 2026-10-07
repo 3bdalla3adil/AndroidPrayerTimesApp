@@ -108,7 +108,27 @@ class NotificationService {
     );
   }
 
-  static NotificationDetails _details(String soundId) {
+  static NotificationDetails _silentDetails() {
+    return const NotificationDetails(
+      android: AndroidNotificationDetails(
+        'prayer_reminder_silent_v1',
+        'Prayer reminders',
+        channelDescription: 'Silent pre-prayer reminders',
+        importance: Importance.high,
+        priority: Priority.high,
+        playSound: false,
+      ),
+      iOS: DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: false,
+        interruptionLevel: InterruptionLevel.active,
+      ),
+    );
+  }
+
+  static NotificationDetails _details(String soundId, {bool withSound = true}) {
+    if (!withSound) return _silentDetails();
     return NotificationDetails(
       android: _androidDetails(soundId),
       iOS: _iosDetails(soundId),
@@ -136,6 +156,7 @@ class NotificationService {
     required String prayerName,
     required DateTime time,
     String soundId = _defaultSoundId,
+    bool withSound = true,
   }) async {
     await initialize();
     if (!_exactAlarmReady) {
@@ -155,7 +176,7 @@ class NotificationService {
       title: 'حان وقت الصلاة',
       body: prayerName,
       scheduledDate: scheduled,
-      notificationDetails: _details(soundId),
+      notificationDetails: _details(soundId, withSound: withSound),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       payload: 'prayer:' + prayerName,
     );
