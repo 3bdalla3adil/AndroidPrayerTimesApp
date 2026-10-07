@@ -67,7 +67,7 @@ class PrayerService {
   }) async {
     var (lat, lon, _) = await storage.loadLocation();
     final selected = await storage.loadPrayerCity();
-    var method = selected.$3 ?? await storage.loadPrayerCalculationMethod();
+    final method = await storage.loadPrayerCalculationMethod() ?? selected.$3 ?? 3;
 
     if (lat == null ||
         lon == null ||
@@ -75,7 +75,6 @@ class PrayerService {
       final position = await determinePosition();
       lat = position.latitude;
       lon = position.longitude;
-      method ??= 3;
       await storage.saveLocation(lat, lon, 'Current location');
     }
 
