@@ -5,9 +5,14 @@ import 'storage_service.dart';
 
 class AthanReminderService {
   AthanReminderService(this._prayerService, this._storage);
+
   final PrayerService _prayerService;
   final StorageService _storage;
-  static const daysToSchedule = 7;
+
+  // iOS limits an app to 64 pending local notifications. Twelve days
+  // gives us 60 prayer alarms (5/day) while leaving headroom for other
+  // notifications.
+  static const daysToSchedule = 12;
 
   Future<void> sync({bool refreshLocation = false}) async {
     if (!await _storage.loadAthanRemindersEnabled()) return;
@@ -28,23 +33,27 @@ class AthanReminderService {
 
   Future<int> _schedule({bool refreshLocation = false}) async {
     await NotificationService.cancelPrayerReminders();
+
     var count = 0;
     final start = DateTime.now();
+
     for (var day = 0; day < daysToSchedule; day++) {
       final prayers = await _prayerService.forDate(
         start.add(Duration(days: day)),
         refreshLocation: day == 0 && refreshLocation,
       );
+
       for (var i = 0; i < prayers.length; i++) {
         final PrayerEntry prayer = prayers[i];
-        await NotificationService.schedulePrayer(
+        final scheduled = await NotificationService.schedulePrayer(
           id: NotificationService.prayerIdBase + day * 10 + i,
           prayerName: prayer.name,
           time: prayer.time,
         );
-        count++;
+        if (scheduled) count++;
       }
     }
+
     return count;
   }
 }
