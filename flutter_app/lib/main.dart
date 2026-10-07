@@ -27,11 +27,6 @@ class SalawatApp extends StatelessWidget {
         primaryColor: CupertinoColors.activeGreen,
         scaffoldBackgroundColor: CupertinoColors.systemGroupedBackground,
       ),
-      darkTheme: const CupertinoThemeData(
-        brightness: Brightness.dark,
-        primaryColor: CupertinoColors.activeGreen,
-        scaffoldBackgroundColor: CupertinoColors.systemGroupedBackground,
-      ),
       localizationsDelegates: const [
         GlobalCupertinoLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
