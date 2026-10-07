@@ -46,6 +46,8 @@ public class QuranActivity extends AppCompatActivity {
     private void loadIndex() {
         new Thread(() -> {
             try {
+                JSONObject pageIndex = new JSONObject(readAsset("quran/page-index.json"));
+                JSONObject starts = pageIndex.optJSONObject("surahStartPages");
                 String[] files = getAssets().list("quran");
                 if (files != null) {
                     for (String file : files) {
@@ -55,7 +57,8 @@ public class QuranActivity extends AppCompatActivity {
                         allSurahs.add(new SurahItem(
                                 Integer.parseInt(root.optString("index", "0")),
                                 root.optString("name", ""),
-                                root.optInt("count", 0)
+                                root.optInt("count", 0),
+                                starts == null ? 1 : starts.optInt(root.optString("index", "1"), 1)
                         ));
                     }
                 }
@@ -87,7 +90,7 @@ public class QuranActivity extends AppCompatActivity {
             row.setPadding(24, 28, 24, 28);
             row.setOnClickListener(v -> {
                 Intent intent = new Intent(this, QuranReaderActivity.class);
-                intent.putExtra("surah", surah.number);
+                intent.putExtra("page", surah.startPage);
                 startActivity(intent);
             });
             list.addView(row);
@@ -117,10 +120,12 @@ public class QuranActivity extends AppCompatActivity {
         final int number;
         final String name;
         final int count;
-        SurahItem(int number, String name, int count) {
+        final int startPage;
+        SurahItem(int number, String name, int count, int startPage) {
             this.number = number;
             this.name = name;
             this.count = count;
+            this.startPage = startPage;
         }
     }
 }
