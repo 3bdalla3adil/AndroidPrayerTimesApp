@@ -144,6 +144,9 @@ jobs:
       - name: Generate iOS platform
         run: flutter create . --platforms=ios --org "com.salawat_quran" --project-name "salawat_quran"
 
+      - name: Prepare bundled Athan sounds
+        run: bash tool/fetch_athan_sounds.sh
+
       - name: Install bundled Athan sound for iOS
         run: |
           set -e
