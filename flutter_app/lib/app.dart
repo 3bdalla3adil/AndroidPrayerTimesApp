@@ -101,23 +101,23 @@ class _RootShellState extends State<RootShell> with WidgetsBindingObserver {
           tabBar: CupertinoTabBar(
             items: const [
               BottomNavigationBarItem(
-                icon: Icon(CupertinoIcons.house),
+                icon: KeyedSubtree(key: ValueKey('home-tab'), child: Icon(CupertinoIcons.house)),
                 label: 'Home',
               ),
               BottomNavigationBarItem(
-                icon: Icon(CupertinoIcons.book),
+                icon: KeyedSubtree(key: ValueKey('quran-tab'), child: Icon(CupertinoIcons.book)),
                 label: 'Quran',
               ),
               BottomNavigationBarItem(
-                icon: Icon(CupertinoIcons.time),
+                icon: KeyedSubtree(key: ValueKey('prayer-tab'), child: Icon(CupertinoIcons.time)),
                 label: 'Prayer',
               ),
               BottomNavigationBarItem(
-                icon: Icon(CupertinoIcons.compass),
+                icon: KeyedSubtree(key: ValueKey('qibla-tab'), child: Icon(CupertinoIcons.compass)),
                 label: 'Qibla',
               ),
               BottomNavigationBarItem(
-                icon: Icon(CupertinoIcons.ellipsis_circle),
+                icon: KeyedSubtree(key: ValueKey('more-tab'), child: Icon(CupertinoIcons.ellipsis_circle)),
                 label: 'More',
               ),
             ],
