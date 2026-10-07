@@ -25,7 +25,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen>{
   }
   Future<Map<String,dynamic>> _data(int p) async {
     if (cache[p] != null) return cache[p]!;
-    final path = 'assets/quran/pages/page-\\${p.toString().padLeft(3, '0')}.json';
+    final path = 'assets/quran/pages/page-${p.toString().padLeft(3, '0')}.json';
     try {
       final raw = await rootBundle.loadString(path);
       final decoded = jsonDecode(raw);
