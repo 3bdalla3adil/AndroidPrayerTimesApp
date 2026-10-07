@@ -45,7 +45,7 @@ class _RootShellState extends State<RootShell> {
   Widget build(BuildContext context) {
     return CupertinoTabScaffold(
       controller: _controller,
-      tabBar: CupertinoTabBar(
+      tabBar: const CupertinoTabBar(
         items: [
           BottomNavigationBarItem(icon: Icon(CupertinoIcons.house), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(CupertinoIcons.book), label: 'Quran'),
