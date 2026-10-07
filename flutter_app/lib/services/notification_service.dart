@@ -18,7 +18,7 @@ class NotificationService {
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
 
     await _plugin.initialize(
-      const InitializationSettings(android: android, iOS: ios),
+      settings: const InitializationSettings(android: android, iOS: ios),
     );
 
     final androidPlugin = _plugin
