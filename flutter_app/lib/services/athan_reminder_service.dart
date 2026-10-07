@@ -40,6 +40,7 @@ class AthanReminderService {
     final start = DateTime.now();
     final enabledPrayers = await _storage.loadEnabledPrayerNames();
     final preMinutes = await _storage.loadPrePrayerReminderMinutes();
+    final soundId = await _storage.loadAthanSound();
     final daysToSchedule = preMinutes > 0 ? preReminderDaysToSchedule : normalDaysToSchedule;
 
     for (var day = 0; day < daysToSchedule; day++) {
@@ -55,6 +56,7 @@ class AthanReminderService {
           id: NotificationService.prayerIdBase + day * 10 + i,
           prayerName: prayer.name,
           time: prayer.time,
+          soundId: soundId,
         );
         if (scheduled) count++;
 
@@ -64,6 +66,7 @@ class AthanReminderService {
             id: prePrayerIdBase + day * 10 + i,
             prayerName: '${prayer.name} in $preMinutes min',
             time: preTime,
+            soundId: soundId,
           );
           if (preScheduled) count++;
         }
