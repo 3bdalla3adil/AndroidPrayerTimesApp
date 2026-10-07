@@ -7,6 +7,7 @@ import 'reading_history_screen.dart';
 import 'settings_screen.dart';
 import 'tasbih_screen.dart';
 import 'adhkar_screen.dart';
+import 'fasting_screen.dart';
 
 class MoreScreen extends StatelessWidget {
   const MoreScreen({super.key});
@@ -61,6 +62,17 @@ class MoreScreen extends StatelessWidget {
                   onTap: () => Navigator.push(
                     context,
                     CupertinoPageRoute(builder: (_) => const AdhkarScreen()),
+                  ),
+                ),
+
+                CupertinoListTile(
+                  leading: const Icon(CupertinoIcons.moon_fill),
+                  title: const Text('Fasting'),
+                  subtitle: const Text('Offline Ramadan and fasting times'),
+                  trailing: const CupertinoListTileChevron(),
+                  onTap: () => Navigator.push(
+                    context,
+                    CupertinoPageRoute(builder: (_) => const FastingScreen()),
                   ),
                 ),
                 CupertinoListTile(
