@@ -49,7 +49,7 @@ class NotificationService {
     importance: Importance.max,
     priority: Priority.max,
     playSound: true,
-    sound: RawResourceAndroidNotificationSound('azan'),
+    sound: RawResourceAndroidNotificationSound(id: 'azan'),
     enableVibration: true,
     visibility: NotificationVisibility.public,
     category: AndroidNotificationCategory.alarm,

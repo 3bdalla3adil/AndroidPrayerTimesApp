@@ -139,7 +139,7 @@ class _NextPrayer extends StatelessWidget {
   @override Widget build(BuildContext context) {
     final d = prayer.time.difference(now);
     final c = d.isNegative ? '00:00:00' :
-      '${d.inHours.toString().padLeft(2,'0')}:${(d.inMinutes%60).toString().padLeft(2,'0')}:${(d.inSeconds%60).toString().padLeft(2,'0')}';
+      '${d.inHours.toString().padLeft(2, '0')}:${(d.inMinutes%60).toString().padLeft(2,'0')}:${(d.inSeconds%60).toString().padLeft(2,'0')}';
     return Container(
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(color: CupertinoColors.activeGreen.resolveFrom(context), borderRadius: BorderRadius.circular(22)),
