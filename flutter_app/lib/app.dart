@@ -6,7 +6,9 @@ import 'screens/prayer_screen.dart';
 import 'screens/qibla_screen.dart';
 import 'screens/quran_screen.dart';
 import 'services/biometric_service.dart';
+import 'services/biometric_service.dart';
 import 'services/notification_service.dart';
+import 'services/storage_service.dart';
 import 'services/storage_service.dart';
 
 class RootShell extends StatefulWidget {
@@ -18,6 +20,9 @@ class RootShell extends StatefulWidget {
 
 class _RootShellState extends State<RootShell> with WidgetsBindingObserver {
   late final CupertinoTabController _controller;
+  final _storage = StorageService();
+  final _biometric = BiometricService();
+  bool _authenticating = false;
   final _storage = StorageService();
   final _biometric = BiometricService();
 
