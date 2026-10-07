@@ -64,7 +64,7 @@ class MoreScreen extends StatelessWidget {
                 ),
               ],
             ),
-            const CupertinoListSection.insetGrouped(
+            CupertinoListSection.insetGrouped(
               children: [
                 CupertinoListTile(
                   leading: Icon(CupertinoIcons.lock_shield),
