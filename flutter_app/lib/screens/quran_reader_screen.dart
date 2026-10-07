@@ -7,6 +7,8 @@ import 'package:quran/quran.dart' as quran;
 
 import '../services/storage_service.dart';
 
+const kQuranFont = 'KFGQPC HAFS Uthmanic Script';
+
 /// Madinah-style 604-page Mushaf reader.
 ///
 /// The page data is bundled in the application, so pages 1-604 work offline.
@@ -30,7 +32,6 @@ class QuranReaderScreen extends StatefulWidget {
 }
 
 class _QuranReaderScreenState extends State<QuranReaderScreen> {
-  static const _quranFont = 'KFGQPC HAFS Uthmanic Script';
   static const totalQuranPages = 604;
   static const totalReaderPages = totalQuranPages + 1;
 
@@ -267,65 +268,75 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
   void _openReaderSettings() {
     showCupertinoModalPopup<void>(
       context: context,
-      builder: (popupContext) => CupertinoActionSheet(
-        title: const Text('إعدادات المصحف'),
-        message: Column(
-          children: [
-            const SizedBox(height: 8),
-            Text('حجم الخط: ${_fontSize.round()}'),
-            CupertinoSlider(
-              min: 20,
-              max: 38,
-              value: _fontSize,
-              onChanged: (value) {
-                setState(() => _fontSize = value);
-                _storage.saveQuranFontSize(value);
-              },
+      builder: (popupContext) => StatefulBuilder(
+        builder: (popupContext, sheetSetState) {
+          void updateFontSize(double value) {
+            sheetSetState(() {});
+            setState(() => _fontSize = value);
+            _storage.saveQuranFontSize(value);
+          }
+
+          void updateLineHeight(double value) {
+            sheetSetState(() {});
+            setState(() => _lineHeight = value);
+            _storage.saveQuranLineHeight(value);
+          }
+
+          void updateTranslation(bool value) {
+            sheetSetState(() {});
+            setState(() => _showTranslation = value);
+            _storage.saveQuranShowTranslation(value);
+          }
+
+          void updateDarkPage(bool value) {
+            sheetSetState(() {});
+            setState(() => _darkPage = value);
+            _storage.saveQuranDarkPage(value);
+          }
+
+          return CupertinoActionSheet(
+            title: const Text('إعدادات المصحف'),
+            message: Column(
+              children: [
+                const SizedBox(height: 8),
+                Text('حجم الخط: ${_fontSize.round()}'),
+                CupertinoSlider(
+                  min: 20,
+                  max: 38,
+                  value: _fontSize,
+                  onChanged: updateFontSize,
+                ),
+                Text('تباعد السطور: ${_lineHeight.toStringAsFixed(2)}'),
+                CupertinoSlider(
+                  min: 1.35,
+                  max: 2.15,
+                  value: _lineHeight,
+                  onChanged: updateLineHeight,
+                ),
+                CupertinoListTile(
+                  title: const Text('الترجمة الإنجليزية'),
+                  trailing: CupertinoSwitch(
+                    value: _showTranslation,
+                    onChanged: updateTranslation,
+                  ),
+                ),
+                CupertinoListTile(
+                  title: const Text('صفحة داكنة'),
+                  trailing: CupertinoSwitch(
+                    value: _darkPage,
+                    onChanged: updateDarkPage,
+                  ),
+                ),
+              ],
             ),
-            Text('تباعد السطور: ${_lineHeight.toStringAsFixed(2)}'),
-            CupertinoSlider(
-              min: 1.35,
-              max: 2.15,
-              value: _lineHeight,
-              onChanged: (value) {
-                setState(() => _lineHeight = value);
-                _storage.saveQuranLineHeight(value);
-              },
+            cancelButton: CupertinoActionSheetAction(
+              onPressed: () => Navigator.pop(popupContext),
+              child: const Text('إغلاق'),
             ),
-            CupertinoListTile(
-              title: const Text('الترجمة الإنجليزية'),
-              trailing: CupertinoSwitch(
-                value: _showTranslation,
-                onChanged: (value) {
-                  setState(() => _showTranslation = value);
-                  _storage.saveQuranShowTranslation(value);
-                },
-              ),
-            ),
-            CupertinoListTile(
-              title: const Text('صفحة داكنة'),
-              trailing: CupertinoSwitch(
-                value: _darkPage,
-                onChanged: (value) {
-                  setState(() => _darkPage = value);
-                  _storage.saveQuranDarkPage(value);
-                },
-              ),
-            ),
-          ],
-        ),
-        cancelButton: CupertinoActionSheetAction(
-          onPressed: () => Navigator.pop(popupContext),
-          child: const Text('إغلاق'),
-        ),
+          );
+        },
       ),
     );
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _restoreHighlight());
   }
 
   @override
@@ -743,7 +754,7 @@ class _MushafPageState extends State<_MushafPage> {
                   textDirection: TextDirection.rtl,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontFamily: _quranFont,
+                    fontFamily: kQuranFont,
                     fontFamilyFallback: const ['Noto Naskh Arabic', 'Arial', 'serif'],
                     fontSize: widget.fontSize - 2,
                     height: 1.5,
@@ -762,7 +773,7 @@ class _MushafPageState extends State<_MushafPage> {
                         TextSpan(
                           text: '${_verseText(verse)} ',
                           style: TextStyle(
-                            fontFamily: _quranFont,
+                            fontFamily: kQuranFont,
                             fontFamilyFallback: const ['Noto Naskh Arabic', 'Arial', 'serif'],
                             fontSize: widget.fontSize,
                             height: widget.lineHeight,
@@ -883,7 +894,7 @@ class _AyahMarker extends StatelessWidget {
           _arabicNumber(number),
           textDirection: TextDirection.rtl,
           style: TextStyle(
-            fontFamily: _QuranReaderScreenState._quranFont,
+            fontFamily: _QuranReaderScreenState.kQuranFont,
             fontSize: 9,
             color: darkPage ? const Color(0xFFE6E0C8) : color,
             fontWeight: FontWeight.w600,
@@ -966,7 +977,7 @@ class _SurahHeader extends StatelessWidget {
             arabic,
             textDirection: TextDirection.rtl,
             style: TextStyle(
-              fontFamily: _QuranReaderScreenState._quranFont,
+              fontFamily: _QuranReaderScreenState.kQuranFont,
               fontFamilyFallback: const ['Noto Naskh Arabic', 'Arial', 'serif'],
               fontSize: 21,
               color: color,
