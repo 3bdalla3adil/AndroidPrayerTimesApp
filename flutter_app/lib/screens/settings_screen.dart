@@ -22,6 +22,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   int _preReminderMinutes = 0;
   String _athanSound = 'default';
   double _quranFontSize = 28;
+  double _quranLineHeight = 1.75;
   bool _quranTranslation = false;
   bool _quranDarkPage = false;
   int _tasbihTarget = 33;
@@ -52,6 +53,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final preReminderMinutes = await _storage.loadPrePrayerReminderMinutes();
     final athanSound = await _storage.loadAthanSound();
     final quranFontSize = await _storage.loadQuranFontSize();
+    final quranLineHeight = await _storage.loadQuranLineHeight();
     final quranTranslation = await _storage.loadQuranShowTranslation();
     final quranDarkPage = await _storage.loadQuranDarkPage();
     final tasbih = await _storage.loadTasbih();
@@ -66,6 +68,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _preReminderMinutes = preReminderMinutes;
       _athanSound = NotificationService.soundLabels.containsKey(athanSound) ? athanSound : 'default';
       _quranFontSize = quranFontSize.clamp(20, 38).toDouble();
+      _quranLineHeight = quranLineHeight.clamp(1.35, 2.15).toDouble();
       _quranTranslation = quranTranslation;
       _quranDarkPage = quranDarkPage;
       _tasbihTarget = tasbih.$2;
@@ -455,6 +458,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         subtitle: Text('${_quranFontSize.round()} pt'),
                         trailing: const CupertinoListTileChevron(),
                         onTap: _loading ? null : _chooseQuranFontSize,
+                      ),
+                      CupertinoListTile(
+                        leading: const Icon(CupertinoIcons.format_line_spacing),
+                        title: const Text('Ayah line spacing'),
+                        subtitle: Text(_quranLineHeight.toStringAsFixed(2)),
+                        trailing: SizedBox(
+                          width: 150,
+                          child: CupertinoSlider(
+                            min: 1.35,
+                            max: 2.15,
+                            value: _quranLineHeight,
+                            onChanged: _loading
+                                ? null
+                                : (value) async {
+                                    setState(() => _quranLineHeight = value);
+                                    await _storage.saveQuranLineHeight(value);
+                                  },
+                          ),
+                        ),
                       ),
                       CupertinoListTile(
                         leading: const Icon(CupertinoIcons.globe),
