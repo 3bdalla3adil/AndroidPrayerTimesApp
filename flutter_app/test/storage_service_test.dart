@@ -1,0 +1,44 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
+import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
+
+import 'package:salawat_quran/services/storage_service.dart';
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUp(() {
+    SharedPreferencesAsyncPlatform.instance = InMemorySharedPreferencesAsync.empty();
+  });
+
+  test('corrupt bookmarks are ignored instead of throwing', () async {
+    final storage = StorageService();
+    await storage.prefs.setStringList('quran_bookmarks', const [
+      '1:1',
+      'bad-value',
+      '999:2',
+      '2:not-a-number',
+    ]);
+    expect(await storage.loadBookmarks(), [(1, 1)]);
+  });
+
+  test('prayer preferences persist safely', () async {
+    final storage = StorageService();
+    await storage.saveEnabledPrayerNames(const ['Fajr', 'Isha']);
+    await storage.savePrayerTimeAdjustments({'Fajr': 5, 'Isha': -10});
+    expect(await storage.loadEnabledPrayerNames(), {'Fajr', 'Isha'});
+    expect(await storage.loadPrayerTimeAdjustments(), {'Fajr': 5, 'Isha': -10});
+  });
+
+  test('reading history is capped and newest entry wins', () async {
+    final storage = StorageService();
+    for (var i = 1; i <= 25; i++) {
+      await storage.addReadingHistory(1, i);
+    }
+    await storage.addReadingHistory(1, 25);
+    final history = await storage.loadReadingHistory();
+    expect(history.length, 20);
+    expect(history.last.$2, 25);
+    expect(history.where((item) => item.$2 == 25).length, 1);
+  });
+}
