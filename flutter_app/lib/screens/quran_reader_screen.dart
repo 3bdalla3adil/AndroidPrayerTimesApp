@@ -1,169 +1,761 @@
 import 'dart:convert';
-import 'package:flutter/material.dart';
+
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:quran/quran.dart' as quran;
+
 import '../services/storage_service.dart';
 
+/// Madinah-style 604-page Mushaf reader.
+///
+/// The page data is bundled in the application, so pages 1-604 work offline.
+/// The visual treatment intentionally follows the traditional printed Mushaf:
+/// warm paper, green ornamental framing, Arabic-first typography, surah header,
+/// basmala, ayah markers and a fixed page footer.
 class QuranReaderScreen extends StatefulWidget {
-  const QuranReaderScreen({super.key,required this.surahNumber,this.startingAyah=1,this.startingPage});
-  final int surahNumber, startingAyah; final int? startingPage;
-  @override State<QuranReaderScreen> createState()=>_QuranReaderScreenState();
+  const QuranReaderScreen({
+    super.key,
+    required this.surahNumber,
+    this.startingAyah = 1,
+    this.startingPage,
+  });
+
+  final int surahNumber;
+  final int startingAyah;
+  final int? startingPage;
+
+  @override
+  State<QuranReaderScreen> createState() => _QuranReaderScreenState();
 }
 
-class _QuranReaderScreenState extends State<QuranReaderScreen>{
-  static const totalPages=604;
-  final pc=PageController(); final storage=StorageService(); final cache=<int,Map<String,dynamic>>{};
-  int page=1; double fontSize=29,lineSpacing=1.85; bool translation=false,tajweed=false,toolbar=true;
-  @override void initState(){super.initState();_load();}
-  Future<void> _load()async{
-    final i=jsonDecode(await rootBundle.loadString('assets/quran/page-index.json')) as Map<String,dynamic>;
-    final starts=(i['surahStartPages'] as Map?)?.cast<String,dynamic>()??{};
-    final saved=await storage.loadQuranFontSize();
-    final p=widget.startingPage??(starts[widget.surahNumber.toString()] as num?)?.toInt()??1;
-    if(!mounted)return; setState((){page=p.clamp(1,totalPages);fontSize=saved;});
-    WidgetsBinding.instance.addPostFrameCallback((_){if(pc.hasClients)pc.jumpToPage(page-1);});
+class _QuranReaderScreenState extends State<QuranReaderScreen> {
+  static const totalPages = 604;
+
+  final _controller = PageController();
+  final _storage = StorageService();
+  final _cache = <int, Map<String, dynamic>>{};
+
+  int _page = 1;
+  double _fontSize = 25;
+  double _lineHeight = 1.75;
+  bool _showTranslation = false;
+  bool _showToolbar = true;
+  bool _darkPage = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadInitialPage();
   }
-  Future<Map<String,dynamic>> _data(int p) async {
-    if (cache[p] != null) return cache[p]!;
-    final path = 'assets/quran/pages/page-${p.toString().padLeft(3, '0')}.json';
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadInitialPage() async {
     try {
-      final raw = await rootBundle.loadString(path);
-      final decoded = jsonDecode(raw);
-      if (decoded is! Map) throw const FormatException('Invalid Quran page JSON');
-      final data = decoded.cast<String, dynamic>();
-      cache[p] = data;
-      return data;
-    } catch (e) {
-      throw StateError('Unable to load Quran page $p from $path: $e');
+      final raw =
+          await rootBundle.loadString('assets/quran/page-index.json');
+      final index = jsonDecode(raw) as Map<String, dynamic>;
+      final starts =
+          (index['surahStartPages'] as Map?)?.cast<String, dynamic>() ?? {};
+      final saved = await _storage.loadQuranFontSize();
+      final requested = widget.startingPage ??
+          (starts[widget.surahNumber.toString()] as num?)?.toInt() ??
+          1;
+
+      if (!mounted) return;
+      setState(() {
+        _page = requested.clamp(1, totalPages);
+        _fontSize = saved.clamp(20, 38);
+      });
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_controller.hasClients) {
+          _controller.jumpToPage(_page - 1);
+        }
+      });
+    } catch (_) {
+      // The reader still starts at page 1 if the index cannot be read.
     }
   }
-  Future<void> _go(int p)async{if(p<1||p>totalPages||!pc.hasClients)return;await pc.animateToPage(p-1,duration:const Duration(milliseconds:250),curve:Curves.easeOut);}
-  void _jump(){final c=TextEditingController(text:'${page}');showDialog<void>(context:context,builder:(x)=>AlertDialog(
-    title:const Text('الانتقال إلى صفحة'),content:TextField(controller:c,keyboardType:TextInputType.number),
-    actions:[TextButton(onPressed:()=>Navigator.pop(x),child:const Text('إلغاء')),FilledButton(onPressed:(){final p=int.tryParse(c.text);Navigator.pop(x);if(p!=null)_go(p);},child:const Text('انتقال'))]));}
-  void _settings(){showModalBottomSheet<void>(context:context,showDragHandle:true,builder:(x)=>StatefulBuilder(builder:(x,set)=>Padding(
-    padding:const EdgeInsets.fromLTRB(20,4,20,30),child:ListView(shrinkWrap:true,children:[
-      const Text('إعدادات القراءة',style:TextStyle(fontSize:20,fontWeight:FontWeight.w800)),
-      Text('حجم الخط: ${fontSize.round()}'),Slider(min:22,max:42,value:fontSize,onChanged:(v){set(()=>fontSize=v);setState((){});storage.saveQuranFontSize(v);}),
-      Text('تباعد الأسطر: ${lineSpacing.toStringAsFixed(2)}'),Slider(min:1.4,max:2.4,value:lineSpacing,onChanged:(v){set(()=>lineSpacing=v);setState((){});}),
-      SwitchListTile(value:translation,onChanged:(v){set(()=>translation=v);setState((){});},title:const Text('عرض الترجمة')),
-      SwitchListTile(value:tajweed,onChanged:(v){set(()=>tajweed=v);setState((){});},title:const Text('ألوان التجويد')),
-    ]))));
+
+  Future<Map<String, dynamic>> _loadPage(int page) async {
+    final cached = _cache[page];
+    if (cached != null) return cached;
+
+    final path =
+        'assets/quran/pages/page-${page.toString().padLeft(3, '0')}.json';
+    final decoded = jsonDecode(await rootBundle.loadString(path));
+    if (decoded is! Map) {
+      throw StateError('Invalid Quran page data.');
+    }
+
+    final data = decoded.cast<String, dynamic>();
+    _cache[page] = data;
+
+    // Keep the adjacent page warm for instant swiping.
+    for (final adjacent in [page - 1, page + 1]) {
+      if (adjacent >= 1 &&
+          adjacent <= totalPages &&
+          !_cache.containsKey(adjacent)) {
+        _loadPage(adjacent).ignore();
+      }
+    }
+
+    return data;
   }
-  @override
-  Widget build(BuildContext context) {
-    final t = Theme.of(context);
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.arrow_back_ios_new, size: 19)),
-        title: Column(children: [
-          const Text('القرآن الكريم', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
-          Text('صفحة ${page} من ${totalPages}', style: TextStyle(fontSize: 11, color: t.colorScheme.onSurfaceVariant)),
-        ]),
-        centerTitle: true,
-        actions: [
-          IconButton(onPressed: _jump, icon: const Icon(Icons.find_in_page_outlined)),
-          IconButton(onPressed: () => setState(() => toolbar = !toolbar), icon: Icon(toolbar ? Icons.visibility_off_outlined : Icons.visibility_outlined)),
-        ],
-      ),
-      body: Column(children: [
-        if (toolbar)
-          Row(children: [
-            _Tool(Icons.text_fields, 'Aa', _settings),
-            _Tool(Icons.palette_outlined, 'تجويد', () => setState(() => tajweed = !tajweed), active: tajweed),
-            const Spacer(),
-            IconButton(onPressed: _settings, icon: const Icon(Icons.tune)),
-          ]),
-        Expanded(
-          child: PageView.builder(
-            controller: pc,
-            reverse: true,
-            itemCount: totalPages,
-            onPageChanged: (p) => setState(() => page = p + 1),
-            itemBuilder: (c, i) => FutureBuilder<Map<String, dynamic>>(
-              future: _data(i + 1),
-              builder: (c, s) {
-                if (s.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (s.hasError) {
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(mainAxisSize: MainAxisSize.min, children: [
-                        const Icon(Icons.menu_book_outlined, size: 48),
-                        const SizedBox(height: 12),
-                        const Text('تعذر تحميل صفحة القرآن', textAlign: TextAlign.center),
-                        const SizedBox(height: 8),
-                        Text('صفحة ${i + 1}', style: const TextStyle(fontWeight: FontWeight.w700)),
-                        const SizedBox(height: 12),
-                        FilledButton.icon(
-                          onPressed: () {
-                            setState(() {});
-                          },
-                          icon: const Icon(Icons.refresh),
-                          label: const Text('إعادة المحاولة'),
-                        ),
-                      ]),
-                    ),
-                  );
-                }
-                return _Page(page: i + 1, data: s.data!, fontSize: fontSize, lineSpacing: lineSpacing, translation: translation, tajweed: tajweed);
-              },
-            ),
+
+  Future<void> _goToPage(int page) async {
+    if (page < 1 || page > totalPages || !_controller.hasClients) return;
+    await _controller.animateToPage(
+      page - 1,
+      duration: const Duration(milliseconds: 260),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  void _jumpToPage() {
+    final input = TextEditingController(text: '$_page');
+    showCupertinoDialog<void>(
+      context: context,
+      builder: (dialogContext) => CupertinoAlertDialog(
+        title: const Text('الانتقال إلى صفحة'),
+        content: Padding(
+          padding: const EdgeInsets.only(top: 14),
+          child: CupertinoTextField(
+            controller: input,
+            keyboardType: TextInputType.number,
+            textAlign: TextAlign.center,
+            placeholder: '1 - 604',
           ),
         ),
-        SafeArea(
-          top: false,
-          child: Row(children: [
-            IconButton(onPressed: page > 1 ? () => _go(page - 1) : null, icon: const Icon(Icons.chevron_left)),
-            Expanded(
-              child: Center(
-                child: InkWell(
-                  onTap: _jump,
-                  child: Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: Text('${page} / ${totalPages}', style: const TextStyle(fontWeight: FontWeight.w800)),
-                  ),
-                ),
+        actions: [
+          CupertinoDialogAction(
+            child: const Text('إلغاء'),
+            onPressed: () => Navigator.pop(dialogContext),
+          ),
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            child: const Text('انتقال'),
+            onPressed: () {
+              final value = int.tryParse(input.text.trim());
+              Navigator.pop(dialogContext);
+              if (value != null) _goToPage(value);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _openReaderSettings() {
+    showCupertinoModalPopup<void>(
+      context: context,
+      builder: (popupContext) => CupertinoActionSheet(
+        title: const Text('إعدادات المصحف'),
+        message: Column(
+          children: [
+            const SizedBox(height: 8),
+            Text('حجم الخط: ${_fontSize.round()}'),
+            CupertinoSlider(
+              min: 20,
+              max: 38,
+              value: _fontSize,
+              onChanged: (value) {
+                setState(() => _fontSize = value);
+                _storage.saveQuranFontSize(value);
+              },
+            ),
+            Text('تباعد السطور: ${_lineHeight.toStringAsFixed(2)}'),
+            CupertinoSlider(
+              min: 1.35,
+              max: 2.15,
+              value: _lineHeight,
+              onChanged: (value) => setState(() => _lineHeight = value),
+            ),
+            CupertinoListTile(
+              title: const Text('الترجمة الإنجليزية'),
+              trailing: CupertinoSwitch(
+                value: _showTranslation,
+                onChanged: (value) =>
+                    setState(() => _showTranslation = value),
               ),
             ),
-            IconButton(onPressed: page < totalPages ? () => _go(page + 1) : null, icon: const Icon(Icons.chevron_right)),
-          ]),
+            CupertinoListTile(
+              title: const Text('صفحة داكنة'),
+              trailing: CupertinoSwitch(
+                value: _darkPage,
+                onChanged: (value) => setState(() => _darkPage = value),
+              ),
+            ),
+          ],
         ),
-      ]),
+        cancelButton: CupertinoActionSheetAction(
+          onPressed: () => Navigator.pop(popupContext),
+          child: const Text('إغلاق'),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final background = CupertinoColors.systemGroupedBackground
+        .resolveFrom(context);
+
+    return CupertinoPageScaffold(
+      backgroundColor: background,
+      navigationBar: CupertinoNavigationBar(
+        middle: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text(
+              'القرآن الكريم',
+              style: TextStyle(fontWeight: FontWeight.w700),
+            ),
+            Text(
+              'صفحة $_page من $totalPages',
+              style: const TextStyle(fontSize: 11),
+            ),
+          ],
+        ),
+        trailing: CupertinoButton(
+          padding: EdgeInsets.zero,
+          onPressed: () => setState(() => _showToolbar = !_showToolbar),
+          child: Icon(
+            _showToolbar
+                ? CupertinoIcons.eye_slash
+                : CupertinoIcons.eye,
+          ),
+        ),
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            if (_showToolbar) _ReaderToolbar(
+              onJump: _jumpToPage,
+              onSettings: _openReaderSettings,
+              page: _page,
+              totalPages: totalPages,
+            ),
+            Expanded(
+              child: PageView.builder(
+                controller: _controller,
+                reverse: true,
+                itemCount: totalPages,
+                onPageChanged: (index) =>
+                    setState(() => _page = index + 1),
+                itemBuilder: (context, index) {
+                  final page = index + 1;
+                  return FutureBuilder<Map<String, dynamic>>(
+                    future: _loadPage(page),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState !=
+                          ConnectionState.done) {
+                        return const Center(
+                          child: CupertinoActivityIndicator(radius: 14),
+                        );
+                      }
+                      if (snapshot.hasError || snapshot.data == null) {
+                        return _ErrorPage(
+                          page: page,
+                          onRetry: () => setState(() {}),
+                        );
+                      }
+
+                      return _MushafPage(
+                        page: page,
+                        data: snapshot.data!,
+                        fontSize: _fontSize,
+                        lineHeight: _lineHeight,
+                        showTranslation: _showTranslation,
+                        darkPage: _darkPage,
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+            _PageControls(
+              page: _page,
+              totalPages: totalPages,
+              onPrevious: () => _goToPage(_page - 1),
+              onNext: () => _goToPage(_page + 1),
+              onJump: _jumpToPage,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
 
-class _Tool extends StatelessWidget{
-  const _Tool(this.icon,this.label,this.onTap,{this.active=false});final IconData icon;final String label;final VoidCallback onTap;final bool active;
-  @override Widget build(BuildContext c){final col=active?Theme.of(c).colorScheme.primary:Theme.of(c).colorScheme.onSurfaceVariant;return InkWell(onTap:onTap,child:Padding(padding:const EdgeInsets.all(8),child:Column(children:[Icon(icon,size:20,color:col),Text(label,style:TextStyle(fontSize:9,color:col))])));}
+class _ReaderToolbar extends StatelessWidget {
+  const _ReaderToolbar({
+    required this.onJump,
+    required this.onSettings,
+    required this.page,
+    required this.totalPages,
+  });
+
+  final VoidCallback onJump;
+  final VoidCallback onSettings;
+  final int page;
+  final int totalPages;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
+      decoration: BoxDecoration(
+        color: CupertinoColors.secondarySystemGroupedBackground
+            .resolveFrom(context),
+        border: Border(
+          bottom: BorderSide(
+            color: CupertinoColors.separator.resolveFrom(context),
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          _ReaderButton(
+            icon: CupertinoIcons.search,
+            label: 'صفحة',
+            onPressed: onJump,
+          ),
+          const SizedBox(width: 8),
+          _ReaderButton(
+            icon: CupertinoIcons.slider_horizontal_3,
+            label: 'المظهر',
+            onPressed: onSettings,
+          ),
+          const Spacer(),
+          Text(
+            '$page / $totalPages',
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-class _Page extends StatelessWidget{
-  const _Page({required this.page,required this.data,required this.fontSize,required this.lineSpacing,required this.translation,required this.tajweed});
-  final int page;final Map<String,dynamic>data;final double fontSize,lineSpacing;final bool translation,tajweed;
-  List<Map<String,dynamic>> get vs=>((data['verses']as List?)??const[]).whereType<Map>().map((v)=>v.cast<String,dynamic>()).toList();
-  String txt(Map<String,dynamic>v){final s=((v['words']as List?)??const[]).whereType<Map>().map((w)=>(w['text']??'').toString()).where((x)=>x.isNotEmpty).join(' ');return s.isEmpty?(v['text']??'').toString():s;}
-  @override Widget build(BuildContext c){final t=Theme.of(c);final ink=t.brightness==Brightness.dark?const Color(0xFFE8E4D8):const Color(0xFF17231D);final first=vs.isEmpty?1:(vs.first['surah_number']as num?)?.toInt()??1;
-    return Container(color:t.colorScheme.surface,padding:const EdgeInsets.all(10),child:Material(color:t.brightness==Brightness.dark?const Color(0xFF121B17):const Color(0xFFFFFDF5),child:SingleChildScrollView(padding:const EdgeInsets.fromLTRB(20,18,20,28),child:Column(children:[
-      Row(mainAxisAlignment:MainAxisAlignment.spaceBetween,children:[Text('الجزء',style:TextStyle(fontSize:10,color:t.colorScheme.onSurfaceVariant)),Text('${page}',style:TextStyle(fontSize:11,color:t.colorScheme.onSurfaceVariant))]),
-      const SizedBox(height:10),if(vs.isNotEmpty)Container(width:double.infinity,padding:const EdgeInsets.symmetric(vertical:10),decoration:BoxDecoration(border:Border.all(color:t.colorScheme.primary.withValues(alpha:.25)),borderRadius:BorderRadius.circular(12)),child:Column(children:[Text(quran.getSurahNameArabic(first),textDirection:TextDirection.rtl,style:TextStyle(fontFamily:'serif',fontSize:23,color:t.colorScheme.primary,fontWeight:FontWeight.w700)),Text(quran.getSurahName(first),style:TextStyle(fontSize:11,color:t.colorScheme.onSurfaceVariant))])),
-      const SizedBox(height:14),if(vs.isNotEmpty)Text.rich(TextSpan(children:[for(final v in vs)...[
-        TextSpan(text:'${txt(v)} ',style:TextStyle(fontSize:fontSize,height:lineSpacing,color:ink,fontFamily:'serif')),
-        WidgetSpan(child:Container(width:29,height:29,margin:const EdgeInsets.symmetric(horizontal:3),decoration:BoxDecoration(shape:BoxShape.circle,border:Border.all(color:t.colorScheme.primary.withValues(alpha:.5))),alignment:Alignment.center,child:Text('${v['ayah_number']??''}',style:TextStyle(fontSize:9,color:t.colorScheme.primary)))),
-        if(translation)TextSpan(text:'\\n${_translation(v)}\\n',style:TextStyle(fontSize:13,height:1.5,color:t.colorScheme.onSurfaceVariant))
-      ]]),textDirection:TextDirection.rtl,textAlign:TextAlign.right) else if(page==604)const _Dua(),
-      if(page==604)const _Dua(),if(tajweed)Padding(padding:const EdgeInsets.only(top:12),child:Text('ألوان التجويد تُطبق عند توفر العلامات في البيانات.',style:TextStyle(fontSize:10)))
-    ])))); }
-  String _translation(Map<String,dynamic>v){try{return quran.getVerseTranslation((v['surah_number']as num).toInt(),(v['ayah_number']as num).toInt());}catch(_){return '';}}
+class _ReaderButton extends StatelessWidget {
+  const _ReaderButton({
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return CupertinoButton(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      minSize: 0,
+      onPressed: onPressed,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 19),
+          Text(label, style: const TextStyle(fontSize: 9)),
+        ],
+      ),
+    );
+  }
 }
 
-class _Dua extends StatelessWidget{
-  const _Dua();
-  @override Widget build(BuildContext c)=>Container(margin:const EdgeInsets.only(top:24),padding:const EdgeInsets.all(18),decoration:BoxDecoration(border:Border.all(color:Theme.of(c).colorScheme.primary.withValues(alpha:.25)),borderRadius:BorderRadius.circular(14)),child:const Column(children:[
-    Text('✦  دُعَاءُ خَتْمِ الْقُرْآنِ  ✦',textDirection:TextDirection.rtl,style:TextStyle(fontSize:19,fontWeight:FontWeight.w800)),
-    SizedBox(height:12),Text('اللهم ارحمني بالقرآن، واجعله لي إماماً ونوراً وهدىً ورحمة. اللهم ذكّرني منه ما نسيت، وعلّمني منه ما جهلت، وارزقني تلاوته آناء الليل وأطراف النهار، واجعله لي حجة يا رب العالمين. اللهم أصلح لي ديني ودنياي وآخرتي، واجعل القرآن ربيع قلبي ونور صدري وجلاء حزني وذهاب همي.',textDirection:TextDirection.rtl,textAlign:TextAlign.right,style:TextStyle(fontSize:18,height:1.8))
-  ]));
+class _MushafPage extends StatelessWidget {
+  const _MushafPage({
+    required this.page,
+    required this.data,
+    required this.fontSize,
+    required this.lineHeight,
+    required this.showTranslation,
+    required this.darkPage,
+  });
+
+  final int page;
+  final Map<String, dynamic> data;
+  final double fontSize;
+  final double lineHeight;
+  final bool showTranslation;
+  final bool darkPage;
+
+  List<Map<String, dynamic>> get verses =>
+      ((data['verses'] as List?) ?? const [])
+          .whereType<Map>()
+          .map((item) => item.cast<String, dynamic>())
+          .toList();
+
+  String _verseText(Map<String, dynamic> verse) {
+    final words = ((verse['words'] as List?) ?? const [])
+        .whereType<Map>()
+        .map((word) => (word['text'] ?? '').toString())
+        .where((text) => text.isNotEmpty)
+        .join(' ');
+    return words.isEmpty
+        ? (verse['text'] ?? '').toString()
+        : words;
+  }
+
+  int get _firstSurah =>
+      (verses.isEmpty ? 1 : (verses.first['surah_number'] as num?)?.toInt() ?? 1);
+
+  bool get _startsSurah =>
+      verses.isNotEmpty &&
+      ((verses.first['ayah_number'] as num?)?.toInt() ?? 0) == 1;
+
+  bool get _hasBasmala => _startsSurah && _firstSurah != 9;
+
+  @override
+  Widget build(BuildContext context) {
+    final pageBg = darkPage
+        ? const Color(0xFF17211C)
+        : const Color(0xFFFFFDF5);
+    final ink = darkPage
+        ? const Color(0xFFECE8D9)
+        : const Color(0xFF1B241E);
+    final green = darkPage
+        ? const Color(0xFF9CC8A8)
+        : const Color(0xFF356B49);
+    final border = darkPage
+        ? const Color(0xFF50675A)
+        : const Color(0xFFB8A66A);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(7, 8, 7, 8),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: pageBg,
+          borderRadius: BorderRadius.circular(5),
+          border: Border.all(color: border, width: 1.1),
+          boxShadow: const [
+            BoxShadow(
+              blurRadius: 7,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(18, 15, 18, 12),
+          child: Column(
+            children: [
+              _PageOrnament(
+                page: page,
+                color: green,
+                border: border,
+              ),
+              if (_startsSurah) ...[
+                const SizedBox(height: 10),
+                _SurahHeader(
+                  arabic: quran.getSurahNameArabic(_firstSurah),
+                  english: quran.getSurahName(_firstSurah),
+                  color: green,
+                  border: border,
+                ),
+              ],
+              if (_hasBasmala) ...[
+                const SizedBox(height: 10),
+                Text(
+                  'بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ',
+                  textDirection: TextDirection.rtl,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: 'serif',
+                    fontSize: fontSize - 2,
+                    height: 1.5,
+                    color: ink,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 11),
+              Directionality(
+                textDirection: TextDirection.rtl,
+                child: Text.rich(
+                  TextSpan(
+                    children: [
+                      for (final verse in verses) ...[
+                        TextSpan(
+                          text: '${_verseText(verse)} ',
+                          style: TextStyle(
+                            fontFamily: 'serif',
+                            fontSize: fontSize,
+                            height: lineHeight,
+                            color: ink,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        WidgetSpan(
+                          alignment: PlaceholderAlignment.middle,
+                          child: _AyahMarker(
+                            number:
+                                (verse['ayah_number'] as num?)?.toInt() ?? 0,
+                            color: green,
+                            darkPage: darkPage,
+                          ),
+                        ),
+                        if (showTranslation)
+                          TextSpan(
+                            text:
+                                '\n${_translation(verse)}\n',
+                            style: TextStyle(
+                              fontFamily: 'serif',
+                              fontSize: 13,
+                              height: 1.45,
+                              color: darkPage
+                                  ? const Color(0xFFB9C5BD)
+                                  : const Color(0xFF657269),
+                            ),
+                          ),
+                      ],
+                    ],
+                  ),
+                  textAlign: TextAlign.justify,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Container(
+                height: 1,
+                color: border.withOpacity(.45),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                '$page',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: green,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _translation(Map<String, dynamic> verse) {
+    final surah = (verse['surah_number'] as num?)?.toInt();
+    final ayah = (verse['ayah_number'] as num?)?.toInt();
+    if (surah == null || ayah == null) return '';
+    try {
+      return quran.getVerseTranslation(surah, ayah);
+    } catch (_) {
+      return '';
+    }
+  }
+}
+
+class _PageOrnament extends StatelessWidget {
+  const _PageOrnament({
+    required this.page,
+    required this.color,
+    required this.border,
+  });
+
+  final int page;
+  final Color color;
+  final Color border;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(child: Container(height: 1, color: border)),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Text(
+            '۞',
+            style: TextStyle(color: color, fontSize: 18),
+          ),
+        ),
+        Text(
+          '$page',
+          style: TextStyle(
+            color: color,
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Text(
+            '۞',
+            style: TextStyle(color: color, fontSize: 18),
+          ),
+        ),
+        Expanded(child: Container(height: 1, color: border)),
+      ],
+    );
+  }
+}
+
+class _SurahHeader extends StatelessWidget {
+  const _SurahHeader({
+    required this.arabic,
+    required this.english,
+    required this.color,
+    required this.border,
+  });
+
+  final String arabic;
+  final String english;
+  final Color color;
+  final Color border;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+      decoration: BoxDecoration(
+        border: Border.all(color: border, width: .8),
+        borderRadius: BorderRadius.circular(9),
+      ),
+      child: Column(
+        children: [
+          Text(
+            arabic,
+            textDirection: TextDirection.rtl,
+            style: TextStyle(
+              fontFamily: 'serif',
+              fontSize: 21,
+              color: color,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            english,
+            style: TextStyle(
+              fontSize: 9,
+              color: color.withOpacity(.8),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AyahMarker extends StatelessWidget {
+  const _AyahMarker({
+    required this.number,
+    required this.color,
+    required this.darkPage,
+  });
+
+  final int number;
+  final Color color;
+  final bool darkPage;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 25,
+      height: 25,
+      margin: const EdgeInsets.symmetric(horizontal: 2),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: color.withOpacity(.7), width: 1),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        quran.convertNumberToArabic(number),
+        textDirection: TextDirection.rtl,
+        style: TextStyle(
+          fontFamily: 'serif',
+          fontSize: 9,
+          color: darkPage ? const Color(0xFFE6E0C8) : color,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
+class _PageControls extends StatelessWidget {
+  const _PageControls({
+    required this.page,
+    required this.totalPages,
+    required this.onPrevious,
+    required this.onNext,
+    required this.onJump,
+  });
+
+  final int page;
+  final int totalPages;
+  final VoidCallback onPrevious;
+  final VoidCallback onNext;
+  final VoidCallback onJump;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 6, 12, 7),
+      decoration: BoxDecoration(
+        color: CupertinoColors.secondarySystemGroupedBackground
+            .resolveFrom(context),
+        border: Border(
+          top: BorderSide(
+            color: CupertinoColors.separator.resolveFrom(context),
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          CupertinoButton(
+            padding: const EdgeInsets.all(8),
+            onPressed: page > 1 ? onPrevious : null,
+            child: const Icon(CupertinoIcons.chevron_left),
+          ),
+          Expanded(
+            child: CupertinoButton(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              onPressed: onJump,
+              child: Text(
+                'صفحة $page / $totalPages',
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ),
+          ),
+          CupertinoButton(
+            padding: const EdgeInsets.all(8),
+            onPressed: page < totalPages ? onNext : null,
+            child: const Icon(CupertinoIcons.chevron_right),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ErrorPage extends StatelessWidget {
+  const _ErrorPage({required this.page, required this.onRetry});
+
+  final int page;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: CupertinoButton.filled(
+        onPressed: onRetry,
+        child: Text('إعادة تحميل الصفحة $page'),
+      ),
+    );
+  }
 }
