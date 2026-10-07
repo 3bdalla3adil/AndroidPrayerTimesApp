@@ -1,5 +1,4 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:timezone/data/latest_all.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
 class NotificationService {
@@ -8,82 +7,68 @@ class NotificationService {
   static final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
 
-  static Future<void> initialize() async {
-    tz_data.initializeTimeZones();
+  static const _channelId = 'prayer_times';
 
-    const androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
-    const iosSettings = DarwinInitializationSettings(
+  static Future<void> initialize() async {
+    const ios = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
       requestSoundPermission: true,
     );
-
-    const settings = InitializationSettings(
-      android: androidSettings,
-      iOS: iosSettings,
-    );
+    const android = AndroidInitializationSettings('@mipmap/ic_launcher');
 
     await _plugin.initialize(
-      settings: settings,
-      onDidReceiveNotificationResponse: (_) {},
+      const InitializationSettings(android: android, iOS: ios),
     );
 
     await _plugin
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
         ?.requestNotificationsPermission();
+
+    await _plugin
+        .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin>()
+        ?.requestPermissions(alert: true, badge: true, sound: true);
   }
 
-  static const AndroidNotificationDetails _androidDetails =
-      AndroidNotificationDetails(
-    'prayer_channel',
+  static const _android = AndroidNotificationDetails(
+    _channelId,
     'Prayer Times',
-    channelDescription: 'Notifications for prayer times',
+    channelDescription: 'Offline prayer and Athan reminders',
     importance: Importance.max,
     priority: Priority.high,
     playSound: true,
   );
 
-  static const NotificationDetails _details =
-      NotificationDetails(android: _androidDetails);
+  static const _ios = DarwinNotificationDetails(
+    presentAlert: true,
+    presentBadge: true,
+    presentSound: true,
+  );
 
-  static Future<void> show({
-    required int id,
-    required String title,
-    required String body,
-  }) async {
-    await _plugin.show(
-      id: id,
-      title: title,
-      body: body,
-      notificationDetails: _details,
-    );
-  }
+  static const _details = NotificationDetails(
+    android: _android,
+    iOS: _ios,
+  );
 
-  /// Schedule a single prayer notification.
   static Future<void> schedulePrayer({
     required int id,
     required String prayerName,
     required DateTime time,
   }) async {
-    final tzDate = tz.TZDateTime.from(time, tz.local);
-
-    if (tzDate.isBefore(tz.TZDateTime.now(tz.local))) return;
+    final scheduled = tz.TZDateTime.from(time, tz.local);
+    if (scheduled.isBefore(tz.TZDateTime.now(tz.local))) return;
 
     await _plugin.zonedSchedule(
-      id: id,
-      title: prayerName,
-      body: 'It is time for $prayerName prayer',
-      scheduledDate: tzDate,
-      notificationDetails: _details,
+      id,
+      'حان وقت الصلاة',
+      prayerName,
+      scheduled,
+      _details,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      matchDateTimeComponents: DateTimeComponents.time,
     );
   }
 
-  static Future<void> cancel(int id) => _plugin.cancel(id: id);
   static Future<void> cancelAll() => _plugin.cancelAll();
-  static Future<List<PendingNotificationRequest>> pending() =>
-      _plugin.pendingNotificationRequests();
 }
