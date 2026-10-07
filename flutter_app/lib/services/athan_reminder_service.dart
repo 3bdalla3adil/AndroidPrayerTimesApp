@@ -12,7 +12,9 @@ class AthanReminderService {
   // iOS limits an app to 64 pending local notifications. Twelve days
   // gives us 60 prayer alarms (5/day) while leaving headroom for other
   // notifications.
-  static const daysToSchedule = 12;
+  static const normalDaysToSchedule = 12;
+  static const preReminderDaysToSchedule = 6;
+  static const prePrayerIdBase = 2000;
 
   Future<void> sync({bool refreshLocation = false}) async {
     if (!await _storage.loadAthanRemindersEnabled()) return;
@@ -37,6 +39,8 @@ class AthanReminderService {
     var count = 0;
     final start = DateTime.now();
     final enabledPrayers = await _storage.loadEnabledPrayerNames();
+    final preMinutes = await _storage.loadPrePrayerReminderMinutes();
+    final daysToSchedule = preMinutes > 0 ? preReminderDaysToSchedule : normalDaysToSchedule;
 
     for (var day = 0; day < daysToSchedule; day++) {
       final prayers = await _prayerService.forDate(
@@ -53,6 +57,16 @@ class AthanReminderService {
           time: prayer.time,
         );
         if (scheduled) count++;
+
+        if (preMinutes > 0) {
+          final preTime = prayer.time.subtract(Duration(minutes: preMinutes));
+          final preScheduled = await NotificationService.schedulePrayer(
+            id: prePrayerIdBase + day * 10 + i,
+            prayerName: '${prayer.name} in $preMinutes min',
+            time: preTime,
+          );
+          if (preScheduled) count++;
+        }
       }
     }
 
