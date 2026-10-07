@@ -1,3 +1,4 @@
+import 'dart:ui' as ui;
 import 'package:flutter/cupertino.dart';
 import 'package:intl/intl.dart';
 
@@ -61,8 +62,8 @@ class CalendarScreen extends StatelessWidget {
                 CupertinoListTile(
                   leading: const Icon(CupertinoIcons.moon),
                   title: Text(
-                    _arabic(h.$3) + ' / ' + _arabic(h.$2) + ' / ' + _arabic(h.$1),
-                    textDirection: TextDirection.rtl,
+                    _arabic(h.$3) + ' / ${_arabic(h.$2)} / ${_arabic(h.$1)}',
+                    textDirection: ui.TextDirection.rtl,
                   ),
                   subtitle: const Text('Offline tabular Hijri date'),
                 ),
