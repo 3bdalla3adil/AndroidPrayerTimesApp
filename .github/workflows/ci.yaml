@@ -93,7 +93,15 @@ jobs:
           APK="build/app/outputs/flutter-apk/app-release.apk"
           test -s "$APK"
           for sound in azan azan_madinah azan_dubai azan_fajr_madinah; do
-            unzip -l "$APK" | grep -Eq "res/raw/$sound\.mp3$"
+            echo "Checking $sound"
+            if unzip -l "$APK" | grep -Eq "res/raw/$sound\\.mp3$"; then
+              echo "ZIP contains res/raw/$sound.mp3"
+            else
+              AAPT2="$(find "$ANDROID_HOME/build-tools" -name aapt2 -type f | sort -V | tail -1)"
+              test -x "$AAPT2"
+              "$AAPT2" dump resources "$APK" | grep -Eq "raw/$sound|raw.*$sound"
+              echo "AAPT2 resource table contains raw/$sound"
+            fi
           done
 
       - name: Build release App Bundle
