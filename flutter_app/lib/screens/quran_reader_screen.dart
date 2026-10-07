@@ -206,16 +206,6 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     );
   }
 
-  String _arabicNumber(int value) {
-    const western = '0123456789';
-    const arabic = '٠١٢٣٤٥٦٧٨٩';
-    return value
-        .toString()
-        .split('')
-        .map((digit) => arabic[western.indexOf(digit)])
-        .join();
-  }
-
   @override
   Widget build(BuildContext context) {
     final background = CupertinoColors.systemGroupedBackground
@@ -380,7 +370,7 @@ class _ReaderButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return CupertinoButton(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-      minSize: 0,
+      minimumSize: 0,
       onPressed: onPressed,
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -613,7 +603,7 @@ class _MushafPage extends StatelessWidget {
               const SizedBox(height: 14),
               Container(
                 height: 1,
-                color: border.withOpacity(.45),
+                color: border.withValues(alpha: .45),
               ),
               const SizedBox(height: 6),
               Text(
@@ -726,13 +716,23 @@ class _SurahHeader extends StatelessWidget {
             english,
             style: TextStyle(
               fontSize: 9,
-              color: color.withOpacity(.8),
+              color: color.withValues(alpha: .8),
             ),
           ),
         ],
       ),
     );
   }
+}
+
+String _arabicNumber(int value) {
+  const western = '0123456789';
+  const arabic = '٠١٢٣٤٥٦٧٨٩';
+  return value
+      .toString()
+      .split('')
+      .map((digit) => arabic[western.indexOf(digit)])
+      .join();
 }
 
 class _AyahMarker extends StatelessWidget {
@@ -754,7 +754,7 @@ class _AyahMarker extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 2),
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(color: color.withOpacity(.7), width: 1),
+        border: Border.all(color: color.withValues(alpha: .7), width: 1),
       ),
       alignment: Alignment.center,
       child: Text(
