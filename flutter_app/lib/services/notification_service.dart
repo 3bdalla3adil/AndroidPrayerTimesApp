@@ -7,7 +7,7 @@ class NotificationService {
   static final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
 
-  static const _channelId = 'prayer_times';
+  static const _channelId = 'prayer_times_v2';
 
   static Future<void> initialize() async {
     const ios = DarwinInitializationSettings(
@@ -21,10 +21,12 @@ class NotificationService {
       const InitializationSettings(android: android, iOS: ios),
     );
 
-    await _plugin
+    final androidPlugin = _plugin
         .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestNotificationsPermission();
+            AndroidFlutterLocalNotificationsPlugin>();
+
+    await androidPlugin?.requestNotificationsPermission();
+    await androidPlugin?.requestExactAlarmsPermission();
 
     await _plugin
         .resolvePlatformSpecificImplementation<
@@ -37,14 +39,18 @@ class NotificationService {
     'Prayer Times',
     channelDescription: 'Offline prayer and Athan reminders',
     importance: Importance.max,
-    priority: Priority.high,
+    priority: Priority.max,
     playSound: true,
+    enableVibration: true,
+    visibility: NotificationVisibility.public,
+    category: AndroidNotificationCategory.alarm,
   );
 
   static const _ios = DarwinNotificationDetails(
     presentAlert: true,
     presentBadge: true,
     presentSound: true,
+    interruptionLevel: InterruptionLevel.timeSensitive,
   );
 
   static const _details = NotificationDetails(
@@ -58,17 +64,25 @@ class NotificationService {
     required DateTime time,
   }) async {
     final scheduled = tz.TZDateTime.from(time, tz.local);
-    if (scheduled.isBefore(tz.TZDateTime.now(tz.local))) return;
+    final now = tz.TZDateTime.now(tz.local);
+
+    if (!scheduled.isAfter(now.add(const Duration(seconds: 2)))) {
+      return;
+    }
 
     await _plugin.zonedSchedule(
-      id,
-      'حان وقت الصلاة',
-      prayerName,
-      scheduled,
-      _details,
+      id: id,
+      title: 'حان وقت الصلاة',
+      body: prayerName,
+      scheduledDate: scheduled,
+      notificationDetails: _details,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      payload: 'prayer:$prayerName',
     );
   }
+
+  static Future<int> pendingCount() async =>
+      (await _plugin.pendingNotificationRequests()).length;
 
   static Future<void> cancelAll() => _plugin.cancelAll();
 }
