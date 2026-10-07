@@ -55,7 +55,7 @@ class _RootShellState extends State<RootShell> {
         ],
       ),
       tabBuilder: (context, index) {
-        const pages = <Widget>[
+        final pages = <Widget>[
           HomeScreen(),
           QuranScreen(),
           PrayerScreen(),
