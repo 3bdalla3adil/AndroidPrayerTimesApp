@@ -184,6 +184,37 @@ p.write_text(s)
 PY
 fi
 
+# Keep runtime notification resources intact in release builds.
+python3 - <<'PY'
+from pathlib import Path
+import re
+
+for name in ("android/app/build.gradle", "android/app/build.gradle.kts"):
+    p = Path(name)
+    if not p.exists():
+        continue
+    s = p.read_text()
+    if name.endswith(".gradle"):
+        pattern = r"(release\\s*\\{)"
+        if "shrinkResources false" not in s:
+            s = re.sub(
+                pattern,
+                r"\\1\\n        shrinkResources false",
+                s,
+                count=1,
+            )
+    else:
+        pattern = r"(getByName\\(\\"release\\"\\)\\s*\\{)"
+        if "isShrinkResources = false" not in s:
+            s = re.sub(
+                pattern,
+                r"\\1\\n        isShrinkResources = false",
+                s,
+                count=1,
+            )
+    p.write_text(s)
+PY
+
 # 3b. local_auth requires FragmentActivity for Android biometric prompts.
 python3 - <<'PY'
 from pathlib import Path
