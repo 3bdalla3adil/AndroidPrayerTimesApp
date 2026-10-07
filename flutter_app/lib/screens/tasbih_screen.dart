@@ -32,9 +32,63 @@ class _TasbihScreenState extends State<TasbihScreen> {
   }
 
   Future<void> _increment() async {
+    if (_count >= _target) return;
     final next = _count + 1;
     setState(() => _count = next);
     await _storage.saveTasbih(next, _target);
+    if (next == _target && mounted) {
+      await showCupertinoDialog<void>(
+        context: context,
+        builder: (dialogContext) => CupertinoAlertDialog(
+          title: const Text('تم الوصول إلى الهدف'),
+          content: Text('ما شاء الله، أكملت $_target تسبيحة.'),
+          actions: [
+            CupertinoDialogAction(
+              isDefaultAction: true,
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('تم'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  Future<void> _chooseCustomTarget() async {
+    final controller = TextEditingController(text: '33');
+    final selected = await showCupertinoDialog<int>(
+      context: context,
+      builder: (dialogContext) => CupertinoAlertDialog(
+        title: const Text('هدف مخصص'),
+        content: Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: CupertinoTextField(
+            controller: controller,
+            keyboardType: TextInputType.number,
+            textAlign: TextAlign.center,
+            placeholder: '1 - 10000',
+          ),
+        ),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('إلغاء'),
+          ),
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            onPressed: () {
+              final value = int.tryParse(controller.text.trim());
+              if (value != null && value >= 1 && value <= 10000) {
+                Navigator.pop(dialogContext, value);
+              }
+            },
+            child: const Text('حفظ'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (selected != null) await _setTarget(selected);
   }
 
   Future<void> _reset() async {
@@ -155,6 +209,12 @@ class _TasbihScreenState extends State<TasbihScreen> {
                     onTap: () => _setTarget(target),
                   ),
               ],
+              CupertinoListTile(
+                title: const Text('Custom target'),
+                subtitle: Text('$_target repetitions selected'),
+                trailing: const CupertinoListTileChevron(),
+                onTap: _chooseCustomTarget,
+              ),
             ),
             CupertinoListSection.insetGrouped(
               children: [
