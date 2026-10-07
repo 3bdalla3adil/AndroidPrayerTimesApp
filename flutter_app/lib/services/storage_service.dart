@@ -13,6 +13,7 @@ class StorageService {
   static const _quranDarkPage = 'quran_dark_page';
   static const _lastSurah = 'last_surah';
   static const _lastAyah = 'last_ayah';
+  static const _lastReaderPage = 'last_reader_page';
   static const _bookmarks = 'quran_bookmarks';
   static const _athanReminders = 'athan_reminders_enabled';
   static const _athanPrayers = 'athan_enabled_prayers';
@@ -65,6 +66,8 @@ class StorageService {
   }
 
   Future<(int?, int?)> loadReaderPosition() async => (await prefs.getInt(_lastSurah), await prefs.getInt(_lastAyah));
+  Future<void> saveReaderPage(int page) async => prefs.setInt(_lastReaderPage, page);
+  Future<int?> loadReaderPage() async => prefs.getInt(_lastReaderPage);
   Future<void> saveQuranFontSize(double size) => prefs.setDouble(_quranFontSize, size);
 
   Future<(int, int)> loadTasbih() async => (await prefs.getInt(_tasbihCount) ?? 0, await prefs.getInt(_tasbihTarget) ?? 33);
