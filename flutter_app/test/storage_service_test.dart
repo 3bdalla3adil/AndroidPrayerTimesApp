@@ -43,22 +43,23 @@ void main() {
     expect(history.last.$2, 25);
     expect(history.where((item) => item.$2 == 25).length, 1);
   });
-  test('persists Quran display settings', () async {
-      await storage.saveQuranFontSize(34);
-      await storage.saveQuranLineHeight(1.9);
-      await storage.saveQuranShowTranslation(true);
-      await storage.saveQuranDarkPage(true);
 
-      expect(await storage.loadQuranFontSize(), 34);
-      expect(await storage.loadQuranLineHeight(), 1.9);
-      expect(await storage.loadQuranShowTranslation(), isTrue);
-      expect(await storage.loadQuranDarkPage(), isTrue);
-    });
+  test('persists Quran display settings', () async {
+    await storage.saveQuranFontSize(34);
+    await storage.saveQuranLineHeight(1.9);
+    await storage.saveQuranShowTranslation(true);
+    await storage.saveQuranDarkPage(true);
+
+    expect(await storage.loadQuranFontSize(), 34);
+    expect(await storage.loadQuranLineHeight(), 1.9);
+    expect(await storage.loadQuranShowTranslation(), isTrue);
+    expect(await storage.loadQuranDarkPage(), isTrue);
+  });
 
   test('persists Tasbih custom target', () async {
-      await storage.saveTasbih(32, 33);
-      expect(await storage.loadTasbih(), (32, 33));
-    });
+    await storage.saveTasbih(32, 33);
+    expect(await storage.loadTasbih(), (32, 33));
+  });
 
   test('persists biometric lock preference', () async {
     expect(await storage.loadBiometricLockEnabled(), isFalse);
@@ -67,5 +68,5 @@ void main() {
     await storage.saveBiometricLockEnabled(false);
     expect(await storage.loadBiometricLockEnabled(), isFalse);
   });
-
+  });
 }
