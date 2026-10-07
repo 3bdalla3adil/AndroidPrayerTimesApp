@@ -89,6 +89,19 @@ print("Patched android/app/build.gradle.kts")
 PY
 fi
 
+# local_auth 3.x supports Android API 24+.
+python3 - <<'PY'
+from pathlib import Path
+for name in ("android/app/build.gradle", "android/app/build.gradle.kts"):
+    p = Path(name)
+    if not p.exists():
+        continue
+    s = p.read_text()
+    s = s.replace("minSdkVersion flutter.minSdkVersion", "minSdkVersion 24")
+    s = s.replace("minSdk = flutter.minSdkVersion", "minSdk = 24")
+    p.write_text(s)
+PY
+
 # 2b. Install the bundled Athan recording as an Android notification sound.
 mkdir -p android/app/src/main/res/raw
 cp -f assets/audio/azan.mp3 android/app/src/main/res/raw/azan.mp3
