@@ -27,6 +27,9 @@ jobs:
       - name: Fetch KFGQPC Hafs Quran font
         run: bash tool/fetch_quran_font.sh
 
+      - name: Prepare bundled Athan sounds
+        run: bash tool/fetch_athan_sounds.sh
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -37,12 +40,17 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
+      - name: Prepare bundled Athan sounds
+        run: bash tool/fetch_athan_sounds.sh
+
       - name: Validate bundled Athan audio
         run: |
           set -e
-          test -s assets/audio/azan.mp3
-          file assets/audio/azan.mp3
-          echo "Bundled Athan audio is present."
+          for f in assets/audio/azan.mp3 assets/audio/azan_madinah.mp3 assets/audio/azan_dubai.mp3 assets/audio/azan_fajr_madinah.mp3; do
+            test -s "$f"
+            file "$f"
+          done
+          echo "All bundled Athan audio is present."
 
       - name: Analyze
         run: flutter analyze --no-fatal-warnings --no-fatal-infos
@@ -140,7 +148,13 @@ jobs:
         run: |
           set -e
           test -s assets/audio/azan.mp3
+          test -s assets/audio/azan_madinah.mp3
+          test -s assets/audio/azan_dubai.mp3
+          test -s assets/audio/azan_fajr_madinah.mp3
           cp assets/audio/azan.mp3 ios/Runner/azan.mp3
+          cp assets/audio/azan_madinah.mp3 ios/Runner/azan_madinah.mp3
+          cp assets/audio/azan_dubai.mp3 ios/Runner/azan_dubai.mp3
+          cp assets/audio/azan_fajr_madinah.mp3 ios/Runner/azan_fajr_madinah.mp3
           gem install xcodeproj --no-document
           ruby - <<'RUBY'
           require 'xcodeproj'
@@ -148,10 +162,12 @@ jobs:
           project = Xcodeproj::Project.open(project_path)
           target = project.targets.find { |t| t.name == 'Runner' }
           group = project.main_group.find_subpath('Runner', true)
-          file = group.files.find { |f| f.path == 'azan.mp3' }
-          file ||= group.new_file('azan.mp3')
           phase = target.resources_build_phase
-          phase.add_file_reference(file) unless phase.files.any? { |b| b.file_ref == file }
+          ['azan.mp3', 'azan_madinah.mp3', 'azan_dubai.mp3', 'azan_fajr_madinah.mp3'].each do |name|
+            file = group.files.find { |f| f.path == name }
+            file ||= group.new_file(name)
+            phase.add_file_reference(file) unless phase.files.any? { |b| b.file_ref == file }
+          end
           project.save
           RUBY
 
@@ -206,8 +222,10 @@ jobs:
         run: |
           set -e
           APP_PATH="build/ios/Build/Products/Release-iphoneos/Runner.app"
-          test -s "$APP_PATH/azan.mp3"
-          echo "iOS app contains azan.mp3."
+          for f in azan.mp3 azan_madinah.mp3 azan_dubai.mp3 azan_fajr_madinah.mp3; do
+            test -s "$APP_PATH/$f"
+          done
+          echo "iOS app contains all Athan sounds."
 
       - name: Package unsigned IPA
         run: |
