@@ -781,7 +781,7 @@ class _MushafPageState extends State<_MushafPage> {
               ),
               const SizedBox(height: 6),
               Text(
-                '$widget.page',
+                '${widget.page}',
                 style: TextStyle(
                   fontSize: 11,
                   color: green,
