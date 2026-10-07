@@ -460,7 +460,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         onTap: _loading ? null : _chooseQuranFontSize,
                       ),
                       CupertinoListTile(
-                        leading: const Icon(CupertinoIcons.format_line_spacing),
+                        leading: const Icon(CupertinoIcons.line_horizontal_3),
                         title: const Text('Ayah line spacing'),
                         subtitle: Text(_quranLineHeight.toStringAsFixed(2)),
                         trailing: SizedBox(
