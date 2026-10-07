@@ -1,9 +1,12 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:salawat_quran/screens/calendar_screen.dart';
 
 void main() {
   testWidgets('Hijri calendar renders current month and navigates', (tester) async {
-    await tester.pumpWidget(const CalendarScreen());
+    await tester.pumpWidget(
+      const CupertinoApp(home: CalendarScreen()),
+    );
     await tester.pump();
 
     expect(find.text('Calendar'), findsOneWidget);
