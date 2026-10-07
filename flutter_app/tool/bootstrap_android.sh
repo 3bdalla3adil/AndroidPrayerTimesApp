@@ -195,11 +195,11 @@ for name in ("android/app/build.gradle", "android/app/build.gradle.kts"):
         continue
     s = p.read_text()
     if name.endswith(".gradle"):
-        pattern = r"(release\\s*\\{)"
+        pattern = r"(release\s*\{)"
         if "shrinkResources false" not in s:
             s = re.sub(
                 pattern,
-                r"\\1\\n        shrinkResources false",
+                r"\1\n        shrinkResources false",
                 s,
                 count=1,
             )
@@ -208,7 +208,7 @@ for name in ("android/app/build.gradle", "android/app/build.gradle.kts"):
         if "isShrinkResources = false" not in s:
             s = re.sub(
                 pattern,
-                r"\\1\\n        isShrinkResources = false",
+                r"\1\n        isShrinkResources = false",
                 s,
                 count=1,
             )
