@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tz_data;
@@ -13,6 +14,7 @@ class NotificationService {
   static const int prayerIdBase = 1000;
   static const int maxScheduledPrayerIds = 120;
   static bool _initialized = false;
+  static final ValueNotifier<String?> lastPayload = ValueNotifier<String?>(null);
 
   static Future<void> initialize() async {
     if (_initialized) return;
@@ -29,7 +31,14 @@ class NotificationService {
 
     await _plugin.initialize(
       settings: const InitializationSettings(android: android, iOS: ios),
+      onDidReceiveNotificationResponse: (response) {
+        lastPayload.value = response.payload;
+      },
     );
+    final launch = await _plugin.getNotificationAppLaunchDetails();
+    if (launch?.didNotificationLaunchApp ?? false) {
+      lastPayload.value = launch?.notificationResponse?.payload;
+    }
 
     final androidPlugin = _plugin
         .resolvePlatformSpecificImplementation<
@@ -108,6 +117,8 @@ class NotificationService {
     await initialize();
     return (await _plugin.pendingNotificationRequests()).length;
   }
+
+  static void clearLastPayload() => lastPayload.value = null;
 
   static Future<void> cancelAll() async {
     await initialize();
