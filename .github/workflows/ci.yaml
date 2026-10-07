@@ -21,6 +21,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Generate 604-page offline Mushaf
+        run: bash tool/generate_madinah_mushaf.sh
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
