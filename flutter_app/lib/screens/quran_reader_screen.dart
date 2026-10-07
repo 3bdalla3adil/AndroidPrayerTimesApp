@@ -977,7 +977,7 @@ class _SurahHeader extends StatelessWidget {
             arabic,
             textDirection: TextDirection.rtl,
             style: TextStyle(
-              fontFamily: _QuranReaderScreenState.kQuranFont,
+              fontFamily: kQuranFont,
               fontFamilyFallback: const ['Noto Naskh Arabic', 'Arial', 'serif'],
               fontSize: 21,
               color: color,
