@@ -107,12 +107,21 @@ class PrayerService {
 
     DateTime local(DateTime value) => tz.TZDateTime.from(value, tz.local);
 
-    return [
+    final raw = <PrayerEntry>[
       PrayerEntry(name: 'Fajr', arabicName: 'الفجر', time: local(calculated.fajr)),
       PrayerEntry(name: 'Dhuhr', arabicName: 'الظهر', time: local(calculated.dhuhr)),
       PrayerEntry(name: 'Asr', arabicName: 'العصر', time: local(calculated.asr)),
       PrayerEntry(name: 'Maghrib', arabicName: 'المغرب', time: local(calculated.maghrib)),
       PrayerEntry(name: 'Isha', arabicName: 'العشاء', time: local(calculated.isha)),
+    ];
+    final adjustments = await storage.loadPrayerTimeAdjustments();
+    return [
+      for (final prayer in raw)
+        PrayerEntry(
+          name: prayer.name,
+          arabicName: prayer.arabicName,
+          time: prayer.time.add(Duration(minutes: adjustments[prayer.name] ?? 0)),
+        ),
     ];
   }
 
