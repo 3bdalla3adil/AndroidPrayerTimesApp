@@ -97,7 +97,7 @@ tasks.register("generateQuranPageAssets") {
             }
         }
 
-        if (starts.size() < 114 || quranPagesDir.listFiles({ f -> f.name.endsWith(".json") } as FileFilter).length < 604) {
+        if (starts.size() < 114 || quranPagesDir.listFiles()?.findAll { it.name.endsWith(".json") }?.size() < 604) {
             throw new GradleException("Madinah Mushaf dataset is incomplete")
         }
 
