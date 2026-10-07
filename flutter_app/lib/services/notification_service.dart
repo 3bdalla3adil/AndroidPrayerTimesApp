@@ -11,6 +11,7 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
 
   static const _defaultSoundId = 'default';
+  static const _fajrSoundId = 'fajr_madinah';
   static const _channelId = 'athan_prayer_channel_v2';
   static const int prayerIdBase = 1000;
   static const int prePrayerIdBase = 2000;
@@ -24,11 +25,20 @@ class NotificationService {
   // Android res/raw and the iOS Runner resources.
   static const soundLabels = <String, String>{
     'default': 'Athan — Default',
+    'madinah': 'Athan — Madinah',
+    'dubai': 'Athan — Dubai',
+    'fajr_madinah': 'Fajr Athan — Madinah',
   };
 
   static const soundResources = <String, String>{
     'default': 'azan',
+    'madinah': 'azan_madinah',
+    'dubai': 'azan_dubai',
+    'fajr_madinah': 'azan_fajr_madinah',
   };
+
+  static String soundForPrayer(String prayerName, String normalSoundId) =>
+      prayerName.toLowerCase() == 'fajr' ? _fajrSoundId : normalSoundId;
 
   static String _soundResource(String soundId) =>
       soundResources[soundId] ?? soundResources[_defaultSoundId]!;
@@ -201,6 +211,9 @@ class NotificationService {
       payload: 'athan_test:$soundId',
     );
   }
+
+  static Future<void> scheduleTestFajrAthan() =>
+      scheduleTestAthan(soundId: _fajrSoundId);
 
   static Future<void> cancelPrayerReminders() async {
     await initialize();
