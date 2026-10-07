@@ -10,12 +10,27 @@ class NotificationService {
   static final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
 
+  static const _defaultSoundId = 'default';
   static const _channelId = 'athan_prayer_channel_v2';
   static const int prayerIdBase = 1000;
   static const int prePrayerIdBase = 2000;
   static const int maxScheduledPrayerIds = 120;
   static bool _initialized = false;
   static final ValueNotifier<String?> lastPayload = ValueNotifier<String?>(null);
+
+  // Only sounds whose files are actually bundled are exposed here.
+  // Add another entry only after its audio file is added to assets/audio,
+  // Android res/raw and the iOS Runner resources.
+  static const soundLabels = <String, String>{
+    'default': 'Athan — Default',
+  };
+
+  static const soundResources = <String, String>{
+    'default': 'azan',
+  };
+
+  static String _soundResource(String soundId) =>
+      soundResources[soundId] ?? soundResources[_defaultSoundId]!;
 
   static Future<void> initialize() async {
     if (_initialized) return;
@@ -36,6 +51,7 @@ class NotificationService {
         lastPayload.value = response.payload;
       },
     );
+
     final launch = await _plugin.getNotificationAppLaunchDetails();
     if (launch?.didNotificationLaunchApp ?? false) {
       lastPayload.value = launch?.notificationResponse?.payload;
@@ -55,37 +71,48 @@ class NotificationService {
     _initialized = true;
   }
 
-  static const _android = AndroidNotificationDetails(
-    _channelId,
-    'Prayer Times',
-    channelDescription: 'Offline prayer and Athan reminders',
-    importance: Importance.max,
-    priority: Priority.max,
-    playSound: true,
-    sound: RawResourceAndroidNotificationSound('azan'),
-    enableVibration: true,
-    visibility: NotificationVisibility.public,
-    category: AndroidNotificationCategory.alarm,
-  );
+  static AndroidNotificationDetails _androidDetails(String soundId) {
+    final resource = _soundResource(soundId);
+    final channelId = soundId == _defaultSoundId
+        ? _channelId
+        : 'athan_prayer_' + soundId;
+    return AndroidNotificationDetails(
+      channelId,
+      'Prayer Times',
+      channelDescription: 'Offline prayer and Athan reminders',
+      importance: Importance.max,
+      priority: Priority.max,
+      playSound: true,
+      sound: RawResourceAndroidNotificationSound(resource),
+      enableVibration: true,
+      visibility: NotificationVisibility.public,
+      category: AndroidNotificationCategory.alarm,
+    );
+  }
 
-  static const _ios = DarwinNotificationDetails(
-    presentAlert: true,
-    presentBadge: true,
-    presentSound: true,
-    interruptionLevel: InterruptionLevel.timeSensitive,
-    sound: 'azan.mp3',
-  );
+  static DarwinNotificationDetails _iosDetails(String soundId) {
+    return DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+      interruptionLevel: InterruptionLevel.timeSensitive,
+      sound: _soundResource(soundId) + '.mp3',
+    );
+  }
 
-  static const _details = NotificationDetails(
-    android: _android,
-    iOS: _ios,
-  );
+  static NotificationDetails _details(String soundId) {
+    return NotificationDetails(
+      android: _androidDetails(soundId),
+      iOS: _iosDetails(soundId),
+    );
+  }
 
   /// Returns true only when a future notification was actually scheduled.
   static Future<bool> schedulePrayer({
     required int id,
     required String prayerName,
     required DateTime time,
+    String soundId = _defaultSoundId,
   }) async {
     await initialize();
     final scheduled = tz.TZDateTime.from(time, tz.local);
@@ -100,11 +127,30 @@ class NotificationService {
       title: 'حان وقت الصلاة',
       body: prayerName,
       scheduledDate: scheduled,
-      notificationDetails: _details,
+      notificationDetails: _details(soundId),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      payload: 'prayer:$prayerName',
+      payload: 'prayer:' + prayerName,
     );
     return true;
+  }
+
+  /// Schedules the exact same notification/sound path used by prayer alarms,
+  /// five seconds from now. This is the Settings > Test Athan action.
+  static Future<void> scheduleTestAthan({
+    String soundId = _defaultSoundId,
+  }) async {
+    await initialize();
+    final testTime =
+        tz.TZDateTime.now(tz.local).add(const Duration(seconds: 5));
+    await _plugin.zonedSchedule(
+      id: 2999,
+      title: 'اختبار الأذان',
+      body: 'سيتم تشغيل صوت الأذان الآن',
+      scheduledDate: testTime,
+      notificationDetails: _details(soundId),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      payload: 'athan_test:' + soundId,
+    );
   }
 
   static Future<void> cancelPrayerReminders() async {
@@ -113,6 +159,7 @@ class NotificationService {
       await _plugin.cancel(id: prayerIdBase + i);
       await _plugin.cancel(id: prePrayerIdBase + i);
     }
+    await _plugin.cancel(id: 2999);
   }
 
   static Future<int> pendingCount() async {
