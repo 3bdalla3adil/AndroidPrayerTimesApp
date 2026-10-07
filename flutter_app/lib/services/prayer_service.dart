@@ -91,6 +91,7 @@ class PrayerService {
 
     final coordinates = Coordinates(lat, lon);
     final params = _parameters(method, coordinates);
+    params.madhab = (await storage.loadPrayerMadhab()) == 1 ? Madhab.hanafi : Madhab.shafi;
     final localDate = tz.TZDateTime(
       tz.local,
       date.year,
