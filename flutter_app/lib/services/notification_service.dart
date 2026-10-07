@@ -12,6 +12,7 @@ class NotificationService {
 
   static const _channelId = 'athan_prayer_channel_v2';
   static const int prayerIdBase = 1000;
+  static const int prePrayerIdBase = 2000;
   static const int maxScheduledPrayerIds = 120;
   static bool _initialized = false;
   static final ValueNotifier<String?> lastPayload = ValueNotifier<String?>(null);
@@ -110,6 +111,7 @@ class NotificationService {
     await initialize();
     for (var i = 0; i < maxScheduledPrayerIds; i++) {
       await _plugin.cancel(id: prayerIdBase + i);
+      await _plugin.cancel(id: prePrayerIdBase + i);
     }
   }
 
