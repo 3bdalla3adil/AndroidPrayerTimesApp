@@ -27,12 +27,6 @@ jobs:
       - name: Fetch KFGQPC Hafs Quran font
         run: bash tool/fetch_quran_font.sh
 
-      - name: Fetch KFGQPC Hafs Quran font
-        run: bash tool/fetch_quran_font.sh
-
-      - name: Fetch KFGQPC Hafs Quran font
-        run: bash tool/fetch_quran_font.sh
-
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -66,6 +60,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Fetch KFGQPC Hafs Quran font
+        run: bash tool/fetch_quran_font.sh
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -123,6 +120,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Fetch KFGQPC Hafs Quran font
+        run: bash tool/fetch_quran_font.sh
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
