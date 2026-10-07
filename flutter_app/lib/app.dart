@@ -26,3 +26,8 @@ class RootShell extends StatelessWidget {
     );
   }
 }
+
+
+class SalawatQuranApp extends RootShell {
+  const SalawatQuranApp({super.key});
+}
