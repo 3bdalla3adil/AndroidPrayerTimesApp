@@ -123,9 +123,25 @@ class _TasbihScreenState extends State<TasbihScreen> {
               ),
             ),
             const SizedBox(height: 22),
-            CupertinoSlider(
-              value: progress,
-              onChanged: (_) {},
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                height: 8,
+                alignment: Alignment.centerLeft,
+                decoration: BoxDecoration(
+                  color: CupertinoColors.systemGrey5.resolveFrom(context),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: FractionallySizedBox(
+                  widthFactor: progress,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: CupertinoColors.activeGreen.resolveFrom(context),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
             ),
             CupertinoListSection.insetGrouped(
               header: const Text('TARGET'),
