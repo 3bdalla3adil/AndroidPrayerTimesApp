@@ -159,6 +159,14 @@ receivers = """
 """
 if "ScheduledNotificationReceiver" not in s:
     s = s[:app_end] + receivers + s[app_end:]
+
+# Keep the Athan raw resource statically referenced so release resource
+# processing cannot discard the dynamically selected notification sound.
+if "com.salawat_quran.athan_sound_resource" not in s:
+    app = s.find("<application")
+    app_end = s.find(">", app) + 1
+    metadata = '\n        <meta-data android:name="com.salawat_quran.athan_sound_resource" android:resource="@raw/azan" />\n'
+    s = s[:app_end] + metadata + s[app_end:]
 p.write_text(s)
 PY
 
