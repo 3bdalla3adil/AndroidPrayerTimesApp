@@ -36,8 +36,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ],
             ),
-            const CupertinoListSection.insetGrouped(
-              header: Text('PRIVACY'),
+            CupertinoListSection.insetGrouped(
+              header: const Text('PRIVACY'),
               children: [
                 CupertinoListTile(
                   leading: Icon(CupertinoIcons.lock),
