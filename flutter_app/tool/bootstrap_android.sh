@@ -174,22 +174,29 @@ fi
 # 3b. local_auth requires FragmentActivity for Android biometric prompts.
 python3 - <<'PY'
 from pathlib import Path
-candidates = [
-    Path("android/app/src/main/kotlin/com/salawat_quran/MainActivity.kt"),
-    Path("android/app/src/main/kotlin/com/salawat_quran/salawat_quran/MainActivity.kt"),
-]
-for p in candidates:
-    if p.exists():
-        text = p.read_text()
-        text = text.replace("import io.flutter.embedding.android.FlutterActivity",
-                            "import io.flutter.embedding.android.FlutterFragmentActivity")
-        text = text.replace("extends FlutterActivity", "extends FlutterFragmentActivity")
-        text = text.replace(": FlutterActivity()", ": FlutterFragmentActivity()")
-        p.write_text(text)
-        print(f"Patched {p} for local_auth.")
-        break
-else:
-    raise SystemExit("ERROR: generated MainActivity.kt not found")
+
+candidates = list(Path("android/app/src/main").rglob("MainActivity.kt"))
+candidates += list(Path("android/app/src/main").rglob("MainActivity.java"))
+
+if not candidates:
+    raise SystemExit("ERROR: generated MainActivity source not found")
+
+p = candidates[0]
+text = p.read_text()
+text = text.replace(
+    "import io.flutter.embedding.android.FlutterActivity",
+    "import io.flutter.embedding.android.FlutterFragmentActivity",
+)
+text = text.replace(
+    "extends FlutterActivity",
+    "extends FlutterFragmentActivity",
+)
+text = text.replace(
+    ": FlutterActivity()",
+    ": FlutterFragmentActivity()",
+)
+p.write_text(text)
+print(f"Patched {p} for local_auth.")
 PY
 
 # 4. Sanity check
