@@ -39,12 +39,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
             CupertinoListSection.insetGrouped(
               header: const Text('PRIVACY'),
               children: [
-                CupertinoListTile(
+                const CupertinoListTile(
                   leading: Icon(CupertinoIcons.lock),
                   title: Text('No account'),
                   subtitle: Text('No login or cloud profile is required.'),
                 ),
-                CupertinoListTile(
+                const CupertinoListTile(
                   leading: Icon(CupertinoIcons.wifi_slash),
                   title: Text('Offline Quran'),
                   subtitle: Text('Quran text is bundled with the application.'),
