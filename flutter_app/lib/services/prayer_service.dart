@@ -67,7 +67,7 @@ class PrayerService {
   }) async {
     var (lat, lon, _) = await storage.loadLocation();
     final selected = await storage.loadPrayerCity();
-    var method = selected.$3;
+    var method = selected.$3 ?? await storage.loadPrayerCalculationMethod();
 
     if (lat == null ||
         lon == null ||
