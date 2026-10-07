@@ -1,4 +1,6 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:timezone/data/latest_all.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
 class NotificationService {
@@ -7,9 +9,15 @@ class NotificationService {
   static final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
 
-  static const _channelId = 'prayer_times_v2';
+  static const _channelId = 'athan_prayer_channel_v2';
+  static const int prayerIdBase = 1000;
+  static bool _initialized = false;
 
   static Future<void> initialize() async {
+    if (_initialized) return;
+    tz_data.initializeTimeZones();
+    final info = await FlutterTimezone.getLocalTimezone();
+    tz.setLocalLocation(tz.getLocation(info.identifier));
     const ios = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
@@ -29,9 +37,9 @@ class NotificationService {
     await androidPlugin?.requestExactAlarmsPermission();
 
     await _plugin
-        .resolvePlatformSpecificImplementation<
-            IOSFlutterLocalNotificationsPlugin>()
+        .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
         ?.requestPermissions(alert: true, badge: true, sound: true);
+    _initialized = true;
   }
 
   static const _android = AndroidNotificationDetails(
@@ -41,6 +49,7 @@ class NotificationService {
     importance: Importance.max,
     priority: Priority.max,
     playSound: true,
+    sound: RawResourceAndroidNotificationSound('azan'),
     enableVibration: true,
     visibility: NotificationVisibility.public,
     category: AndroidNotificationCategory.alarm,
@@ -51,6 +60,7 @@ class NotificationService {
     presentBadge: true,
     presentSound: true,
     interruptionLevel: InterruptionLevel.timeSensitive,
+    sound: 'azan.mp3',
   );
 
   static const _details = NotificationDetails(
@@ -63,6 +73,7 @@ class NotificationService {
     required String prayerName,
     required DateTime time,
   }) async {
+    await initialize();
     final scheduled = tz.TZDateTime.from(time, tz.local);
     final now = tz.TZDateTime.now(tz.local);
 
@@ -79,6 +90,13 @@ class NotificationService {
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       payload: 'prayer:$prayerName',
     );
+  }
+
+  static Future<void> cancelPrayerReminders() async {
+    await initialize();
+    for (var i = 0; i < 70; i++) {
+      await _plugin.cancel(prayerIdBase + i);
+    }
   }
 
   static Future<int> pendingCount() async =>
