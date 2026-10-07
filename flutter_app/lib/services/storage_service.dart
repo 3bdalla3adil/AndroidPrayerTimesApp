@@ -13,6 +13,7 @@ class StorageService {
   static const _bookmarks = 'quran_bookmarks';
   static const _athanReminders = 'athan_reminders_enabled';
   static const _athanPrayers = 'athan_enabled_prayers';
+  static const _athanSound = 'athan_sound';
   static const _preReminderMinutes = 'pre_prayer_reminder_minutes';
   static const _prayerAdjustments = 'prayer_time_adjustments';
   static const _tasbihCount = 'tasbih_count';
@@ -100,6 +101,9 @@ class StorageService {
 
   Future<bool> loadAthanRemindersEnabled() async => await prefs.getBool(_athanReminders) ?? false;
   Future<void> saveAthanRemindersEnabled(bool enabled) => prefs.setBool(_athanReminders, enabled);
+
+  Future<String> loadAthanSound() async => await prefs.getString(_athanSound) ?? 'default';
+  Future<void> saveAthanSound(String soundId) => prefs.setString(_athanSound, soundId);
 
   Future<int> loadPrePrayerReminderMinutes() async =>
       (await prefs.getInt(_preReminderMinutes) ?? 0).clamp(0, 30);
