@@ -13,6 +13,7 @@ class StorageService {
   static const _bookmarks = 'quran_bookmarks';
   static const _athanReminders = 'athan_reminders_enabled';
   static const _athanPrayers = 'athan_enabled_prayers';
+  static const _preReminderMinutes = 'pre_prayer_reminder_minutes';
   static const _prayerAdjustments = 'prayer_time_adjustments';
   static const _tasbihCount = 'tasbih_count';
   static const _tasbihTarget = 'tasbih_target';
