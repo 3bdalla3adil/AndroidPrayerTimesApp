@@ -68,7 +68,11 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
       final savedLineHeight = await _storage.loadQuranLineHeight();
       final savedTranslation = await _storage.loadQuranShowTranslation();
       final savedDarkPage = await _storage.loadQuranDarkPage();
+      final savedReaderPage = await _storage.loadReaderPage();
       var requestedQuranPage = widget.startingPage ??
+          (savedReaderPage != null && savedReaderPage >= 1 && savedReaderPage <= totalQuranPages
+              ? savedReaderPage
+              : null) ??
           (starts[widget.surahNumber.toString()] as num?)?.toInt() ??
           1;
 
@@ -213,6 +217,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
 
   Future<void> _rememberPage(int index) async {
     if (index < 1) return;
+    await _storage.saveReaderPage(index);
     try {
       final data = await _loadPage(index);
       final verses = ((data['verses'] as List?) ?? const [])
@@ -319,6 +324,12 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
         ),
       ),
     );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _restoreHighlight());
   }
 
   @override
@@ -627,11 +638,26 @@ class _MushafPageState extends State<_MushafPage> {
   bool _isHighlighted(Map<String, dynamic> verse) =>
       _highlightedAyah == _ayahKey(verse);
 
-  void _toggleHighlight(Map<String, dynamic> verse) {
+  Future<void> _toggleHighlight(Map<String, dynamic> verse) async {
     final key = _ayahKey(verse);
+    final surah = (verse['surah_number'] as num?)?.toInt();
+    final ayah = (verse['ayah_number'] as num?)?.toInt();
     setState(() {
       _highlightedAyah = _highlightedAyah == key ? null : key;
     });
+    if (surah != null && ayah != null) {
+      await StorageService().saveReaderPosition(surah, ayah);
+      await StorageService().saveReaderPage(widget.page);
+    }
+  }
+
+  Future<void> _restoreHighlight() async {
+    final (surah, ayah) = await StorageService().loadReaderPosition();
+    if (!mounted || surah == null || ayah == null) return;
+    final match = verses.any((verse) =>
+        (verse['surah_number'] as num?)?.toInt() == surah &&
+        (verse['ayah_number'] as num?)?.toInt() == ayah);
+    if (match) setState(() => _highlightedAyah = '$surah:$ayah');
   }
 
 
