@@ -95,7 +95,7 @@ class NotificationService {
   static Future<void> cancelPrayerReminders() async {
     await initialize();
     for (var i = 0; i < 70; i++) {
-      await _plugin.cancel(prayerIdBase + i);
+      await _plugin.cancel(id: prayerIdBase + i);
     }
   }
 
