@@ -43,7 +43,7 @@ void main() {
     expect(history.last.$2, 25);
     expect(history.where((item) => item.$2 == 25).length, 1);
   });
-    test('persists Quran display settings', () async {
+  test('persists Quran display settings', () async {
       await storage.saveQuranFontSize(34);
       await storage.saveQuranLineHeight(1.9);
       await storage.saveQuranShowTranslation(true);
@@ -55,9 +55,17 @@ void main() {
       expect(await storage.loadQuranDarkPage(), isTrue);
     });
 
-    test('persists Tasbih custom target', () async {
+  test('persists Tasbih custom target', () async {
       await storage.saveTasbih(32, 33);
       expect(await storage.loadTasbih(), (32, 33));
     });
+
+  test('persists biometric lock preference', () async {
+    expect(await storage.loadBiometricLockEnabled(), isFalse);
+    await storage.saveBiometricLockEnabled(true);
+    expect(await storage.loadBiometricLockEnabled(), isTrue);
+    await storage.saveBiometricLockEnabled(false);
+    expect(await storage.loadBiometricLockEnabled(), isFalse);
+  });
 
 }
