@@ -83,7 +83,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
             break;
           }
           final passedSurah = verses.any((verse) =>
-              (verse['surah_number'] as num?)?.toInt() > widget.surahNumber);
+              ((verse['surah_number'] as num?)?.toInt() ?? -1) > widget.surahNumber);
           if (passedSurah) break;
         }
       }
