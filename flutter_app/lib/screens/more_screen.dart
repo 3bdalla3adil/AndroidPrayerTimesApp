@@ -4,6 +4,7 @@ import 'bookmarks_screen.dart';
 import 'calendar_screen.dart';
 import 'qibla_screen.dart';
 import 'settings_screen.dart';
+import 'tasbih_screen.dart';
 
 class MoreScreen extends StatelessWidget {
   const MoreScreen({super.key});
@@ -27,6 +28,16 @@ class MoreScreen extends StatelessWidget {
                   onTap: () => Navigator.push(
                     context,
                     CupertinoPageRoute(builder: (_) => const BookmarksScreen()),
+                  ),
+                ),
+                CupertinoListTile(
+                  leading: const Icon(CupertinoIcons.circle_grid_3x3),
+                  title: const Text('Tasbih'),
+                  subtitle: const Text('Offline dhikr counter'),
+                  trailing: const CupertinoListTileChevron(),
+                  onTap: () => Navigator.push(
+                    context,
+                    CupertinoPageRoute(builder: (_) => const TasbihScreen()),
                   ),
                 ),
                 CupertinoListTile(
