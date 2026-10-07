@@ -163,6 +163,6 @@ class StorageService {
     history.removeWhere((item) => item.$1 == surah && item.$2 == ayah);
     history.add((surah, ayah, DateTime.now()));
     if (history.length > 20) history.removeRange(0, history.length - 20);
-    await prefs.setStringList(_readingHistory, history.map((item) => item.$1.toString() + ':' + item.$2.toString() + ':' + item.$3.millisecondsSinceEpoch.toString()).toList());
+    await prefs.setStringList(_readingHistory, history.map((item) => '${item.$1}:${item.$2}:${item.$3.millisecondsSinceEpoch}').toList());
   }
 }
