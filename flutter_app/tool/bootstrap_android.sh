@@ -144,6 +144,20 @@ if "ScheduledNotificationReceiver" not in s:
 p.write_text(s)
 PY
 
+# local_auth on Android requires an AppCompat launch theme.
+if [ -f android/app/src/main/res/values/styles.xml ]; then
+  python3 - <<'PY'
+from pathlib import Path
+p = Path("android/app/src/main/res/values/styles.xml")
+s = p.read_text()
+s = s.replace('parent="Theme.MaterialComponents.DayNight.NoActionBar"',
+              'parent="Theme.AppCompat.DayNight.NoActionBar"')
+s = s.replace('parent="Theme.Material.Light.NoActionBar"',
+              'parent="Theme.AppCompat.Light.NoActionBar"')
+p.write_text(s)
+PY
+fi
+
 # 3b. local_auth requires FragmentActivity for Android biometric prompts.
 python3 - <<'PY'
 from pathlib import Path
