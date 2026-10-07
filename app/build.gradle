@@ -95,9 +95,9 @@ tasks.register("generateQuranPageAssets") {
                 }
             }
             def json = new groovy.json.JsonSlurper().parse(target)
-            def ayahs = json?.data?.ayahs ?: []
+            def ayahs = json?.verses ?: []
             ayahs.each { ayah ->
-                def surah = ayah?.surah?.number ?: 0
+                def surah = ayah?.surah_number ?: 0
                 if (surah > 0 && !starts.containsKey(surah)) {
                     starts[surah] = page
                 }
