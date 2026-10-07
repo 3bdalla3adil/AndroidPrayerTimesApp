@@ -19,6 +19,7 @@ class AthanReminderService {
       refreshLocation: refreshLocation,
     );
 
+    await NotificationService.initialize();
     await NotificationService.cancelPrayerReminders();
     await NotificationService.scheduleDailyPrayers(
       prayers
@@ -30,8 +31,21 @@ class AthanReminderService {
   }
 
   Future<void> enable() async {
+    // Schedule first. Only persist the enabled state after all five reminders
+    // have been accepted by the platform scheduler.
+    await NotificationService.initialize();
+
+    final prayers = await _prayerService.today();
+    await NotificationService.cancelPrayerReminders();
+    await NotificationService.scheduleDailyPrayers(
+      prayers
+          .map<({String name, DateTime time})>(
+            (PrayerEntry prayer) => (name: prayer.name, time: prayer.time),
+          )
+          .toList(),
+    );
+
     await _storage.saveAthanRemindersEnabled(true);
-    await sync();
   }
 
   Future<void> disable() async {
