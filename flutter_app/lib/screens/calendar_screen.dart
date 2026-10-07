@@ -58,8 +58,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
       (day +
               (29.5 * (month - 1)).ceil() +
               (year - 1) * 354 +
-              ((3 + 11 * year) / 30).floor() +
-              _islamicEpoch -
+              ((3 + 11 * year) / 30).floor() -
               1)
           .floor();
 
