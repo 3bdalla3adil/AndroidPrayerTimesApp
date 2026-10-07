@@ -16,6 +16,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   int _scheduled = 0;
   int _method = 3;
   int _madhab = 0;
+  Set<String> _enabledPrayers = StorageService.prayerNames.toSet();
+  Map<String, int> _adjustments = {};
 
   static const _methods = <int, String>{
     1: 'Karachi', 2: 'North America (ISNA)', 3: 'Muslim World League',
@@ -38,16 +40,83 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final city = await _storage.loadPrayerCity();
     final savedMethod = await _storage.loadPrayerCalculationMethod();
     final madhab = await _storage.loadPrayerMadhab();
+    final enabledPrayers = await _storage.loadEnabledPrayerNames();
+    final adjustments = await _storage.loadPrayerTimeAdjustments();
     if (!mounted) return;
     setState(() {
       _reminders = enabled;
       _scheduled = count;
       _method = savedMethod ?? city.$3 ?? 3;
       _madhab = madhab;
+      _enabledPrayers = enabledPrayers;
+      _adjustments = adjustments;
       _loading = false;
     });
   }
 
+
+  Future<void> _refreshSchedules() async {
+    if (!_reminders) return;
+    try {
+      await _athan.sync();
+      final count = await NotificationService.pendingCount();
+      if (mounted) setState(() => _scheduled = count);
+    } catch (e) {
+      if (mounted) await _showError('Reminder update failed', e);
+    }
+  }
+
+  Future<void> _togglePrayer(String prayer, bool enabled) async {
+    final next = {..._enabledPrayers};
+    if (enabled) next.add(prayer); else next.remove(prayer);
+    if (next.isEmpty) {
+      await _showError('At least one prayer must remain enabled', null);
+      return;
+    }
+    await _storage.saveEnabledPrayerNames(next);
+    if (mounted) setState(() => _enabledPrayers = next);
+    await _refreshSchedules();
+  }
+
+  Future<void> _chooseAdjustment(String prayer) async {
+    final current = _adjustments[prayer] ?? 0;
+    final selected = await showCupertinoModalPopup<int>(
+      context: context,
+      builder: (context) => CupertinoActionSheet(
+        title: Text('$prayer time adjustment'),
+        message: Text('Current: ${current >= 0 ? '+' : ''}$current minutes'),
+        actions: [
+          for (var value = -60; value <= 60; value += 5)
+            CupertinoActionSheetAction(
+              onPressed: () => Navigator.pop(context, value),
+              child: Text('${value >= 0 ? '+' : ''}$value minutes'),
+            ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+      ),
+    );
+    if (selected == null) return;
+    final next = {..._adjustments};
+    if (selected == 0) next.remove(prayer); else next[prayer] = selected;
+    await _storage.savePrayerTimeAdjustments(next);
+    if (mounted) setState(() => _adjustments = next);
+    await _refreshSchedules();
+  }
+
+  Future<void> _showError(String title, Object? error) async {
+    if (!mounted) return;
+    await showCupertinoDialog<void>(
+      context: context,
+      builder: (dialogContext) => CupertinoAlertDialog(
+        title: Text(title),
+        content: error == null ? null : Text(error.toString()),
+        actions: [CupertinoDialogAction(child: const Text('OK'), onPressed: () => Navigator.pop(dialogContext))],
+      ),
+    );
+  }
 
   Future<void> _chooseMethod() async {
     final selected = await showCupertinoModalPopup<int>(
@@ -151,6 +220,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ? '$_scheduled notifications scheduled for the next 12 days.'
                             : 'Schedule local prayer notifications automatically.'),
                         trailing: CupertinoSwitch(value: _reminders, onChanged: _loading ? null : _toggle),
+                      ),
+                      for (final prayer in StorageService.prayerNames)
+                        CupertinoListTile(
+                          leading: Icon(_enabledPrayers.contains(prayer) ? CupertinoIcons.bell_fill : CupertinoIcons.bell_slash),
+                          title: Text(prayer),
+                          subtitle: Text(_adjustments[prayer] == null ? 'Athan enabled' : 'Adjustment: ${_adjustments[prayer]! >= 0 ? '+' : ''}${_adjustments[prayer]} min'),
+                          trailing: CupertinoSwitch(
+                            value: _enabledPrayers.contains(prayer),
+                            onChanged: _loading ? null : (value) => _togglePrayer(prayer, value),
+                          ),
+                          onLongPress: _loading ? null : () => _chooseAdjustment(prayer),
+                        ),
+                      const CupertinoListTile(
+                        leading: Icon(CupertinoIcons.info_circle),
+                        title: Text('Prayer time adjustment'),
+                        subtitle: Text('Long-press a prayer to adjust it by 5-minute steps.'),
                       ),
                     ],
                   ),
