@@ -20,6 +20,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Set<String> _enabledPrayers = StorageService.prayerNames.toSet();
   Map<String, int> _adjustments = {};
   int _preReminderMinutes = 0;
+  String _athanSound = 'default';
 
   static const _methods = <int, String>{
     1: 'Karachi', 2: 'North America (ISNA)', 3: 'Muslim World League',
@@ -45,6 +46,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final enabledPrayers = await _storage.loadEnabledPrayerNames();
     final adjustments = await _storage.loadPrayerTimeAdjustments();
     final preReminderMinutes = await _storage.loadPrePrayerReminderMinutes();
+    final athanSound = await _storage.loadAthanSound();
     if (!mounted) return;
     setState(() {
       _reminders = enabled;
@@ -54,6 +56,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _enabledPrayers = enabledPrayers;
       _adjustments = adjustments;
       _preReminderMinutes = preReminderMinutes;
+      _athanSound = NotificationService.soundLabels.containsKey(athanSound) ? athanSound : 'default';
       _loading = false;
     });
   }
@@ -116,6 +119,53 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await _storage.savePrayerTimeAdjustments(next);
     if (mounted) setState(() => _adjustments = next);
     await _refreshSchedules();
+  }
+
+  Future<void> _chooseAthanSound() async {
+    final selected = await showCupertinoModalPopup<String>(
+      context: context,
+      builder: (context) => CupertinoActionSheet(
+        title: const Text('Athan sound'),
+        message: const Text('Choose the bundled Athan recording used at every prayer time.'),
+        actions: [
+          for (final entry in NotificationService.soundLabels.entries)
+            CupertinoActionSheetAction(
+              onPressed: () => Navigator.pop(context, entry.key),
+              child: Text(entry.value),
+            ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+      ),
+    );
+    if (selected == null) return;
+    await _storage.saveAthanSound(selected);
+    if (mounted) setState(() => _athanSound = selected);
+    await _refreshSchedules();
+  }
+
+  Future<void> _testAthan() async {
+    try {
+      await NotificationService.scheduleTestAthan(soundId: _athanSound);
+      if (!mounted) return;
+      await showCupertinoDialog<void>(
+        context: context,
+        builder: (dialogContext) => CupertinoAlertDialog(
+          title: const Text('Athan test scheduled'),
+          content: const Text('The Athan notification will trigger in about 5 seconds. Keep the device audio enabled.'),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      await _showError('Athan test failed', e);
+    }
   }
 
   Future<void> _choosePreReminder() async {
@@ -300,6 +350,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         subtitle: Text(_madhab == 1 ? 'Hanafi' : 'Shafi / Standard'),
                         trailing: const CupertinoListTileChevron(),
                         onTap: _loading ? null : _chooseMadhab,
+                      ),
+                    ],
+                  ),
+                  CupertinoListSection.insetGrouped(
+                    header: const Text('ATHAN SOUND'),
+                    children: [
+                      CupertinoListTile(
+                        leading: const Icon(CupertinoIcons.music_note),
+                        title: const Text('Athan sound'),
+                        subtitle: Text(NotificationService.soundLabels[_athanSound] ?? 'Athan — Default'),
+                        trailing: const CupertinoListTileChevron(),
+                        onTap: _loading ? null : _chooseAthanSound,
+                      ),
+                      CupertinoListTile(
+                        leading: const Icon(CupertinoIcons.play_circle_fill),
+                        title: const Text('Test Athan sound'),
+                        subtitle: const Text('Play the selected Athan through the same notification path used for prayer time.'),
+                        onTap: _loading ? null : _testAthan,
                       ),
                     ],
                   ),
