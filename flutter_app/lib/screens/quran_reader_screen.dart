@@ -201,6 +201,16 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     );
   }
 
+  String _arabicNumber(int value) {
+    const western = '0123456789';
+    const arabic = '٠١٢٣٤٥٦٧٨٩';
+    return value
+        .toString()
+        .split('')
+        .map((digit) => arabic[western.indexOf(digit)])
+        .join();
+  }
+
   @override
   Widget build(BuildContext context) {
     final background = CupertinoColors.systemGroupedBackground
@@ -673,7 +683,7 @@ class _AyahMarker extends StatelessWidget {
       ),
       alignment: Alignment.center,
       child: Text(
-        quran.convertNumberToArabic(number),
+        _arabicNumber(number),
         textDirection: TextDirection.rtl,
         style: TextStyle(
           fontFamily: 'serif',
