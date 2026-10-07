@@ -178,7 +178,7 @@ class NotificationService {
       scheduledDate: scheduled,
       notificationDetails: _details(soundId, withSound: withSound),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      payload: 'prayer:' + prayerName,
+      payload: 'prayer:$prayerName',
     );
     return true;
   }
