@@ -164,16 +164,26 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 8),
                   CupertinoListSection.insetGrouped(
                     children: [
-                      for (final prayer in _prayers)
-                        CupertinoListTile(
-                          leading: const Icon(CupertinoIcons.time),
-                          title: Text(prayer.name),
-                          subtitle: Text(prayer.arabicName, textDirection: TextDirection.rtl),
-                          trailing: Text(
-                            DateFormat('h:mm a').format(prayer.time),
-                            style: const TextStyle(fontWeight: FontWeight.w600),
+                      if (_prayers.isEmpty)
+                        const CupertinoListTile(
+                          leading: Icon(CupertinoIcons.time),
+                          title: Text('Prayer times'),
+                          subtitle: Text('Load your location to calculate today\'s prayers.'),
+                        )
+                      else
+                        for (final prayer in _prayers)
+                          CupertinoListTile(
+                            leading: const Icon(CupertinoIcons.time),
+                            title: Text(prayer.name),
+                            subtitle: Text(
+                              prayer.arabicName,
+                              textDirection: TextDirection.rtl,
+                            ),
+                            trailing: Text(
+                              DateFormat('h:mm a').format(prayer.time),
+                              style: const TextStyle(fontWeight: FontWeight.w600),
+                            ),
                           ),
-                        ),
                     ],
                   ),
                   CupertinoListSection.insetGrouped(
