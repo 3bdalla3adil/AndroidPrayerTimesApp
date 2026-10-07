@@ -72,7 +72,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _togglePrayer(String prayer, bool enabled) async {
     final next = {..._enabledPrayers};
-    if (enabled) next.add(prayer); else next.remove(prayer);
+    if (enabled) {
+      next.add(prayer);
+    } else {
+      next.remove(prayer);
+    }
     if (next.isEmpty) {
       await _showError('At least one prayer must remain enabled', null);
       return;
@@ -104,7 +108,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
     if (selected == null) return;
     final next = {..._adjustments};
-    if (selected == 0) next.remove(prayer); else next[prayer] = selected;
+    if (selected == 0) {
+      next.remove(prayer);
+    } else {
+      next[prayer] = selected;
+    }
     await _storage.savePrayerTimeAdjustments(next);
     if (mounted) setState(() => _adjustments = next);
     await _refreshSchedules();
@@ -265,7 +273,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       CupertinoListTile(
                         leading: const Icon(CupertinoIcons.alarm),
                         title: const Text('Pre-prayer reminder'),
-                        subtitle: Text(_preReminderMinutes == 0 ? 'Off' : '${_preReminderMinutes} minutes before each enabled prayer'),
+                        subtitle: Text(_preReminderMinutes == 0 ? 'Off' : '$_preReminderMinutes minutes before each enabled prayer'),
                         trailing: const CupertinoListTileChevron(),
                         onTap: _loading ? null : _choosePreReminder,
                       ),
