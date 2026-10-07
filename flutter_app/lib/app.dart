@@ -46,7 +46,7 @@ class _RootShellState extends State<RootShell> {
     return CupertinoTabScaffold(
       controller: _controller,
       tabBar: CupertinoTabBar(
-        items: [
+        items: const [
           BottomNavigationBarItem(icon: Icon(CupertinoIcons.house), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(CupertinoIcons.book), label: 'Quran'),
           BottomNavigationBarItem(icon: Icon(CupertinoIcons.time), label: 'Prayer'),
@@ -56,11 +56,11 @@ class _RootShellState extends State<RootShell> {
       ),
       tabBuilder: (context, index) {
         final pages = <Widget>[
-          HomeScreen(),
-          QuranScreen(),
-          PrayerScreen(),
-          QiblaScreen(),
-          MoreScreen(),
+          const HomeScreen(),
+          const QuranScreen(),
+          const PrayerScreen(),
+          const QiblaScreen(),
+          const MoreScreen(),
         ];
         return CupertinoTabView(builder: (_) => pages[index]);
       },
