@@ -50,6 +50,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
   void initState() {
     super.initState();
     _loadInitialPage();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _restoreHighlight());
   }
 
   @override
