@@ -67,42 +67,40 @@ tasks.register("generateQuranPageAssets") {
     outputs.file(quranPageMeta)
     doLast {
         quranPagesDir.mkdirs()
-        def starts = [:]
-        (1..604).each { page ->
-            def name = String.format("%03d.json", page)
-            def target = new File(quranPagesDir, name)
-            if (!target.exists() || target.length() < 100) {
-                def url = new URL("https://cdn.jsdelivr.net/gh/ouryhamdalaye/madinah-mushaf-json@main/pages/page-" + name)
-                Exception last = null
-                (1..4).each { attempt ->
-                    if (target.exists() && target.length() >= 100) return
-                    try {
-                        def connection = url.openConnection()
-                        connection.connectTimeout = 20000
-                        connection.readTimeout = 60000
-                        connection.setRequestProperty("User-Agent", "AndroidPrayerTimesApp-QuranBuilder/2.1")
-                        connection.setRequestProperty("Accept", "application/json")
-                        target.withOutputStream { output ->
-                            connection.inputStream.withCloseable { input -> input.transferTo(output) }
-                        }
-                    } catch (Exception e) {
-                        last = e
-                        if (attempt < 4) Thread.sleep(1000L * attempt)
-                    }
-                }
-                if (!target.exists() || target.length() < 100) {
-                    throw new IOException("Unable to download Quran page " + page + ": " + last)
-                }
+        def zipFile = new File(temporaryDir, "madinah-mushaf-json.zip")
+        if (!zipFile.exists() || zipFile.length() < 1000) {
+            def url = new URL("https://github.com/ouryhamdalaye/madinah-mushaf-json/archive/refs/heads/main.zip")
+            def connection = url.openConnection()
+            connection.connectTimeout = 30000
+            connection.readTimeout = 120000
+            connection.setRequestProperty("User-Agent", "AndroidPrayerTimesApp-QuranBuilder/2.2")
+            zipFile.withOutputStream { output ->
+                connection.inputStream.withCloseable { input -> input.transferTo(output) }
             }
-            def json = new groovy.json.JsonSlurper().parse(target)
-            def ayahs = json?.verses ?: []
-            ayahs.each { ayah ->
-                def surah = ayah?.surah_number ?: 0
-                if (surah > 0 && !starts.containsKey(surah)) {
-                    starts[surah] = page
+        }
+
+        def starts = [:]
+        new java.util.zip.ZipInputStream(new FileInputStream(zipFile)).withCloseable { zip ->
+            java.util.zip.ZipEntry entry
+            while ((entry = zip.nextEntry) != null) {
+                def marker = "/pages/page-"
+                def pos = entry.name.indexOf(marker)
+                if (pos < 0 || !entry.name.endsWith(".json")) continue
+                def pageName = entry.name.substring(entry.name.lastIndexOf("/") + 1)
+                def target = new File(quranPagesDir, pageName)
+                target.withOutputStream { output -> zip.transferTo(output) }
+                def json = new groovy.json.JsonSlurper().parse(target)
+                (json?.verses ?: []).each { ayah ->
+                    def surah = ayah?.surah_number ?: 0
+                    if (surah > 0 && !starts.containsKey(surah)) starts[surah] = json.page ?: 0
                 }
             }
         }
+
+        if (starts.size() < 114 || quranPagesDir.listFiles({ f -> f.name.endsWith(".json") } as FileFilter).length < 604) {
+            throw new GradleException("Madinah Mushaf dataset is incomplete")
+        }
+
         quranPageMeta.text = groovy.json.JsonOutput.prettyPrint(
                 groovy.json.JsonOutput.toJson([totalPages: 604, surahStartPages: starts])
         )
