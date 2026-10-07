@@ -63,9 +63,30 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
       final starts =
           (index['surahStartPages'] as Map?)?.cast<String, dynamic>() ?? {};
       final saved = await _storage.loadQuranFontSize();
-      final requestedQuranPage = widget.startingPage ??
+      var requestedQuranPage = widget.startingPage ??
           (starts[widget.surahNumber.toString()] as num?)?.toInt() ??
           1;
+
+      if (widget.startingPage == null && widget.startingAyah > 1) {
+        final startPage = requestedQuranPage;
+        for (var page = startPage; page <= totalQuranPages; page++) {
+          final pageData = await _loadPage(page);
+          final verses = ((pageData['verses'] as List?) ?? const [])
+              .whereType<Map>()
+              .map((item) => item.cast<String, dynamic>())
+              .toList();
+          final found = verses.any((verse) =>
+              (verse['surah_number'] as num?)?.toInt() == widget.surahNumber &&
+              (verse['ayah_number'] as num?)?.toInt() == widget.startingAyah);
+          if (found) {
+            requestedQuranPage = page;
+            break;
+          }
+          final passedSurah = verses.any((verse) =>
+              (verse['surah_number'] as num?)?.toInt() > widget.surahNumber);
+          if (passedSurah) break;
+        }
+      }
       final requestedReaderPage =
           widget.startingPage == null && widget.surahNumber == 1
               ? 0
