@@ -36,6 +36,7 @@ class AthanReminderService {
 
     var count = 0;
     final start = DateTime.now();
+    final enabledPrayers = await _storage.loadEnabledPrayerNames();
 
     for (var day = 0; day < daysToSchedule; day++) {
       final prayers = await _prayerService.forDate(
@@ -45,6 +46,7 @@ class AthanReminderService {
 
       for (var i = 0; i < prayers.length; i++) {
         final PrayerEntry prayer = prayers[i];
+        if (!enabledPrayers.contains(prayer.name)) continue;
         final scheduled = await NotificationService.schedulePrayer(
           id: NotificationService.prayerIdBase + day * 10 + i,
           prayerName: prayer.name,
