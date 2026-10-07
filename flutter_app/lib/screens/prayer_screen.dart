@@ -4,7 +4,6 @@ import 'package:intl/intl.dart' hide TextDirection;
 
 import '../models/prayer_city.dart';
 import '../models/prayer_entry.dart';
-import '../services/notification_service.dart';
 import '../services/athan_reminder_service.dart';
 import '../services/prayer_service.dart';
 import '../services/storage_service.dart';
@@ -48,6 +47,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
     try {
       final prayers = await _service.today(refreshLocation: refresh);
       final location = await StorageService().loadLocation();
+      final remindersEnabled = await StorageService().loadAthanRemindersEnabled();
       final selected = await StorageService().loadPrayerCity();
       if (!mounted) return;
       setState(() {
@@ -57,8 +57,9 @@ class _PrayerScreenState extends State<PrayerScreen> {
         _city = selected.$2;
         _message = null;
         _loading = false;
+        _reminders = remindersEnabled;
       });
-      await _athanService.sync();
+      await _athanService.sync(refreshLocation: refresh);
     } catch (error) {
       if (!mounted) return;
       setState(() {
@@ -301,7 +302,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
           Card(child: SwitchListTile(
             secondary: Icon(Icons.notifications_active_outlined, color: theme.colorScheme.primary),
             title: const Text('Prayer reminders'),
-            subtitle: const Text('Schedule local reminders for today.'),
+            subtitle: const Text('Automatic Athan notifications at each prayer time.'),
             value: _reminders,
             onChanged: _toggleReminders,
           )),
