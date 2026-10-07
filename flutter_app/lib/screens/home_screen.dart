@@ -6,6 +6,7 @@ import '../models/prayer_entry.dart';
 import '../services/prayer_service.dart';
 import '../services/storage_service.dart';
 import '../services/notification_service.dart';
+import '../services/athan_reminder_service.dart';
 import 'quran_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -17,6 +18,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final service = PrayerService(StorageService());
+  late final AthanReminderService _athanService;
   List<PrayerEntry> prayers = [];
   String location = 'Finding your location…';
   String? error;
@@ -26,6 +28,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _athanService = AthanReminderService(service, StorageService());
     load();
     timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() => now = DateTime.now());
@@ -47,6 +50,7 @@ class _HomeScreenState extends State<HomeScreen> {
         error = null;
         location = 'Current location';
       });
+      await _athanService.sync(refreshLocation: refresh);
     } catch (e) {
       if (!mounted) return;
       setState(() => error = e.toString().replaceFirst('Bad state: ', ''));
@@ -54,20 +58,18 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _scheduleReminders() async {
-    await NotificationService.cancelAll();
-
-    for (var i = 0; i < prayers.length; i++) {
-      await NotificationService.schedulePrayer(
-        id: 100 + i,
-        prayerName: prayers[i].name,
-        time: prayers[i].time,
+    try {
+      await _athanService.enable();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Automatic Athan reminders enabled.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.toString())),
       );
     }
-
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Prayer reminders scheduled.')),
-    );
   }
 
   PrayerEntry? get nextPrayer {
@@ -213,7 +215,7 @@ class _HomeScreenState extends State<HomeScreen> {
           FilledButton.icon(
             onPressed: prayers.isEmpty ? null : _scheduleReminders,
             icon: const Icon(Icons.notifications_active_outlined),
-            label: const Text('Schedule prayer reminders'),
+            label: const Text('Enable automatic Athan reminders'),
           ),
         ],
       ),
