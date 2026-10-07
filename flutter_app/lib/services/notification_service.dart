@@ -75,7 +75,7 @@ class NotificationService {
     final resource = _soundResource(soundId);
     final channelId = soundId == _defaultSoundId
         ? _channelId
-        : 'athan_prayer_' + soundId;
+        : 'athan_prayer_$soundId';
     return AndroidNotificationDetails(
       channelId,
       'Prayer Times',
@@ -96,7 +96,7 @@ class NotificationService {
       presentBadge: true,
       presentSound: true,
       interruptionLevel: InterruptionLevel.timeSensitive,
-      sound: _soundResource(soundId) + '.mp3',
+      sound: '${_soundResource(soundId)}.mp3',
     );
   }
 
@@ -149,7 +149,7 @@ class NotificationService {
       scheduledDate: testTime,
       notificationDetails: _details(soundId),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      payload: 'athan_test:' + soundId,
+      payload: 'athan_test:$soundId',
     );
   }
 
