@@ -1,152 +1,96 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:quran/quran.dart' as quran;
 
-import '../services/storage_service.dart';
 import 'quran_reader_screen.dart';
 
 class QuranScreen extends StatefulWidget {
   const QuranScreen({super.key});
+
   @override
   State<QuranScreen> createState() => _QuranScreenState();
 }
 
 class _QuranScreenState extends State<QuranScreen> {
-  final _searchController = TextEditingController();
+  String _query = '';
 
-  @override
-  void dispose() { _searchController.dispose(); super.dispose(); }
-
-  List<int> get _filtered {
-    final query = _searchController.text.trim().toLowerCase();
+  List<int> get _items {
+    final query = _query.trim().toLowerCase();
     final all = List.generate(quran.totalSurahCount, (i) => i + 1);
     if (query.isEmpty) return all;
     return all.where((number) {
-      final text = '${quran.getSurahName(number)} ${quran.getSurahNameArabic(number)} ${quran.getPlaceOfRevelation(number)}';
-      return text.toLowerCase().contains(query);
+      final text = quran.getSurahName(number) + ' ' + quran.getSurahNameArabic(number);
+      return text.toLowerCase().contains(query) || number.toString() == query;
     }).toList();
   }
 
-  void _openReader(int surah, {int ayah = 1}) => Navigator.push(context, MaterialPageRoute(builder: (_) => QuranReaderScreen(surahNumber: surah, startingAyah: ayah)));
-
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final items = _filtered;
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(22, 20, 22, 112),
-      children: [
-        Text('THE HOLY QURAN', style: theme.textTheme.labelSmall?.copyWith(letterSpacing: 1.6, fontWeight: FontWeight.w800, color: theme.colorScheme.primary)),
-        const SizedBox(height: 7),
-        Text('Read & reflect', style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800)),
-        Text('All 114 surahs, ready to read offline.', style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-        const SizedBox(height: 20),
-        TextField(
-          controller: _searchController,
-          onChanged: (_) => setState(() {}),
-          decoration: InputDecoration(
-            hintText: 'Find a surah',
-            prefixIcon: const Icon(Icons.search),
-            suffixIcon: _searchController.text.isEmpty ? null : IconButton(icon: const Icon(Icons.clear), onPressed: () { _searchController.clear(); setState(() {}); }),
-          ),
-        ),
-        const SizedBox(height: 14),
-        FutureBuilder<(int?, int?)>(
-          future: StorageService().loadReaderPosition(),
-          builder: (context, snapshot) {
-            final surah = snapshot.data?.$1 ?? 1;
-            final ayah = snapshot.data?.$2 ?? 1;
-            return Card(
-              color: theme.colorScheme.inverseSurface,
-              child: ListTile(
-                leading: Icon(Icons.bookmark_outline, color: theme.colorScheme.onInverseSurface),
-                title: Text('Continue reading', style: TextStyle(color: theme.colorScheme.onInverseSurface, fontWeight: FontWeight.w800)),
-                subtitle: Text('Verse $ayah', style: TextStyle(color: theme.colorScheme.onInverseSurface.withValues(alpha: .7))),
-                trailing: Icon(Icons.arrow_outward, color: theme.colorScheme.onInverseSurface),
-                onTap: () => _openReader(surah, ayah: ayah),
-              ),
-            );
-          },
-        ),
-        const SizedBox(height: 20),
-        Row(children: [
-          Expanded(child: Text('Surahs', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800))),
-          Text('${items.length} / 114', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-        ]),
-        const SizedBox(height: 8),
-        ...items.map((number) {
-          final name = quran.getSurahName(number);
-          final arabic = quran.getSurahNameArabic(number);
-          final place = quran.getPlaceOfRevelation(number);
-          final count = quran.getVerseCount(number);
-          return Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () => _openReader(number),
-              borderRadius: BorderRadius.circular(13),
-              child: Container(
-                constraints: const BoxConstraints(minHeight: 74),
-                decoration: BoxDecoration(
-                  border: Border(bottom: BorderSide(color: theme.colorScheme.outlineVariant)),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Row(
-                  children: [
-                    _DiamondNumber(number: number, color: theme.colorScheme.primary),
-                    const SizedBox(width: 13),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(name, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
-                          const SizedBox(height: 3),
-                          Text('$place · $count verses', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Flexible(
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Flexible(
-                            child: Text(
-                              arabic,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              textDirection: TextDirection.rtl,
-                              style: TextStyle(color: theme.colorScheme.primary, fontSize: 17, fontFamily: 'serif'),
+    final items = _items;
+    return CupertinoPageScaffold(
+      navigationBar: const CupertinoNavigationBar(middle: Text('القرآن الكريم')),
+      child: SafeArea(
+        child: CustomScrollView(
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 110),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  CupertinoSearchTextField(
+                    placeholder: 'Search surah',
+                    onChanged: (value) => setState(() => _query = value),
+                  ),
+                  const SizedBox(height: 12),
+                  CupertinoListSection.insetGrouped(
+                    children: [
+                      for (final number in items)
+                        CupertinoListTile(
+                          leading: _NumberBadge(number: number),
+                          title: Text(quran.getSurahName(number)),
+                          subtitle: Text(
+                            quran.getPlaceOfRevelation(number) +
+                                ' • ' +
+                                quran.getVerseCount(number).toString() +
+                                ' verses',
+                          ),
+                          trailing: Text(
+                            quran.getSurahNameArabic(number),
+                            textDirection: TextDirection.rtl,
+                            style: const TextStyle(fontFamily: 'serif', fontSize: 17),
+                          ),
+                          onTap: () => Navigator.of(context).push(
+                            CupertinoPageRoute(
+                              builder: (_) => QuranReaderScreen(surahNumber: number),
                             ),
                           ),
-                          const SizedBox(width: 7),
-                          Icon(Icons.chevron_right, size: 17, color: theme.colorScheme.onSurfaceVariant),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                        ),
+                    ],
+                  ),
+                ]),
               ),
             ),
-          );
-        }),
-        if (items.isEmpty) const Padding(padding: EdgeInsets.all(30), child: Center(child: Text('No surah found.'))),
-      ],
+          ],
+        ),
+      ),
     );
   }
 }
 
-class _DiamondNumber extends StatelessWidget {
-  const _DiamondNumber({required this.number, required this.color});
+class _NumberBadge extends StatelessWidget {
+  const _NumberBadge({required this.number});
   final int number;
-  final Color color;
+
   @override
-  Widget build(BuildContext context) => Transform.rotate(
-    angle: 0.785398,
-    child: Container(
-      width: 38,
-      height: 38,
-      decoration: BoxDecoration(border: Border.all(color: color.withValues(alpha: .2)), borderRadius: BorderRadius.circular(12)),
-      alignment: Alignment.center,
-      child: Transform.rotate(angle: -0.785398, child: Text(number.toString(), style: TextStyle(color: color, fontWeight: FontWeight.w800))),
-    ),
-  );
+  Widget build(BuildContext context) => Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: CupertinoColors.activeGreen.resolveFrom(context),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          number.toString(),
+          style: const TextStyle(color: CupertinoColors.white, fontWeight: FontWeight.w700),
+        ),
+      );
 }
