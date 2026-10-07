@@ -19,6 +19,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   int _madhab = 0;
   Set<String> _enabledPrayers = StorageService.prayerNames.toSet();
   Map<String, int> _adjustments = {};
+  int _preReminderMinutes = 0;
 
   static const _methods = <int, String>{
     1: 'Karachi', 2: 'North America (ISNA)', 3: 'Muslim World League',
@@ -43,6 +44,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final madhab = await _storage.loadPrayerMadhab();
     final enabledPrayers = await _storage.loadEnabledPrayerNames();
     final adjustments = await _storage.loadPrayerTimeAdjustments();
+    final preReminderMinutes = await _storage.loadPrePrayerReminderMinutes();
     if (!mounted) return;
     setState(() {
       _reminders = enabled;
@@ -51,6 +53,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _madhab = madhab;
       _enabledPrayers = enabledPrayers;
       _adjustments = adjustments;
+      _preReminderMinutes = preReminderMinutes;
       _loading = false;
     });
   }
@@ -104,6 +107,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (selected == 0) next.remove(prayer); else next[prayer] = selected;
     await _storage.savePrayerTimeAdjustments(next);
     if (mounted) setState(() => _adjustments = next);
+    await _refreshSchedules();
+  }
+
+  Future<void> _choosePreReminder() async {
+    final selected = await showCupertinoModalPopup<int>(
+      context: context,
+      builder: (context) => CupertinoActionSheet(
+        title: const Text('Pre-prayer reminder'),
+        message: const Text('When enabled, the schedule uses 6 days so iOS stays within its 64-notification pending limit.'),
+        actions: [
+          for (final value in const [0, 5, 10, 15, 20, 30])
+            CupertinoActionSheetAction(
+              onPressed: () => Navigator.pop(context, value),
+              child: Text(value == 0 ? 'Off' : '$value minutes before'),
+            ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+      ),
+    );
+    if (selected == null) return;
+    await _storage.savePrePrayerReminderMinutes(selected);
+    if (mounted) setState(() => _preReminderMinutes = selected);
     await _refreshSchedules();
   }
 
@@ -233,6 +261,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                           onTap: _loading ? null : () => _chooseAdjustment(prayer),
                         ),
+
+                      CupertinoListTile(
+                        leading: const Icon(CupertinoIcons.alarm),
+                        title: const Text('Pre-prayer reminder'),
+                        subtitle: Text(_preReminderMinutes == 0 ? 'Off' : '${_preReminderMinutes} minutes before each enabled prayer'),
+                        trailing: const CupertinoListTileChevron(),
+                        onTap: _loading ? null : _choosePreReminder,
+                      ),
                       const CupertinoListTile(
                         leading: Icon(CupertinoIcons.info_circle),
                         title: Text('Prayer time adjustment'),
