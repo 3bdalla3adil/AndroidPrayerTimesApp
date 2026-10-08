@@ -1,7 +1,6 @@
 import 'package:flutter/cupertino.dart';
 
 import '../services/athan_reminder_service.dart';
-import '../services/biometric_service.dart';
 import '../services/notification_service.dart';
 import '../services/prayer_service.dart';
 import '../services/storage_service.dart';
@@ -12,7 +11,6 @@ class SettingsScreen extends StatefulWidget {
 }
 class _SettingsScreenState extends State<SettingsScreen> {
   final _storage = StorageService();
-  final _biometric = BiometricService();
   late final AthanReminderService _athan;
   bool _reminders = false;
   bool _loading = true;
@@ -27,7 +25,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   double _quranLineHeight = 1.75;
   bool _quranTranslation = false;
   bool _quranDarkPage = false;
-  bool _biometricLock = false;
   int _tasbihTarget = 33;
 
   static const _methods = <int, String>{
@@ -60,7 +57,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final quranTranslation = await _storage.loadQuranShowTranslation();
     final quranDarkPage = await _storage.loadQuranDarkPage();
     final tasbih = await _storage.loadTasbih();
-    final biometricLock = await _storage.loadBiometricLockEnabled();
     if (!mounted) return;
     setState(() {
       _reminders = enabled;
@@ -76,31 +72,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _quranTranslation = quranTranslation;
       _quranDarkPage = quranDarkPage;
       _tasbihTarget = tasbih.$2;
-      _biometricLock = biometricLock;
       _loading = false;
     });
   }
 
-
-  Future<void> _toggleBiometricLock(bool enabled) async {
-    if (!enabled) {
-      await _storage.saveBiometricLockEnabled(false);
-      if (mounted) setState(() => _biometricLock = false);
-      return;
-    }
-    final available = await _biometric.isAvailable();
-    if (!available) {
-      await _showError(
-        'Biometrics unavailable',
-        'Set up Face ID or Touch ID on iOS, or fingerprint/face biometrics on Android, then try again.',
-      );
-      return;
-    }
-    final authenticated = await _biometric.authenticate();
-    if (!authenticated) return;
-    await _storage.saveBiometricLockEnabled(true);
-    if (mounted) setState(() => _biometricLock = true);
-  }
 
   Future<void> _refreshSchedules() async {
     if (!_reminders) return;
@@ -550,17 +525,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     ],
                   ),
-                  CupertinoListSection.insetGrouped(
-                    header: const Text('PRIVACY & SECURITY'),
-                    children: [
-                      CupertinoListTile(
-                        leading: const Icon(CupertinoIcons.lock_shield),
-                        title: const Text('Biometric app lock'),
-                        subtitle: Text(
-                          _biometricLock
-                              ? 'Required when opening or returning to the app.'
-                              : 'Protect the app with Face ID, Touch ID, or device biometrics.',
-                        ),
+
                         trailing: CupertinoSwitch(
                           value: _biometricLock,
                           onChanged: _loading ? null : _toggleBiometricLock,
