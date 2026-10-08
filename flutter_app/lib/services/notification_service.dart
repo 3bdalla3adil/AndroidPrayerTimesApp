@@ -1,3 +1,4 @@
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
@@ -9,6 +10,7 @@ class NotificationService {
 
   static final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
+  static final AudioPlayer _testAudioPlayer = AudioPlayer();
 
   static const _defaultSoundId = 'default';
   static const _fajrSoundId = 'fajr_madinah';
@@ -238,6 +240,15 @@ class NotificationService {
 
   /// Schedules the exact same notification/sound path used by prayer alarms,
   /// five seconds from now. This is the Settings > Test Athan action.
+  /// Plays the selected Athan immediately for the Settings test button.
+  /// This bypasses the OS notification scheduler, so the test validates the
+  /// actual bundled recording even while the app is in the foreground.
+  static Future<void> playTestAthan({String soundId = _defaultSoundId}) async {
+    final resource = _soundResource(soundId);
+    await _testAudioPlayer.stop();
+    await _testAudioPlayer.play(AssetSource('audio/$resource.mp3'));
+  }
+
   static Future<void> scheduleTestAthan({
     String soundId = _defaultSoundId,
   }) async {
