@@ -213,10 +213,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
             CupertinoListSection.insetGrouped(
               header: const Text('CALENDAR ACCURACY'),
               children: [
-                CupertinoListTile(
-                  leading: const Icon(CupertinoIcons.info),
-                  title: const Text('Calculated Hijri calendar'),
-                  subtitle: const Text(
+                const CupertinoListTile(
+                  leading: Icon(CupertinoIcons.info),
+                  title: Text('Calculated Hijri calendar'),
+                  subtitle: Text(
                     'This offline civil calculation can differ from an official or moon-sighting calendar by one day.',
                   ),
                 ),
