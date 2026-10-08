@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 AUDIO_DIR="$ROOT/assets/audio"
-BASE="https://raw.githubusercontent.com/Kiwifu/adhan-mp3/main"
+BASE="https://raw.githubusercontent.com/Golyriun/adhan-audio/main/azan_1.mp3"
 
 mkdir -p "$AUDIO_DIR"
 
