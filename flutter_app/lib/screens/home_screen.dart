@@ -165,7 +165,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   CupertinoListTile(
                     leading: const Icon(CupertinoIcons.bell), title: const Text('Athan reminders'),
                     subtitle: const Text('Plays the bundled Athan at prayer time'),
-                    trailing: CupertinoSwitch(value: _reminders, onChanged: _toggle),
+                    trailing: CupertinoButton(
+                      padding: EdgeInsets.zero,
+                      minSize: 36,
+                      onPressed: () => _toggle(!_reminders),
+                      child: Icon(
+                        _reminders ? CupertinoIcons.bell_fill : CupertinoIcons.bell_slash,
+                        size: 25,
+                      ),
+                    ),
                   ),
                 ]),
               ])),
@@ -227,52 +235,57 @@ class _HomeFeatureGrid extends StatelessWidget {
       ('القبلة', 'Qibla', CupertinoIcons.compass_fill, onQibla),
     ];
 
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: items.length,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 10,
-        mainAxisSpacing: 10,
-        childAspectRatio: 1.28,
-      ),
-      itemBuilder: (context, index) {
-        final item = items[index];
-        return CupertinoButton(
-          padding: EdgeInsets.zero,
-          onPressed: item.$4,
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: CupertinoColors.secondarySystemGroupedBackground.resolveFrom(context),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: CupertinoColors.separator.resolveFrom(context),
-              ),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(item.$3, size: 32),
-                const SizedBox(height: 9),
-                Text(
-                  item.$1,
-                  textAlign: TextAlign.center,
-                  textDirection: TextDirection.rtl,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  item.$2,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: CupertinoColors.secondaryLabel,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = constraints.maxWidth >= 560 ? 3 : 2;
+        final spacing = columns == 3 ? 12.0 : 10.0;
+        final width = (constraints.maxWidth - spacing * (columns - 1)) / columns;
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          alignment: WrapAlignment.spaceEvenly,
+          children: [
+            for (final item in items)
+              SizedBox(
+                width: width,
+                child: CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  onPressed: item.$4,
+                  child: Container(
+                    height: 132,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: CupertinoColors.secondarySystemGroupedBackground.resolveFrom(context),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: CupertinoColors.separator.resolveFrom(context),
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(item.$3, size: 31),
+                        const SizedBox(height: 8),
+                        Text(
+                          item.$1,
+                          textAlign: TextAlign.center,
+                          textDirection: TextDirection.rtl,
+                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          item.$2,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: CupertinoColors.secondaryLabel,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ],
-            ),
-          ),
+              ),
+          ],
         );
       },
     );
