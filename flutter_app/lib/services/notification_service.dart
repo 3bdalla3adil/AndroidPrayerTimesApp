@@ -12,7 +12,10 @@ class NotificationService {
 
   static const _defaultSoundId = 'default';
   static const _fajrSoundId = 'fajr_madinah';
-  static const _channelId = 'athan_prayer_channel_v2';
+  // Android notification channels are immutable after creation, including their
+  // sound. Use a versioned channel namespace so older installs receive fresh
+  // sound-enabled channels after upgrading the app.
+  static const _channelVersion = 'v3';
   static const int prayerIdBase = 1000;
   static const int prePrayerIdBase = 2000;
   static const int maxScheduledPrayerIds = 120;
@@ -73,6 +76,7 @@ class NotificationService {
             AndroidFlutterLocalNotificationsPlugin>();
     await androidPlugin?.requestNotificationsPermission();
     if (androidPlugin != null) {
+      await _createSoundChannels(androidPlugin);
       final exact = await androidPlugin.canScheduleExactNotifications();
       if (exact != true) {
         await androidPlugin.requestExactAlarmsPermission();
@@ -89,11 +93,31 @@ class NotificationService {
     _initialized = true;
   }
 
+  static String _channelIdForSound(String soundId) =>
+      'athan_prayer_${_channelVersion}_$soundId';
+
+  static Future<void> _createSoundChannels(
+    AndroidFlutterLocalNotificationsPlugin androidPlugin,
+  ) async {
+    for (final entry in soundResources.entries) {
+      await androidPlugin.createNotificationChannel(
+        AndroidNotificationChannel(
+          _channelIdForSound(entry.key),
+          'Prayer Times — ${soundLabels[entry.key] ?? entry.key}',
+          description: 'Prayer notifications with Athan audio',
+          importance: Importance.max,
+          playSound: true,
+          sound: RawResourceAndroidNotificationSound(entry.value),
+          enableVibration: true,
+          audioAttributesUsage: AudioAttributesUsage.alarm,
+        ),
+      );
+    }
+  }
+
   static AndroidNotificationDetails _androidDetails(String soundId) {
     final resource = _soundResource(soundId);
-    final channelId = soundId == _defaultSoundId
-        ? _channelId
-        : 'athan_prayer_$soundId';
+    final channelId = _channelIdForSound(soundId);
     return AndroidNotificationDetails(
       channelId,
       'Prayer Times',
