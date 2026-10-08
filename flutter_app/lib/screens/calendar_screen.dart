@@ -215,8 +215,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
               children: [
                 CupertinoListTile(
                   leading: const Icon(CupertinoIcons.info),
-                  title: Text('Calculated Hijri calendar'),
-                  subtitle: Text(
+                  title: const Text('Calculated Hijri calendar'),
+                  subtitle: const Text(
                     'This offline civil calculation can differ from an official or moon-sighting calendar by one day.',
                   ),
                 ),
