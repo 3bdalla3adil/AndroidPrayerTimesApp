@@ -251,17 +251,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _testAthan({bool fajr = false}) async {
     try {
-      if (fajr) {
-        await NotificationService.scheduleTestFajrAthan();
-      } else {
-        await NotificationService.scheduleTestAthan(soundId: _athanSound);
-      }
+      final soundId = fajr
+          ? NotificationService.soundForPrayer('Fajr', _athanSound)
+          : _athanSound;
+      await NotificationService.playTestAthan(soundId: soundId);
       if (!mounted) return;
       await showCupertinoDialog<void>(
         context: context,
         builder: (dialogContext) => CupertinoAlertDialog(
-          title: Text(fajr ? 'Fajr Athan test scheduled' : 'Athan test scheduled'),
-          content: const Text('The notification will trigger in about 5 seconds. Keep the device audio enabled.'),
+          title: Text(fajr ? 'Fajr Athan playing' : 'Athan playing'),
+          content: const Text('The selected Athan should play immediately. Keep the device audio enabled and make sure Silent Mode / Do Not Disturb is not suppressing audio.'),
           actions: [
             CupertinoDialogAction(
               onPressed: () => Navigator.pop(dialogContext),
@@ -473,13 +472,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       CupertinoListTile(
                         leading: const Icon(CupertinoIcons.play_circle_fill),
                         title: const Text('Test Athan sound'),
-                        subtitle: const Text('Play the selected Athan through the same notification path used for prayer time.'),
+                        subtitle: const Text('Play the selected Athan immediately to verify the bundled audio recording.'),
                         onTap: _loading ? null : _testAthan,
                       ),
                       CupertinoListTile(
                         leading: const Icon(CupertinoIcons.sunrise_fill),
                         title: const Text('Test Fajr Athan'),
-                        subtitle: const Text('Test the dedicated Madinah Fajr Athan used automatically at Fajr.'),
+                        subtitle: const Text('Play the dedicated Madinah Fajr Athan immediately.'),
                         onTap: _loading ? null : () => _testAthan(fajr: true),
                       ),
                     ],
