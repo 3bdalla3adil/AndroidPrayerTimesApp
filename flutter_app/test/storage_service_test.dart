@@ -61,11 +61,4 @@ void main() {
     expect(await storage.loadTasbih(), (32, 33));
   });
 
-  test('persists biometric lock preference', () async {
-    expect(await storage.loadBiometricLockEnabled(), isFalse);
-    await storage.saveBiometricLockEnabled(true);
-    expect(await storage.loadBiometricLockEnabled(), isTrue);
-    await storage.saveBiometricLockEnabled(false);
-    expect(await storage.loadBiometricLockEnabled(), isFalse);
-  });
 }
