@@ -24,7 +24,6 @@ class StorageService {
   static const _tasbihTarget = 'tasbih_target';
   static const _madhab = 'prayer_madhab';
   static const _readingHistory = 'quran_reading_history';
-  static const _biometricLock = 'biometric_lock_enabled';
 
   static const prayerNames = <String>['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
 
@@ -111,9 +110,6 @@ class StorageService {
     }
     await prefs.setStringList(_bookmarks, unique.toList());
   }
-
-  Future<bool> loadBiometricLockEnabled() async => await prefs.getBool(_biometricLock) ?? false;
-  Future<void> saveBiometricLockEnabled(bool enabled) => prefs.setBool(_biometricLock, enabled);
 
   Future<bool> loadAthanRemindersEnabled() async => await prefs.getBool(_athanReminders) ?? false;
   Future<void> saveAthanRemindersEnabled(bool enabled) => prefs.setBool(_athanReminders, enabled);
