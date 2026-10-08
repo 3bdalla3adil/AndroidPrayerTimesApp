@@ -52,7 +52,7 @@ class AthanReminderService {
       for (var i = 0; i < prayers.length; i++) {
         final PrayerEntry prayer = prayers[i];
         if (!enabledPrayers.contains(prayer.name)) continue;
-        final scheduled = await NotificationService.schedulePrayer(
+        final scheduled = await NotificationService.scheduleAthanPrayer(
           id: NotificationService.prayerIdBase + day * 10 + i,
           prayerName: prayer.name,
           time: prayer.time,
