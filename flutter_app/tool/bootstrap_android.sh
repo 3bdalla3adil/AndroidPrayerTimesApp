@@ -89,7 +89,6 @@ print("Patched android/app/build.gradle.kts")
 PY
 fi
 
-# local_auth 3.x supports Android API 24+.
 python3 - <<'PY'
 from pathlib import Path
 for name in ("android/app/build.gradle", "android/app/build.gradle.kts"):
@@ -130,7 +129,6 @@ permissions = [
     "android.permission.RECEIVE_BOOT_COMPLETED",
     "android.permission.VIBRATE",
     "android.permission.WAKE_LOCK",
-    "android.permission.USE_BIOMETRIC",
 ]
 for permission in permissions:
     tag = f'    <uses-permission android:name="{permission}" />'
@@ -174,20 +172,6 @@ if "com.salawat_quran.athan_sound_resource" not in s:
 p.write_text(s)
 PY
 
-# local_auth on Android requires an AppCompat launch theme.
-if [ -f android/app/src/main/res/values/styles.xml ]; then
-  python3 - <<'PY'
-from pathlib import Path
-p = Path("android/app/src/main/res/values/styles.xml")
-s = p.read_text()
-s = s.replace('parent="Theme.MaterialComponents.DayNight.NoActionBar"',
-              'parent="Theme.AppCompat.DayNight.NoActionBar"')
-s = s.replace('parent="Theme.Material.Light.NoActionBar"',
-              'parent="Theme.AppCompat.Light.NoActionBar"')
-p.write_text(s)
-PY
-fi
-
 # Keep runtime notification resources intact in release builds.
 python3 - <<'PY'
 from pathlib import Path
@@ -217,34 +201,6 @@ for name in ("android/app/build.gradle", "android/app/build.gradle.kts"):
                 count=1,
             )
     p.write_text(s)
-PY
-
-# 3b. local_auth requires FragmentActivity for Android biometric prompts.
-python3 - <<'PY'
-from pathlib import Path
-
-candidates = list(Path("android/app/src/main").rglob("MainActivity.kt"))
-candidates += list(Path("android/app/src/main").rglob("MainActivity.java"))
-
-if not candidates:
-    raise SystemExit("ERROR: generated MainActivity source not found")
-
-p = candidates[0]
-text = p.read_text()
-text = text.replace(
-    "import io.flutter.embedding.android.FlutterActivity",
-    "import io.flutter.embedding.android.FlutterFragmentActivity",
-)
-text = text.replace(
-    "extends FlutterActivity",
-    "extends FlutterFragmentActivity",
-)
-text = text.replace(
-    ": FlutterActivity()",
-    ": FlutterFragmentActivity()",
-)
-p.write_text(text)
-print(f"Patched {p} for local_auth.")
 PY
 
 # 4. Sanity check
