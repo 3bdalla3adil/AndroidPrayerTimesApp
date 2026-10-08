@@ -35,7 +35,8 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
   static const totalQuranPages = 604;
   static const totalReaderPages = totalQuranPages + 1;
 
-  final _controller = PageController();
+  final _controller = ScrollController();
+  final _pageKeys = <int, GlobalKey>{};
   final _storage = StorageService();
   final _cache = <int, Map<String, dynamic>>{};
 
@@ -51,6 +52,9 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     super.initState();
     _loadInitialPage();
   }
+
+  GlobalKey _keyForPage(int page) =>
+      _pageKeys.putIfAbsent(page, GlobalKey.new);
 
   @override
   void dispose() {
@@ -108,9 +112,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
       });
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (_controller.hasClients) {
-          _controller.jumpToPage(requestedReaderPage);
-        }
+        _scrollToPage(requestedReaderPage, animated: false);
       });
     } catch (_) {
       // The reader still starts at page 1 if the index cannot be read.
@@ -143,14 +145,36 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     return data;
   }
 
-  Future<void> _goToPage(int page) async {
-    if (page < 0 || page >= totalReaderPages || !_controller.hasClients) return;
-    await _controller.animateToPage(
-      page,
-      duration: const Duration(milliseconds: 260),
-      curve: Curves.easeOutCubic,
-    );
+  Future<void> _scrollToPage(int page, {bool animated = true}) async {
+    if (page < 0 || page >= totalReaderPages) return;
+    final key = _keyForPage(page);
+    final target = key.currentContext;
+    if (target != null) {
+      await Scrollable.ensureVisible(
+        target,
+        duration: animated ? const Duration(milliseconds: 320) : Duration.zero,
+        curve: Curves.easeOutCubic,
+        alignment: 0.02,
+      );
+      return;
+    }
+    if (!_controller.hasClients) return;
+    final viewport = _controller.position.viewportDimension;
+    final offset = (page * viewport).clamp(0.0, _controller.position.maxScrollExtent);
+    if (animated) {
+      await _controller.animateTo(offset, duration: const Duration(milliseconds: 220), curve: Curves.easeOutCubic);
+    } else {
+      _controller.jumpTo(offset);
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final builtTarget = key.currentContext;
+      if (builtTarget != null) {
+        Scrollable.ensureVisible(builtTarget, duration: animated ? const Duration(milliseconds: 180) : Duration.zero, alignment: 0.02);
+      }
+    });
   }
+
+  Future<void> _goToPage(int page) => _scrollToPage(page);
 
   Future<void> _bookmarkCurrentPage() async {
     if (_readerPage < 1) return;
@@ -382,47 +406,65 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
               totalPages: totalReaderPages,
             ),
             Expanded(
-              child: PageView.builder(
-                controller: _controller,
-                reverse: true,
-                itemCount: totalReaderPages,
-                onPageChanged: (index) {
-                setState(() => _readerPage = index);
-                _rememberPage(index);
-              },
-                itemBuilder: (context, index) {
-                  if (index == 0) {
-                    return const _DedicationPage();
+              child: NotificationListener<ScrollNotification>(
+                onNotification: (notification) {
+                  if (notification is ScrollEndNotification) {
+                    final viewport = notification.metrics.viewportDimension;
+                    if (viewport > 0) {
+                      final estimated = (notification.metrics.pixels / viewport)
+                          .round()
+                          .clamp(0, totalReaderPages - 1);
+                      if (estimated != _readerPage) {
+                        setState(() => _readerPage = estimated);
+                        _rememberPage(estimated);
+                      }
+                    }
                   }
-                  final page = index;
-                  return FutureBuilder<Map<String, dynamic>>(
-                    future: _loadPage(page),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState !=
-                          ConnectionState.done) {
-                        return const Center(
-                          child: CupertinoActivityIndicator(radius: 14),
-                        );
-                      }
-                      if (snapshot.hasError || snapshot.data == null) {
-                        return _ErrorPage(
-                          page: page,
-                          onRetry: () => setState(() {}),
-                        );
-                      }
-
-                      return _MushafPage(
-                        page: page,
-                        data: snapshot.data!,
-                        fontSize: _fontSize,
-                        lineHeight: _lineHeight,
-                        showTranslation: _showTranslation,
-                        darkPage: _darkPage,
-                        onBookmarkAyah: _bookmarkAyah,
-                      );
-                    },
-                  );
+                  return false;
                 },
+                child: ListView.builder(
+                  controller: _controller,
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.only(bottom: 8),
+                  itemCount: totalReaderPages,
+                  itemBuilder: (context, index) {
+                    final page = index;
+                    if (page == 0) {
+                      return KeyedSubtree(
+                        key: _keyForPage(page),
+                        child: const _DedicationPage(),
+                      );
+                    }
+                    return KeyedSubtree(
+                      key: _keyForPage(page),
+                      child: FutureBuilder<Map<String, dynamic>>(
+                        future: _loadPage(page),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState != ConnectionState.done) {
+                            return const Center(
+                              child: CupertinoActivityIndicator(radius: 14),
+                            );
+                          }
+                          if (snapshot.hasError || snapshot.data == null) {
+                            return _ErrorPage(
+                              page: page,
+                              onRetry: () => setState(() {}),
+                            );
+                          }
+                          return _MushafPage(
+                            page: page,
+                            data: snapshot.data!,
+                            fontSize: _fontSize,
+                            lineHeight: _lineHeight,
+                            showTranslation: _showTranslation,
+                            darkPage: _darkPage,
+                            onBookmarkAyah: _bookmarkAyah,
+                          );
+                        },
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
             _PageControls(
