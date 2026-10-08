@@ -139,7 +139,7 @@ class NotificationService {
       presentBadge: true,
       presentSound: true,
       interruptionLevel: InterruptionLevel.timeSensitive,
-      // iOS notification sounds are generated as <29s WAV clips because
+      // iOS notification sounds are generated as under 30 seconds WAV clips because
       // Apple falls back to the default sound for custom sounds >= 30s.
       sound: '${_soundResource(soundId)}.wav',
     );
@@ -220,7 +220,23 @@ class NotificationService {
     return true;
   }
 
-  /// Schedules a prayer notification with Athan audio explicitly enabled.\n  /// The Athan-alert switch uses this path so prayer alerts cannot accidentally\n  /// be converted into silent notifications by a future scheduling change.\n  static Future<bool> scheduleAthanPrayer({\n    required int id,\n    required String prayerName,\n    required DateTime time,\n    required String soundId,\n  }) => schedulePrayer(\n        id: id,\n        prayerName: prayerName,\n        time: time,\n        soundId: soundId,\n        withSound: true,\n      );\n\n  /// Schedules the exact same notification/sound path used by prayer alarms,
+  /// Schedules a prayer notification with Athan audio explicitly enabled.
+  /// The Athan-alert switch uses this path so prayer alerts cannot accidentally
+  /// be converted into silent notifications by a future scheduling change.
+  static Future<bool> scheduleAthanPrayer({
+    required int id,
+    required String prayerName,
+    required DateTime time,
+    required String soundId,
+  }) => schedulePrayer(
+        id: id,
+        prayerName: prayerName,
+        time: time,
+        soundId: soundId,
+        withSound: true,
+      );
+
+  /// Schedules the exact same notification/sound path used by prayer alarms,
   /// five seconds from now. This is the Settings > Test Athan action.
   static Future<void> scheduleTestAthan({
     String soundId = _defaultSoundId,
