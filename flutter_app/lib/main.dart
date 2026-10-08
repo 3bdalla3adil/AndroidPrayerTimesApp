@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'app.dart';
 import 'services/notification_service.dart';
 import 'services/prayer_service.dart';
+import 'theme/app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,11 +23,7 @@ class SalawatApp extends StatelessWidget {
     return CupertinoApp(
       title: 'Salawat',
       debugShowCheckedModeBanner: false,
-      theme: const CupertinoThemeData(
-        brightness: Brightness.light,
-        primaryColor: CupertinoColors.activeGreen,
-        scaffoldBackgroundColor: CupertinoColors.systemGroupedBackground,
-      ),
+      theme: AppTheme.data,
       localizationsDelegates: const [
         GlobalCupertinoLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
