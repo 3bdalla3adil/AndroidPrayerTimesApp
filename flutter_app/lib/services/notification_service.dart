@@ -126,6 +126,7 @@ class NotificationService {
       priority: Priority.max,
       playSound: true,
       sound: RawResourceAndroidNotificationSound(resource),
+      audioAttributesUsage: AudioAttributesUsage.alarm,
       enableVibration: true,
       visibility: NotificationVisibility.public,
       category: AndroidNotificationCategory.alarm,
