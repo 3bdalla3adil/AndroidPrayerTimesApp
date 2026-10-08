@@ -389,7 +389,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             : 'Schedule local prayer notifications automatically.'),
                         trailing: CupertinoButton(
                           padding: EdgeInsets.zero,
-                          minSize: 36,
+                          minimumSize: 36,
                           onPressed: _loading ? null : () => _toggle(!_reminders),
                           child: Icon(
                             _reminders ? CupertinoIcons.bell_fill : CupertinoIcons.bell_slash,
@@ -404,7 +404,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           subtitle: Text(_adjustments[prayer] == null ? 'Athan enabled' : 'Adjustment: ${_adjustments[prayer]! >= 0 ? '+' : ''}${_adjustments[prayer]} min'),
                           trailing: CupertinoButton(
                             padding: EdgeInsets.zero,
-                            minSize: 36,
+                            minimumSize: 36,
                             onPressed: _loading
                                 ? null
                                 : () => _togglePrayer(
