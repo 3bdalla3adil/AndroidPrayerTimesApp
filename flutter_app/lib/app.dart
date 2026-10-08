@@ -5,9 +5,7 @@ import 'screens/more_screen.dart';
 import 'screens/prayer_screen.dart';
 import 'screens/qibla_screen.dart';
 import 'screens/quran_screen.dart';
-import 'services/biometric_service.dart';
 import 'services/notification_service.dart';
-import 'services/storage_service.dart';
 
 class RootShell extends StatefulWidget {
   const RootShell({super.key});
@@ -16,24 +14,15 @@ class RootShell extends StatefulWidget {
   State<RootShell> createState() => _RootShellState();
 }
 
-class _RootShellState extends State<RootShell> with WidgetsBindingObserver {
+class _RootShellState extends State<RootShell> {
   late final CupertinoTabController _controller;
-  final _storage = StorageService();
-  final _biometric = BiometricService();
-
-  bool _locked = false;
-  bool _authenticating = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
     _controller = CupertinoTabController();
     NotificationService.lastPayload.addListener(_handleNotificationPayload);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _handleNotificationPayload();
-      _authenticateIfRequired();
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _handleNotificationPayload());
   }
 
   void _handleNotificationPayload() {
@@ -43,50 +32,8 @@ class _RootShellState extends State<RootShell> with WidgetsBindingObserver {
     NotificationService.clearLastPayload();
   }
 
-  Future<void> _authenticateIfRequired() async {
-    if (_authenticating || !mounted) return;
-    final enabled = await _storage.loadBiometricLockEnabled();
-    if (!mounted || !enabled) {
-      if (mounted && _locked) setState(() => _locked = false);
-      return;
-    }
-    setState(() => _locked = true);
-    await _authenticate();
-  }
-
-  Future<void> _authenticate() async {
-    if (_authenticating || !mounted) return;
-    setState(() => _authenticating = true);
-    try {
-      final available = await _biometric.isAvailable();
-      if (!mounted) return;
-      if (!available) {
-        setState(() => _authenticating = false);
-        return;
-      }
-      final ok = await _biometric.authenticate();
-      if (!mounted) return;
-      setState(() {
-        _authenticating = false;
-        _locked = !ok;
-      });
-    } catch (_) {
-      if (mounted) {
-        setState(() => _authenticating = false);
-      }
-    }
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      _authenticateIfRequired();
-    }
-  }
-
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
     NotificationService.lastPayload.removeListener(_handleNotificationPayload);
     _controller.dispose();
     super.dispose();
@@ -94,81 +41,42 @@ class _RootShellState extends State<RootShell> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        CupertinoTabScaffold(
-          controller: _controller,
-          tabBar: CupertinoTabBar(
-            items: const [
-              BottomNavigationBarItem(
-                icon: KeyedSubtree(key: ValueKey('home-tab'), child: Icon(CupertinoIcons.house)),
-                label: 'Home',
-              ),
-              BottomNavigationBarItem(
-                icon: KeyedSubtree(key: ValueKey('quran-tab'), child: Icon(CupertinoIcons.book)),
-                label: 'Quran',
-              ),
-              BottomNavigationBarItem(
-                icon: KeyedSubtree(key: ValueKey('prayer-tab'), child: Icon(CupertinoIcons.time)),
-                label: 'Prayer',
-              ),
-              BottomNavigationBarItem(
-                icon: KeyedSubtree(key: ValueKey('qibla-tab'), child: Icon(CupertinoIcons.compass)),
-                label: 'Qibla',
-              ),
-              BottomNavigationBarItem(
-                icon: KeyedSubtree(key: ValueKey('more-tab'), child: Icon(CupertinoIcons.ellipsis_circle)),
-                label: 'More',
-              ),
-            ],
+    return CupertinoTabScaffold(
+      controller: _controller,
+      tabBar: CupertinoTabBar(
+        items: const [
+          BottomNavigationBarItem(
+            icon: KeyedSubtree(key: ValueKey('home-tab'), child: Icon(CupertinoIcons.house)),
+            label: 'Home',
           ),
-          tabBuilder: (context, index) {
-            final pages = <Widget>[
-              const HomeScreen(),
-              const QuranScreen(),
-              const PrayerScreen(),
-              const QiblaScreen(),
-              const MoreScreen(),
-            ];
-            return CupertinoTabView(builder: (_) => pages[index]);
-          },
-        ),
-        if (_locked)
-          Positioned.fill(
-            child: ColoredBox(
-              color: CupertinoColors.systemBackground,
-              child: SafeArea(
-                child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(CupertinoIcons.lock_shield, size: 56),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'App locked',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text('Authenticate to continue.'),
-                      const SizedBox(height: 20),
-                      CupertinoButton.filled(
-                        onPressed: _authenticating ? null : _authenticate,
-                        child: Text(
-                          _authenticating
-                              ? 'Waiting…'
-                              : 'Unlock with biometrics',
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+          BottomNavigationBarItem(
+            icon: KeyedSubtree(key: ValueKey('quran-tab'), child: Icon(CupertinoIcons.book)),
+            label: 'Quran',
           ),
-      ],
+          BottomNavigationBarItem(
+            icon: KeyedSubtree(key: ValueKey('prayer-tab'), child: Icon(CupertinoIcons.time)),
+            label: 'Prayer',
+          ),
+          BottomNavigationBarItem(
+            icon: KeyedSubtree(key: ValueKey('qibla-tab'), child: Icon(CupertinoIcons.compass)),
+            label: 'Qibla',
+          ),
+          BottomNavigationBarItem(
+            icon: KeyedSubtree(key: ValueKey('more-tab'), child: Icon(CupertinoIcons.ellipsis_circle)),
+            label: 'More',
+          ),
+        ],
+      ),
+      tabBuilder: (context, index) {
+        final pages = <Widget>[
+          const HomeScreen(),
+          const QuranScreen(),
+          const PrayerScreen(),
+          const QiblaScreen(),
+          const MoreScreen(),
+        ];
+        return CupertinoTabView(builder: (_) => pages[index]);
+      },
     );
   }
 }
