@@ -150,12 +150,18 @@ jobs:
       - name: Prepare bundled Athan sounds
         run: bash tool/fetch_athan_sounds.sh
 
+      - name: Install ffmpeg for iOS Athan notification clips
+        run: brew install ffmpeg
+
+      - name: Prepare iOS Athan notification sounds
+        run: bash tool/prepare_ios_athan_sounds.sh
+
       - name: Install bundled Athan sounds for iOS
         run: |
           set -e
           for sound in azan azan_madinah azan_dubai azan_fajr_madinah; do
             test -s "assets/audio/$sound.mp3"
-            cp "assets/audio/$sound.mp3" "ios/Runner/$sound.mp3"
+            test -s "ios/Runner/$sound.wav"
           done
           gem install xcodeproj --no-document
           ruby - <<'RUBY'
@@ -165,7 +171,7 @@ jobs:
           target = project.targets.find { |t| t.name == 'Runner' }
           group = project.main_group.find_subpath('Runner', true)
           phase = target.resources_build_phase
-          ['azan.mp3', 'azan_madinah.mp3', 'azan_dubai.mp3', 'azan_fajr_madinah.mp3'].each do |name|
+          ['azan.wav', 'azan_madinah.wav', 'azan_dubai.wav', 'azan_fajr_madinah.wav'].each do |name|
             file = group.files.find { |f| f.path == name }
             file ||= group.new_file(name)
             phase.add_file_reference(file) unless phase.files.any? { |b| b.file_ref == file }
@@ -224,7 +230,10 @@ jobs:
           set -e
           APP_PATH="build/ios/Build/Products/Release-iphoneos/Runner.app"
           for sound in azan azan_madinah azan_dubai azan_fajr_madinah; do
-            test -s "$APP_PATH/$sound.mp3"
+            test -s "$APP_PATH/$sound.wav"
+            # Apple requires custom notification sounds to remain under 30s.
+            duration="$(/usr/local/bin/ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$APP_PATH/$sound.wav" 2>/dev/null || /opt/homebrew/bin/ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$APP_PATH/$sound.wav")"
+            python3 -c "d=float('$duration'); assert 0 < d < 30, d"
           done
 
       - name: Package unsigned IPA
