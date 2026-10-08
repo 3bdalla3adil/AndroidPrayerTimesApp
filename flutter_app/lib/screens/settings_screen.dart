@@ -387,16 +387,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         subtitle: Text(_reminders
                             ? '$_scheduled notifications scheduled for the next 12 days.'
                             : 'Schedule local prayer notifications automatically.'),
-                        trailing: CupertinoSwitch(value: _reminders, onChanged: _loading ? null : _toggle),
+                        trailing: CupertinoButton(
+                          padding: EdgeInsets.zero,
+                          minSize: 36,
+                          onPressed: _loading ? null : () => _toggle(!_reminders),
+                          child: Icon(
+                            _reminders ? CupertinoIcons.bell_fill : CupertinoIcons.bell_slash,
+                            size: 25,
+                          ),
+                        ),
                       ),
                       for (final prayer in StorageService.prayerNames)
                         CupertinoListTile(
                           leading: Icon(_enabledPrayers.contains(prayer) ? CupertinoIcons.bell_fill : CupertinoIcons.bell_slash),
                           title: Text(prayer),
                           subtitle: Text(_adjustments[prayer] == null ? 'Athan enabled' : 'Adjustment: ${_adjustments[prayer]! >= 0 ? '+' : ''}${_adjustments[prayer]} min'),
-                          trailing: CupertinoSwitch(
-                            value: _enabledPrayers.contains(prayer),
-                            onChanged: _loading ? null : (value) => _togglePrayer(prayer, value),
+                          trailing: CupertinoButton(
+                            padding: EdgeInsets.zero,
+                            minSize: 36,
+                            onPressed: _loading
+                                ? null
+                                : () => _togglePrayer(
+                                      prayer,
+                                      !_enabledPrayers.contains(prayer),
+                                    ),
+                            child: Icon(
+                              _enabledPrayers.contains(prayer)
+                                  ? CupertinoIcons.bell_fill
+                                  : CupertinoIcons.bell_slash,
+                              size: 23,
+                            ),
                           ),
                           onTap: _loading ? null : () => _chooseAdjustment(prayer),
                         ),
@@ -526,11 +546,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ],
                   ),
 
-                        trailing: CupertinoSwitch(
-                          value: _biometricLock,
-                          onChanged: _loading ? null : _toggleBiometricLock,
-                        ),
-                      ),
+                  CupertinoListSection.insetGrouped(
+                    header: const Text('PRIVACY & OFFLINE'),
+                    children: [
                       const CupertinoListTile(
                         leading: Icon(CupertinoIcons.person_crop_circle_badge_checkmark),
                         title: Text('No account'),
