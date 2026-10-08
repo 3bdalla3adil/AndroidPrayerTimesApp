@@ -167,7 +167,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     subtitle: const Text('Plays the bundled Athan at prayer time'),
                     trailing: CupertinoButton(
                       padding: EdgeInsets.zero,
-                      minSize: 36,
+                      minimumSize: 36,
                       onPressed: () => _toggle(!_reminders),
                       child: Icon(
                         _reminders ? CupertinoIcons.bell_fill : CupertinoIcons.bell_slash,
