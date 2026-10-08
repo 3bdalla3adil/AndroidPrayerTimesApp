@@ -12,7 +12,6 @@ class CalendarScreen extends StatefulWidget {
 }
 
 class _CalendarScreenState extends State<CalendarScreen> {
-  static const _islamicEpoch = 1948439.5;
   static const _hijriMonths = <String>[
     'Muharram', 'Safar', 'Rabi al-Awwal', 'Rabi al-Thani',
     'Jumada al-Awwal', 'Jumada al-Thani', 'Rajab', 'Shaaban',
@@ -215,7 +214,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
               header: const Text('CALENDAR ACCURACY'),
               children: [
                 CupertinoListTile(
-                  leading: Icon(CupertinoIcons.info),
+                  leading: const Icon(CupertinoIcons.info),
                   title: Text('Calculated Hijri calendar'),
                   subtitle: Text(
                     'This offline civil calculation can differ from an official or moon-sighting calendar by one day.',
