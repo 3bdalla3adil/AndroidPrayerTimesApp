@@ -138,7 +138,9 @@ class NotificationService {
       presentBadge: true,
       presentSound: true,
       interruptionLevel: InterruptionLevel.timeSensitive,
-      sound: '${_soundResource(soundId)}.mp3',
+      // iOS notification sounds are generated as <29s WAV clips because
+      // Apple falls back to the default sound for custom sounds >= 30s.
+      sound: '${_soundResource(soundId)}.wav',
     );
   }
 
