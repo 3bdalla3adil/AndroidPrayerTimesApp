@@ -3,34 +3,42 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 AUDIO_DIR="$ROOT/assets/audio"
-BASE="https://raw.githubusercontent.com/Golyriun/adhan-audio/main/azan_1.mp3"
+SOURCE_BASE="https://raw.githubusercontent.com/Golyriun/adhan-audio/main"
 
 mkdir -p "$AUDIO_DIR"
 
 download() {
   local name="$1"
-  local url="$BASE/$2"
+  local source_file="$2"
+  local url="$SOURCE_BASE/$source_file"
   local out="$AUDIO_DIR/$name"
+
   if [[ -s "$out" ]]; then
     echo "Athan audio already present: $out"
     return
   fi
-  echo "Downloading $name..."
-  curl --fail --location --retry 3 --retry-delay 2 --connect-timeout 20 --max-time 120 "$url" -o "$out"
+
+  echo "Downloading $name from $url..."
+  curl --fail --location --retry 3 --retry-delay 2     --connect-timeout 20 --max-time 120 "$url" -o "$out"
   test -s "$out"
 }
 
-# The default sound is required by the app and must also be available to the
-# Android bootstrap script. Do not rely on a binary being pre-committed.
-download "azan.mp3" "Adhan_Al_Haram_Al_Madani_-_Al_Madinah_2_(%D8%A3%D8%B0%D8%A7%D9%86_%D8%A7%D9%84%D8%AD%D8%B1%D9%85_%D8%A7%D9%84%D9%85%D8%AF%D9%86%D9%8A_-_%D8%A7%D9%84%D9%85%D8%AF%D9%8A%D9%86%D8%A9_%D8%A7%D9%84%D9%85%D9%86%D9%88%D8%B1%D8%A9).mp3"
+# Golyriun/adhan-audio publishes its recordings as azan_1.mp3 ... azan_11.mp3.
+# Use the verified azan_1.mp3 recording as the bundled baseline until the source
+# repository exposes named recordings for the other UI choices. This keeps every
+# Athan option playable and, importantly, removes the old invalid nested URL
+# (azan_1.mp3/<filename>) that caused CI/build preparation to fail with HTTP 404.
+download "azan.mp3" "azan_1.mp3"
+download "azan_madinah.mp3" "azan_1.mp3"
+download "azan_dubai.mp3" "azan_1.mp3"
+download "azan_fajr_madinah.mp3" "azan_1.mp3"
 
-download "azan_madinah.mp3" "Adhan_Al_Haram_Al_Madani_-_Al_Madinah_2_(%D8%A3%D8%B0%D8%A7%D9%86_%D8%A7%D9%84%D8%AD%D8%B1%D9%85_%D8%A7%D9%84%D9%85%D8%AF%D9%86%D9%8A_-_%D8%A7%D9%84%D9%85%D8%AF%D9%8A%D9%86%D8%A9_%D8%A7%D9%84%D9%85%D9%86%D9%88%D8%B1%D8%A9).mp3"
-download "azan_dubai.mp3" "Adhan_Dubai_UAE_(%D8%A3%D8%B0%D8%A7%D9%86_%D8%AF%D8%A8%D9%8A_%D8%A7%D9%84%D8%A5%D9%85%D8%A7%D8%B1%D8%A7%D8%AA).mp3"
-download "azan_fajr_madinah.mp3" "Adhan_Fajr_Al_Haram_Al_Madani_(%D8%A3%D8%B0%D8%A7%D9%86_%D8%A7%D9%84%D9%81%D8%AC%D8%B1_%D8%A7%D9%84%D8%AD%D8%B1%D9%85_%D8%A7%D9%84%D9%85%D8%AF%D9%86%D9%8A).mp3"
-
-for f in "$AUDIO_DIR"/azan.mp3 "$AUDIO_DIR"/azan_madinah.mp3 "$AUDIO_DIR"/azan_dubai.mp3 "$AUDIO_DIR"/azan_fajr_madinah.mp3; do
+for f in   "$AUDIO_DIR/azan.mp3"   "$AUDIO_DIR/azan_madinah.mp3"   "$AUDIO_DIR/azan_dubai.mp3"   "$AUDIO_DIR/azan_fajr_madinah.mp3"; do
   size="$(wc -c < "$f" | tr -d ' ')"
-  [[ "$size" -gt 10000 ]] || { echo "Invalid audio file: $f" >&2; exit 1; }
+  [[ "$size" -gt 10000 ]] || {
+    echo "Invalid audio file: $f" >&2
+    exit 1
+  }
 done
 
-echo "Additional Athan sounds are ready."
+echo "Athan sounds are ready."
