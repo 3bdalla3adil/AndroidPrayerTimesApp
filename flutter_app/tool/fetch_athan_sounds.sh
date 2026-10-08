@@ -28,7 +28,7 @@ download "azan_madinah.mp3" "Adhan_Al_Haram_Al_Madani_-_Al_Madinah_2_(%D8%A3%D8%
 download "azan_dubai.mp3" "Adhan_Dubai_UAE_(%D8%A3%D8%B0%D8%A7%D9%86_%D8%AF%D8%A8%D9%8A_%D8%A7%D9%84%D8%A5%D9%85%D8%A7%D8%B1%D8%A7%D8%AA).mp3"
 download "azan_fajr_madinah.mp3" "Adhan_Fajr_Al_Haram_Al_Madani_(%D8%A3%D8%B0%D8%A7%D9%86_%D8%A7%D9%84%D9%81%D8%AC%D8%B1_%D8%A7%D9%84%D8%AD%D8%B1%D9%85_%D8%A7%D9%84%D9%85%D8%AF%D9%86%D9%8A).mp3"
 
-for f in "$AUDIO_DIR"/azan_madinah.mp3 "$AUDIO_DIR"/azan_dubai.mp3 "$AUDIO_DIR"/azan_fajr_madinah.mp3; do
+for f in "$AUDIO_DIR"/azan.mp3 "$AUDIO_DIR"/azan_madinah.mp3 "$AUDIO_DIR"/azan_dubai.mp3 "$AUDIO_DIR"/azan_fajr_madinah.mp3; do
   size="$(wc -c < "$f" | tr -d ' ')"
   [[ "$size" -gt 10000 ]] || { echo "Invalid audio file: $f" >&2; exit 1; }
 done
