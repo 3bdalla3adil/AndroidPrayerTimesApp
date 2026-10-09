@@ -18,7 +18,7 @@ class RootTabNavigation extends InheritedWidget {
   }
 
   static RootTabNavigation? maybeOf(BuildContext context) =>
-      context.dependOnInheritedWidgetOfExactType<RootTabNavigation>();
+      context.findAncestorWidgetOfExactType<RootTabNavigation>();
 
   @override
   bool updateShouldNotify(RootTabNavigation oldWidget) =>
