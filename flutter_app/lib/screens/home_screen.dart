@@ -11,6 +11,7 @@ import 'adhkar_screen.dart';
 import 'prayer_screen.dart';
 import 'qibla_screen.dart';
 import 'tasbih_screen.dart';
+import '../theme/app_theme.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -194,7 +195,18 @@ class _NextPrayer extends StatelessWidget {
       '${d.inHours.toString().padLeft(2, '0')}:${(d.inMinutes%60).toString().padLeft(2,'0')}:${(d.inSeconds%60).toString().padLeft(2,'0')}';
     return Container(
       padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(color: CupertinoColors.activeGreen.resolveFrom(context), borderRadius: BorderRadius.circular(22)),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppTheme.emerald, AppTheme.deepEmerald],
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppTheme.antiqueGold.withValues(alpha: .55)),
+        boxShadow: [
+          BoxShadow(color: AppTheme.deepEmerald.withValues(alpha: .18), blurRadius: 18, offset: const Offset(0, 8)),
+        ],
+      ),
       child: Column(children: [
         const Text('NEXT PRAYER', style: TextStyle(color: CupertinoColors.white, letterSpacing: 1.4)),
         const SizedBox(height: 8),
@@ -257,14 +269,19 @@ class _HomeFeatureGrid extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: CupertinoColors.secondarySystemGroupedBackground.resolveFrom(context),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: CupertinoColors.separator.resolveFrom(context),
-                      ),
+                      border: Border.all(color: AppTheme.emerald.withValues(alpha: .18)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.deepEmerald.withValues(alpha: .06),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(item.$3, size: 31),
+                        Icon(item.$3, size: 31, color: AppTheme.emerald),
                         const SizedBox(height: 8),
                         Text(
                           item.$1,
