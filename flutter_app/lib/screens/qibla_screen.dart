@@ -163,8 +163,8 @@ class _QiblaScreenState extends State<QiblaScreen> {
                     child: Text(LocaleController.isArabic ? 'حساب اتجاه القبلة' : 'Calculate Qibla'),
                   ),
                   const SizedBox(height: 12),
-                  const Text(
-                    (LocaleController.isArabic ? 'أبقِ الهاتف مستويًا. إذا كان الاتجاه غير ثابت، فعاير البوصلة.' : 'Keep the phone flat. If the heading is unstable, calibrate the compass.'),
+                  Text(
+                    LocaleController.isArabic ? 'أبقِ الهاتف مستويًا. إذا كان الاتجاه غير ثابت، فعاير البوصلة.' : 'Keep the phone flat. If the heading is unstable, calibrate the compass.',
                     textAlign: TextAlign.center,
                   ),
                 ],
