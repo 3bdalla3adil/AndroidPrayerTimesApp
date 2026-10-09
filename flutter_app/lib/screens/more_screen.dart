@@ -113,7 +113,7 @@ class MoreScreen extends StatelessWidget {
             ),
             CupertinoListSection.insetGrouped(
               children: [
-                const CupertinoListTile(
+                CupertinoListTile(
                   leading: Icon(CupertinoIcons.lock_shield),
                   title: Text(LocaleController.isArabic ? 'يعمل دون اتصال' : 'Offline-first'),
                   subtitle: Text('Prayer calculations, Quran and Qibla work on-device.'),
