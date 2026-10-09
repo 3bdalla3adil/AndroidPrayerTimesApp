@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:quran/quran.dart' as quran;
 
 import '../services/storage_service.dart';
+import '../services/locale_controller.dart';
 
 const kQuranFont = 'KFGQPC HAFS Uthmanic Script';
 
@@ -572,21 +573,40 @@ class _ReaderButton extends StatelessWidget {
 class _DedicationPage extends StatelessWidget {
   const _DedicationPage();
 
-  static const _lines = <String>[
-    'بارك الله لكما وبارك عليكما',
-    'وجمع بينكما في خير',
-    'سائلين الله لكما السعادة',
-    'في الدارين',
-    'ويرزقكم المحبة والبركة',
-    'والخير والمودة والرحمة',
-    'إهداء إلى والدنا علي عبد الرزاق',
-    'تقديرًا ومحبةً ووفاءً',
-    'نسأل الله أن يبارك في عمره وعمله',
-    'وأن يجزيه عنا خير الجزاء',
+  static const _arabicLines = <String>[
+    'إلى والد زوجتي الغالي، وأمير قلبها،',
+    'وصاحب الفضل بعد الله في نشأتها وتربيتها،',
+    'أُهدي إليك هذه الكلمات محبةً وتقديرًا،',
+    'عرفانًا بمكانتك، وامتنانًا لثقتك الغالية.',
+    'لقد أكرمني الله بزواجي من ابنتك،',
+    'وأسأله أن يجعلني لها زوجًا صالحًا وسندًا أمينًا،',
+    'وأن أُحسن صحبتها، وأصون قلبها،',
+    'وأكون سببًا في سعادتها وراحة بالها.',
+    'بارك الله في عمرك وصحتك، وأقرّ عينك بها،',
+    'وجزاك عن تربيتها خير الجزاء،',
+    'وجمعنا دائمًا على المحبة والمودة والرحمة.',
+    'إهداءٌ من القلب، تقديرًا لمقامك ووفاءً لفضلك.',
+  ];
+
+  static const _englishLines = <String>[
+    'To my beloved father-in-law, the prince of her heart,',
+    'and the one who lovingly raised the daughter I am blessed to marry.',
+    'I offer these words with sincere love, respect, and gratitude,',
+    'in appreciation of your place in our family and your trust in me.',
+    'Allah has honoured me by joining my life with your daughter.',
+    'I pray to be a good husband and a steadfast companion to her,',
+    'to cherish her heart, honour her, and care for her,',
+    'and to be a source of happiness and peace in her life.',
+    'May Allah bless your life and health and bring you joy through her,',
+    'reward you abundantly for all you have given her,',
+    'and keep our family united in love, mercy, and kindness.',
+    'A heartfelt dedication, in honour of you and with lasting gratitude.',
   ];
 
   @override
   Widget build(BuildContext context) {
+    final arabic = LocaleController.isArabic;
+    final lines = arabic ? _arabicLines : _englishLines;
     return Container(
       margin: const EdgeInsets.fromLTRB(7, 8, 7, 8),
       decoration: BoxDecoration(
@@ -601,30 +621,41 @@ class _DedicationPage extends StatelessWidget {
         bottom: false,
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 44),
+            padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 34),
             child: Directionality(
-              textDirection: TextDirection.rtl,
+              textDirection: arabic ? TextDirection.rtl : TextDirection.ltr,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const Text('۞', style: TextStyle(fontFamily: 'serif', fontSize: 22, color: Color(0xFF6F6242))),
-                  const SizedBox(height: 34),
-                  for (var i = 0; i < _lines.length; i++)
+                  const SizedBox(height: 28),
+                  Text(
+                    arabic ? 'إهداء وتقدير' : 'A Dedication of Love & Gratitude',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: 'serif',
+                      fontSize: arabic ? 24 : 21,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF356B49),
+                    ),
+                  ),
+                  const SizedBox(height: 26),
+                  for (var i = 0; i < lines.length; i++)
                     Padding(
-                      padding: EdgeInsets.only(bottom: i == _lines.length - 1 ? 0 : 8),
+                      padding: EdgeInsets.only(bottom: i == lines.length - 1 ? 0 : 9),
                       child: Text(
-                        _lines[i],
+                        lines[i],
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'serif',
-                          fontSize: 22,
-                          height: 1.18,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF242019),
+                          fontSize: arabic ? 19 : 15,
+                          height: arabic ? 1.35 : 1.5,
+                          fontWeight: i < 2 ? FontWeight.w700 : FontWeight.w500,
+                          color: const Color(0xFF242019),
                         ),
                       ),
                     ),
-                  const SizedBox(height: 34),
+                  const SizedBox(height: 28),
                   const Text('۞', style: TextStyle(fontFamily: 'serif', fontSize: 22, color: Color(0xFF6F6242))),
                 ],
               ),
