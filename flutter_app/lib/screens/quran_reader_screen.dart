@@ -261,7 +261,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     showCupertinoDialog<void>(
       context: context,
       builder: (dialogContext) => CupertinoAlertDialog(
-        title: const Text('الانتقال إلى صفحة'),
+        title: Text(LocaleController.isArabic ? 'الانتقال إلى صفحة' : 'Go to page'),
         content: Padding(
           padding: const EdgeInsets.only(top: 14),
           child: CupertinoTextField(
@@ -273,12 +273,12 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
         ),
         actions: [
           CupertinoDialogAction(
-            child: const Text('إلغاء'),
+            child: Text(LocaleController.isArabic ? 'إلغاء' : 'Cancel'),
             onPressed: () => Navigator.pop(dialogContext),
           ),
           CupertinoDialogAction(
             isDefaultAction: true,
-            child: const Text('انتقال'),
+            child: Text(LocaleController.isArabic ? 'انتقال' : 'Go'),
             onPressed: () {
               final value = int.tryParse(input.text.trim());
               Navigator.pop(dialogContext);
@@ -320,18 +320,18 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
           }
 
           return CupertinoActionSheet(
-            title: const Text('إعدادات المصحف'),
+            title: Text(LocaleController.isArabic ? 'إعدادات المصحف' : 'Mushaf settings'),
             message: Column(
               children: [
                 const SizedBox(height: 8),
-                Text('حجم الخط: ${_fontSize.round()}'),
+                Text(LocaleController.isArabic ? 'حجم الخط: ${_fontSize.round()}' : 'Font size: ${_fontSize.round()}'),
                 CupertinoSlider(
                   min: 20,
                   max: 38,
                   value: _fontSize,
                   onChanged: updateFontSize,
                 ),
-                Text('تباعد السطور: ${_lineHeight.toStringAsFixed(2)}'),
+                Text(LocaleController.isArabic ? 'تباعد السطور: ${_lineHeight.toStringAsFixed(2)}' : 'Line spacing: ${_lineHeight.toStringAsFixed(2)}'),
                 CupertinoSlider(
                   min: 1.35,
                   max: 2.15,
@@ -339,14 +339,14 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
                   onChanged: updateLineHeight,
                 ),
                 CupertinoListTile(
-                  title: const Text('الترجمة الإنجليزية'),
+                  title: Text(LocaleController.isArabic ? 'الترجمة الإنجليزية' : 'English translation'),
                   trailing: CupertinoSwitch(
                     value: _showTranslation,
                     onChanged: updateTranslation,
                   ),
                 ),
                 CupertinoListTile(
-                  title: const Text('صفحة داكنة'),
+                  title: Text(LocaleController.isArabic ? 'صفحة داكنة' : 'Dark page'),
                   trailing: CupertinoSwitch(
                     value: _darkPage,
                     onChanged: updateDarkPage,
@@ -356,7 +356,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
             ),
             cancelButton: CupertinoActionSheetAction(
               onPressed: () => Navigator.pop(popupContext),
-              child: const Text('إغلاق'),
+              child: Text(LocaleController.isArabic ? 'إغلاق' : 'Close'),
             ),
           );
         },
@@ -376,11 +376,11 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Text(
-              'القرآن الكريم',
+              LocaleController.isArabic ? 'القرآن الكريم' : 'The Holy Quran',
               style: TextStyle(fontWeight: FontWeight.w700),
             ),
             Text(
-              _readerPage == 0 ? 'صفحة الإهداء' : 'صفحة $_readerPage من $totalQuranPages',
+              _readerPage == 0 ? (LocaleController.isArabic ? 'صفحة الإهداء' : 'Dedication') : (LocaleController.isArabic ? 'صفحة $_readerPage من $totalQuranPages' : 'Page $_readerPage of $totalQuranPages'),
               style: const TextStyle(fontSize: 11),
             ),
           ],
@@ -514,18 +514,18 @@ class _ReaderToolbar extends StatelessWidget {
         children: [
           _ReaderButton(
             icon: CupertinoIcons.search,
-            label: 'صفحة',
+            label: LocaleController.isArabic ? 'صفحة' : 'Page',
             onPressed: onJump,
           ),
           const SizedBox(width: 8),
           _ReaderButton(
             icon: CupertinoIcons.slider_horizontal_3,
-            label: 'المظهر',
+            label: LocaleController.isArabic ? 'المظهر' : 'Appearance',
             onPressed: onSettings,
           ),
           _ReaderButton(
             icon: CupertinoIcons.bookmark,
-            label: 'حفظ',
+            label: LocaleController.isArabic ? 'حفظ' : 'Bookmark',
             onPressed: page > 0 ? onBookmark : () {},
           ),
           const Spacer(),
@@ -1121,7 +1121,7 @@ class _PageControls extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 8),
               onPressed: onJump,
               child: Text(
-                'صفحة $page / $totalPages',
+                LocaleController.isArabic ? 'صفحة $page / $totalPages' : 'Page $page / $totalPages',
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontWeight: FontWeight.w700),
               ),
@@ -1149,7 +1149,7 @@ class _ErrorPage extends StatelessWidget {
     return Center(
       child: CupertinoButton.filled(
         onPressed: onRetry,
-        child: Text('إعادة تحميل الصفحة $page'),
+        child: Text(LocaleController.isArabic ? 'إعادة تحميل الصفحة $page' : 'Retry loading page $page'),
       ),
     );
   }
