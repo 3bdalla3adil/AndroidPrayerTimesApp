@@ -8,11 +8,10 @@ import '../services/storage_service.dart';
 import 'quran_screen.dart';
 import 'quran_reader_screen.dart';
 import 'adhkar_screen.dart';
-import 'prayer_screen.dart';
-import 'qibla_screen.dart';
 import 'tasbih_screen.dart';
 import '../theme/app_theme.dart';
 import '../services/locale_controller.dart';
+import '../services/root_tab_navigation.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -130,10 +129,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 10),
                 _HomeFeatureGrid(
                   onQuran: _continueQuran,
-                  onPrayer: () => Navigator.push(
-                    context,
-                    CupertinoPageRoute(builder: (_) => const PrayerScreen()),
-                  ),
+                  onPrayer: () {
+                    RootTabNavigation.maybeOf(context)?.selectTab(2);
+                  },
                   onTasbih: () => Navigator.push(
                     context,
                     CupertinoPageRoute(builder: (_) => const TasbihScreen()),
@@ -142,10 +140,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     context,
                     CupertinoPageRoute(builder: (_) => const AdhkarScreen()),
                   ),
-                  onQibla: () => Navigator.push(
-                    context,
-                    CupertinoPageRoute(builder: (_) => const QiblaScreen()),
-                  ),
+                  onQibla: () {
+                    RootTabNavigation.maybeOf(context)?.selectTab(3);
+                  },
                 ),
                 const SizedBox(height: 18),
                 CupertinoListSection.insetGrouped(children: [
