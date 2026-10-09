@@ -4,6 +4,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:hijri_core/hijri_core.dart';
 import 'package:intl/intl.dart';
 
+import '../theme/app_theme.dart';
+
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
 
@@ -162,12 +164,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
                           return DecoratedBox(
                             decoration: BoxDecoration(
                               color: isToday
-                                  ? CupertinoColors.activeBlue.withValues(alpha: .14)
-                                  : null,
+                                  ? AppTheme.emerald.withValues(alpha: .12)
+                                  : CupertinoColors.secondarySystemGroupedBackground.resolveFrom(context),
                               border: Border.all(
                                 color: isToday
-                                    ? CupertinoColors.activeBlue
-                                    : CupertinoColors.separator,
+                                    ? AppTheme.emerald
+                                    : CupertinoColors.separator.resolveFrom(context),
                               ),
                               borderRadius: BorderRadius.circular(8),
                             ),
@@ -179,14 +181,18 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                   Text(
                                     date.day.toString(),
                                     style: const TextStyle(
-                                      fontWeight: FontWeight.w600,
+                                      fontWeight: isToday ? FontWeight.w800 : FontWeight.w600,
+                                      color: isToday ? AppTheme.emerald : CupertinoColors.label.resolveFrom(context),
                                     ),
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
                                     _arabic(h.$3),
                                     textDirection: ui.TextDirection.rtl,
-                                    style: const TextStyle(fontSize: 13),
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: isToday ? AppTheme.emerald : CupertinoColors.secondaryLabel.resolveFrom(context),
+                                    ),
                                   ),
                                 ],
                               ),
