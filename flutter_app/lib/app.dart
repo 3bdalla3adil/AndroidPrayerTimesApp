@@ -7,6 +7,7 @@ import 'screens/qibla_screen.dart';
 import 'screens/quran_screen.dart';
 import 'services/notification_service.dart';
 import 'services/locale_controller.dart';
+import 'services/root_tab_navigation.dart';
 
 class RootShell extends StatefulWidget {
   const RootShell({super.key});
@@ -42,7 +43,9 @@ class _RootShellState extends State<RootShell> {
 
   @override
   Widget build(BuildContext context) {
-    return CupertinoTabScaffold(
+    return RootTabNavigation(
+      controller: _controller,
+      child: CupertinoTabScaffold(
       controller: _controller,
       tabBar: CupertinoTabBar(
         items: const [
@@ -78,6 +81,7 @@ class _RootShellState extends State<RootShell> {
         ];
         return CupertinoTabView(builder: (_) => pages[index]);
       },
+      ),
     );
   }
 }
