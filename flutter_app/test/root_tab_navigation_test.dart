@@ -63,6 +63,7 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('invalid-tab')));
       expect(controller.index, 0);
 
+      await tester.pumpWidget(const CupertinoApp(home: SizedBox.shrink()));
       controller.dispose();
     });
   });
