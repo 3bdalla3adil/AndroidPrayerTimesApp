@@ -21,7 +21,7 @@ class _HomeScreenState extends State<HomeScreen> {
   late final AthanReminderService _athan;
   List<PrayerEntry> _prayers = const [];
   DateTime _now = DateTime.now();
-  String _location = 'Current location';
+  String _location = LocaleController.isArabic ? 'الموقع الحالي' : 'Current location';
   String? _error;
   bool _reminders = false;
   Timer? _timer;
@@ -43,7 +43,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final reminders = await StorageService().loadAthanRemindersEnabled();
       if (!mounted) return;
       setState(() {
-        _prayers = prayers; _location = location.$3 ?? 'Current location';
+        _prayers = prayers; _location = location.$3 ?? (LocaleController.isArabic ? 'الموقع الحالي' : 'Current location');
         _reminders = reminders; _error = null;
       });
       await _athan.sync(refreshLocation: refresh);
@@ -61,12 +61,12 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       if (enabled) {
         final count = await _athan.enable();
-        if (mounted) { setState(() => _reminders = true); _dialog('Athan enabled', '$count prayer notifications scheduled.'); }
+        if (mounted) { setState(() => _reminders = true); _dialog(LocaleController.isArabic ? 'تم تفعيل الأذان' : 'Athan enabled', LocaleController.isArabic ? 'تمت جدولة $count من تنبيهات الصلاة.' : '$count prayer notifications scheduled.'); }
       } else {
         await _athan.disable();
         if (mounted) setState(() => _reminders = false);
       }
-    } catch (e) { if (mounted) _dialog('Athan setup failed', e.toString()); }
+    } catch (e) { if (mounted) _dialog(LocaleController.isArabic ? 'تعذّر إعداد الأذان' : 'Athan setup failed', e.toString()); }
   }
 
   Future<void> _continueQuran() async {
@@ -95,7 +95,7 @@ class _HomeScreenState extends State<HomeScreen> {
     context: context,
     builder: (_) => CupertinoAlertDialog(
       title: Text(title), content: Text(message),
-      actions: [CupertinoDialogAction(child: const Text('OK'), onPressed: () => Navigator.pop(context))],
+      actions: [CupertinoDialogAction(child: Text(LocaleController.isArabic ? 'حسنًا' : 'OK'), onPressed: () => Navigator.pop(context))],
     ),
   );
 
@@ -127,7 +127,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ]),
                 if (next != null) _NextPrayer(prayer: next, now: _now),
                 const SizedBox(height: 18),
-                const Text('Today', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
+                Text(LocaleController.isArabic ? 'اليوم' : 'Today', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
                 const SizedBox(height: 8),
                 const Text(
                   'Quick access',
@@ -213,7 +213,7 @@ class _NextPrayer extends StatelessWidget {
         ],
       ),
       child: Column(children: [
-        const Text('NEXT PRAYER', style: TextStyle(color: CupertinoColors.white, letterSpacing: 1.4)),
+        Text(LocaleController.isArabic ? 'الصلاة القادمة' : 'NEXT PRAYER', style: const TextStyle(color: CupertinoColors.white, letterSpacing: 1.4)),
         const SizedBox(height: 8),
         Text(prayer.arabicName, textDirection: TextDirection.rtl,
           style: const TextStyle(color: CupertinoColors.white, fontSize: 31, fontWeight: FontWeight.w700)),
