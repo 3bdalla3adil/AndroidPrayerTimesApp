@@ -5,8 +5,8 @@ import 'screens/more_screen.dart';
 import 'screens/prayer_screen.dart';
 import 'screens/qibla_screen.dart';
 import 'screens/quran_screen.dart';
-import 'services/notification_service.dart';
 import 'services/locale_controller.dart';
+import 'services/notification_service.dart';
 import 'services/root_tab_navigation.dart';
 
 class RootShell extends StatefulWidget {
@@ -46,41 +46,56 @@ class _RootShellState extends State<RootShell> {
     return RootTabNavigation(
       controller: _controller,
       child: CupertinoTabScaffold(
-      controller: _controller,
-      tabBar: CupertinoTabBar(
-        items: const [
-          BottomNavigationBarItem(
-            icon: KeyedSubtree(key: ValueKey('home-tab'), child: Icon(CupertinoIcons.house)),
-            label: LocaleController.isArabic ? 'الرئيسية' : 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: KeyedSubtree(key: ValueKey('quran-tab'), child: Icon(CupertinoIcons.book)),
-            label: LocaleController.isArabic ? 'القرآن' : 'Quran',
-          ),
-          BottomNavigationBarItem(
-            icon: KeyedSubtree(key: ValueKey('prayer-tab'), child: Icon(CupertinoIcons.time)),
-            label: LocaleController.isArabic ? 'الصلاة' : 'Prayer',
-          ),
-          BottomNavigationBarItem(
-            icon: KeyedSubtree(key: ValueKey('qibla-tab'), child: Icon(CupertinoIcons.compass)),
-            label: LocaleController.isArabic ? 'القبلة' : 'Qibla',
-          ),
-          BottomNavigationBarItem(
-            icon: KeyedSubtree(key: ValueKey('more-tab'), child: Icon(CupertinoIcons.ellipsis_circle)),
-            label: LocaleController.isArabic ? 'المزيد' : 'More',
-          ),
-        ],
-      ),
-      tabBuilder: (context, index) {
-        final pages = <Widget>[
-          const HomeScreen(),
-          const QuranScreen(),
-          const PrayerScreen(),
-          const QiblaScreen(),
-          const MoreScreen(),
-        ];
-        return CupertinoTabView(builder: (_) => pages[index]);
-      },
+        controller: _controller,
+        tabBar: CupertinoTabBar(
+          items: [
+            BottomNavigationBarItem(
+              icon: const KeyedSubtree(
+                key: ValueKey('home-tab'),
+                child: Icon(CupertinoIcons.house),
+              ),
+              label: LocaleController.isArabic ? 'الرئيسية' : 'Home',
+            ),
+            BottomNavigationBarItem(
+              icon: const KeyedSubtree(
+                key: ValueKey('quran-tab'),
+                child: Icon(CupertinoIcons.book),
+              ),
+              label: LocaleController.isArabic ? 'القرآن' : 'Quran',
+            ),
+            BottomNavigationBarItem(
+              icon: const KeyedSubtree(
+                key: ValueKey('prayer-tab'),
+                child: Icon(CupertinoIcons.time),
+              ),
+              label: LocaleController.isArabic ? 'الصلاة' : 'Prayer',
+            ),
+            BottomNavigationBarItem(
+              icon: const KeyedSubtree(
+                key: ValueKey('qibla-tab'),
+                child: Icon(CupertinoIcons.compass),
+              ),
+              label: LocaleController.isArabic ? 'القبلة' : 'Qibla',
+            ),
+            BottomNavigationBarItem(
+              icon: const KeyedSubtree(
+                key: ValueKey('more-tab'),
+                child: Icon(CupertinoIcons.ellipsis_circle),
+              ),
+              label: LocaleController.isArabic ? 'المزيد' : 'More',
+            ),
+          ],
+        ),
+        tabBuilder: (context, index) {
+          final pages = <Widget>[
+            const HomeScreen(),
+            const QuranScreen(),
+            const PrayerScreen(),
+            const QiblaScreen(),
+            const MoreScreen(),
+          ];
+          return CupertinoTabView(builder: (_) => pages[index]);
+        },
       ),
     );
   }
