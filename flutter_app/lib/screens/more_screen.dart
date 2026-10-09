@@ -7,7 +7,6 @@ import 'adhkar_screen.dart';
 import 'bookmarks_screen.dart';
 import 'calendar_screen.dart';
 import 'fasting_screen.dart';
-import 'qibla_screen.dart';
 import 'reading_history_screen.dart';
 import 'settings_screen.dart';
 import 'tasbih_screen.dart';
