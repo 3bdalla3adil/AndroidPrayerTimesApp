@@ -5,7 +5,6 @@ import '../models/prayer_entry.dart';
 import '../services/athan_reminder_service.dart';
 import '../services/prayer_service.dart';
 import '../services/storage_service.dart';
-import 'quran_screen.dart';
 import 'quran_reader_screen.dart';
 import 'adhkar_screen.dart';
 import 'tasbih_screen.dart';
