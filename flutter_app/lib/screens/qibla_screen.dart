@@ -16,7 +16,7 @@ class QiblaScreen extends StatefulWidget {
 
 class _QiblaScreenState extends State<QiblaScreen> {
   double? qiblaBearing;
-  String status = 'Find your Qibla direction using the phone compass.';
+  String status = LocaleController.isArabic ? 'حدّد اتجاه القبلة باستخدام بوصلة الهاتف.' : 'Find your Qibla direction using the phone compass.';
 
   Future<void> calculate() async {
     try {
@@ -77,7 +77,7 @@ class _QiblaScreenState extends State<QiblaScreen> {
           stream: FlutterCompass.events,
           builder: (context, snapshot) {
             if (snapshot.hasError) {
-              return Center(child: Text('Compass error: ${snapshot.error}'));
+              return Center(child: Text(LocaleController.isArabic ? 'خطأ في البوصلة: ${snapshot.error}' : 'Compass error: ${snapshot.error}'));
             }
 
             final heading = snapshot.data?.heading;
@@ -99,8 +99,8 @@ class _QiblaScreenState extends State<QiblaScreen> {
                   const SizedBox(height: 10),
                   Text(
                     heading == null
-                        ? 'Waiting for compass sensor…'
-                        : 'Turn the arrow toward the Qibla',
+                        ? (LocaleController.isArabic ? 'بانتظار مستشعر البوصلة…' : 'Waiting for compass sensor…')
+                        : (LocaleController.isArabic ? 'وجّه السهم نحو القبلة' : 'Turn the arrow toward the Qibla'),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 28),
@@ -160,11 +160,11 @@ class _QiblaScreenState extends State<QiblaScreen> {
                   const SizedBox(height: 18),
                   CupertinoButton.filled(
                     onPressed: calculate,
-                    child: const Text('Calculate Qibla'),
+                    child: Text(LocaleController.isArabic ? 'حساب اتجاه القبلة' : 'Calculate Qibla'),
                   ),
                   const SizedBox(height: 12),
                   const Text(
-                    'Keep the phone flat. If the heading is unstable, calibrate the compass.',
+                    (LocaleController.isArabic ? 'أبقِ الهاتف مستويًا. إذا كان الاتجاه غير ثابت، فعاير البوصلة.' : 'Keep the phone flat. If the heading is unstable, calibrate the compass.'),
                     textAlign: TextAlign.center,
                   ),
                 ],
