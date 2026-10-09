@@ -375,7 +375,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
         middle: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text(
+            Text(
               LocaleController.isArabic ? 'القرآن الكريم' : 'The Holy Quran',
               style: TextStyle(fontWeight: FontWeight.w700),
             ),
