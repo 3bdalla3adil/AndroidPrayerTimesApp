@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:quran/quran.dart' as quran;
 
 import 'quran_reader_screen.dart';
+import '../services/locale_controller.dart';
 
 class QuranScreen extends StatefulWidget {
   const QuranScreen({super.key});
@@ -58,7 +59,7 @@ class _QuranScreenState extends State<QuranScreen> {
         actions: [
           CupertinoDialogAction(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('إلغاء'),
+            child: Text(LocaleController.isArabic ? 'إلغاء' : 'Cancel'),
           ),
           CupertinoDialogAction(
             isDefaultAction: true,
@@ -68,7 +69,7 @@ class _QuranScreenState extends State<QuranScreen> {
                 Navigator.pop(dialogContext, parsed);
               }
             },
-            child: const Text('انتقال'),
+            child: Text(LocaleController.isArabic ? 'انتقال' : 'Go'),
           ),
         ],
       ),
@@ -177,7 +178,7 @@ class _QuranScreenState extends State<QuranScreen> {
     final items = _items;
     return CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
-        middle: const Text('القرآن الكريم'),
+        middle: Text(LocaleController.isArabic ? 'القرآن الكريم' : 'The Holy Quran'),
         trailing: CupertinoButton(
           padding: EdgeInsets.zero,
           onPressed: _openNavigator,
