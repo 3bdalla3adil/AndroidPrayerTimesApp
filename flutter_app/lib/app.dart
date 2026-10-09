@@ -6,6 +6,7 @@ import 'screens/prayer_screen.dart';
 import 'screens/qibla_screen.dart';
 import 'screens/quran_screen.dart';
 import 'services/notification_service.dart';
+import 'services/locale_controller.dart';
 
 class RootShell extends StatefulWidget {
   const RootShell({super.key});
@@ -47,23 +48,23 @@ class _RootShellState extends State<RootShell> {
         items: const [
           BottomNavigationBarItem(
             icon: KeyedSubtree(key: ValueKey('home-tab'), child: Icon(CupertinoIcons.house)),
-            label: 'Home',
+            label: LocaleController.isArabic ? 'الرئيسية' : 'Home',
           ),
           BottomNavigationBarItem(
             icon: KeyedSubtree(key: ValueKey('quran-tab'), child: Icon(CupertinoIcons.book)),
-            label: 'Quran',
+            label: LocaleController.isArabic ? 'القرآن' : 'Quran',
           ),
           BottomNavigationBarItem(
             icon: KeyedSubtree(key: ValueKey('prayer-tab'), child: Icon(CupertinoIcons.time)),
-            label: 'Prayer',
+            label: LocaleController.isArabic ? 'الصلاة' : 'Prayer',
           ),
           BottomNavigationBarItem(
             icon: KeyedSubtree(key: ValueKey('qibla-tab'), child: Icon(CupertinoIcons.compass)),
-            label: 'Qibla',
+            label: LocaleController.isArabic ? 'القبلة' : 'Qibla',
           ),
           BottomNavigationBarItem(
             icon: KeyedSubtree(key: ValueKey('more-tab'), child: Icon(CupertinoIcons.ellipsis_circle)),
-            label: 'More',
+            label: LocaleController.isArabic ? 'المزيد' : 'More',
           ),
         ],
       ),
