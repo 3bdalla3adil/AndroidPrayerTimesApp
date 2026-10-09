@@ -129,9 +129,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 18),
                 Text(LocaleController.isArabic ? 'اليوم' : 'Today', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
                 const SizedBox(height: 8),
-                const Text(
-                  'Quick access',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+                Text(
+                  LocaleController.isArabic ? 'وصول سريع' : 'Quick access',
+                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 10),
                 _HomeFeatureGrid(
