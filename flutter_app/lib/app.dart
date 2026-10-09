@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'screens/home_screen.dart';
 import 'screens/more_screen.dart';
@@ -8,6 +9,7 @@ import 'screens/quran_screen.dart';
 import 'services/locale_controller.dart';
 import 'services/notification_service.dart';
 import 'services/root_tab_navigation.dart';
+import 'theme/app_theme.dart';
 
 class RootShell extends StatefulWidget {
   const RootShell({super.key});
@@ -43,59 +45,64 @@ class _RootShellState extends State<RootShell> {
 
   @override
   Widget build(BuildContext context) {
-    return RootTabNavigation(
-      controller: _controller,
-      child: CupertinoTabScaffold(
+    // Listen here as well as at the app root so tab labels refresh immediately
+    // when the user changes language from Settings.
+    return ValueListenableBuilder<Locale>(
+      valueListenable: LocaleController.locale,
+      builder: (context, locale, _) => RootTabNavigation(
         controller: _controller,
-        tabBar: CupertinoTabBar(
-          items: [
-            BottomNavigationBarItem(
-              icon: const KeyedSubtree(
-                key: ValueKey('home-tab'),
-                child: Icon(CupertinoIcons.house),
+        child: CupertinoTabScaffold(
+          controller: _controller,
+          tabBar: CupertinoTabBar(
+            items: [
+              BottomNavigationBarItem(
+                icon: const KeyedSubtree(
+                  key: ValueKey('home-tab'),
+                  child: Icon(CupertinoIcons.house),
+                ),
+                label: locale.languageCode == 'ar' ? 'الرئيسية' : 'Home',
               ),
-              label: LocaleController.isArabic ? 'الرئيسية' : 'Home',
-            ),
-            BottomNavigationBarItem(
-              icon: const KeyedSubtree(
-                key: ValueKey('quran-tab'),
-                child: Icon(CupertinoIcons.book),
+              BottomNavigationBarItem(
+                icon: const KeyedSubtree(
+                  key: ValueKey('quran-tab'),
+                  child: Icon(CupertinoIcons.book),
+                ),
+                label: locale.languageCode == 'ar' ? 'القرآن' : 'Quran',
               ),
-              label: LocaleController.isArabic ? 'القرآن' : 'Quran',
-            ),
-            BottomNavigationBarItem(
-              icon: const KeyedSubtree(
-                key: ValueKey('prayer-tab'),
-                child: Icon(CupertinoIcons.time),
+              BottomNavigationBarItem(
+                icon: const KeyedSubtree(
+                  key: ValueKey('prayer-tab'),
+                  child: Icon(CupertinoIcons.time),
+                ),
+                label: locale.languageCode == 'ar' ? 'الصلاة' : 'Prayer',
               ),
-              label: LocaleController.isArabic ? 'الصلاة' : 'Prayer',
-            ),
-            BottomNavigationBarItem(
-              icon: const KeyedSubtree(
-                key: ValueKey('qibla-tab'),
-                child: Icon(CupertinoIcons.compass),
+              BottomNavigationBarItem(
+                icon: const KeyedSubtree(
+                  key: ValueKey('qibla-tab'),
+                  child: Icon(CupertinoIcons.compass),
+                ),
+                label: locale.languageCode == 'ar' ? 'القبلة' : 'Qibla',
               ),
-              label: LocaleController.isArabic ? 'القبلة' : 'Qibla',
-            ),
-            BottomNavigationBarItem(
-              icon: const KeyedSubtree(
-                key: ValueKey('more-tab'),
-                child: Icon(CupertinoIcons.ellipsis_circle),
+              BottomNavigationBarItem(
+                icon: const KeyedSubtree(
+                  key: ValueKey('more-tab'),
+                  child: Icon(CupertinoIcons.ellipsis_circle),
+                ),
+                label: locale.languageCode == 'ar' ? 'المزيد' : 'More',
               ),
-              label: LocaleController.isArabic ? 'المزيد' : 'More',
-            ),
-          ],
+            ],
+          ),
+          tabBuilder: (context, index) {
+            final pages = <Widget>[
+              const HomeScreen(),
+              const QuranScreen(),
+              const PrayerScreen(),
+              const QiblaScreen(),
+              const MoreScreen(),
+            ];
+            return CupertinoTabView(builder: (_) => pages[index]);
+          },
         ),
-        tabBuilder: (context, index) {
-          final pages = <Widget>[
-            const HomeScreen(),
-            const QuranScreen(),
-            const PrayerScreen(),
-            const QiblaScreen(),
-            const MoreScreen(),
-          ];
-          return CupertinoTabView(builder: (_) => pages[index]);
-        },
       ),
     );
   }
@@ -106,9 +113,23 @@ class SalawatQuranApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const CupertinoApp(
-      debugShowCheckedModeBanner: false,
-      home: RootShell(),
+    // Keep the test/embedded app entry point visually and behaviorally
+    // identical to the production Cupertino app.
+    return ValueListenableBuilder<Locale>(
+      valueListenable: LocaleController.locale,
+      builder: (context, locale, _) => CupertinoApp(
+        title: locale.languageCode == 'ar' ? 'صلوات' : 'Salawat',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.data,
+        locale: locale,
+        localizationsDelegates: const [
+          GlobalCupertinoLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+        ],
+        supportedLocales: const [Locale('ar'), Locale('en')],
+        home: const RootShell(),
+      ),
     );
   }
 }
