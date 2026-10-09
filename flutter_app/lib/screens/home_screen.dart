@@ -75,11 +75,19 @@ class _HomeScreenState extends State<HomeScreen> {
     final (surah, ayah) = await storage.loadReaderPosition();
     final page = await storage.loadReaderPage();
     if (!mounted) return;
+    if (surah == null) {
+      // No saved reading position yet: use the Quran's main tab instead of
+      // creating a second copy of the surah-selection screen on the Home stack.
+      RootTabNavigation.maybeOf(context)?.selectTab(1);
+      return;
+    }
     Navigator.of(context).push(
       CupertinoPageRoute(
-        builder: (_) => surah != null
-            ? QuranReaderScreen(surahNumber: surah, startingAyah: ayah ?? 1, startingPage: page)
-            : const QuranScreen(),
+        builder: (_) => QuranReaderScreen(
+          surahNumber: surah,
+          startingAyah: ayah ?? 1,
+          startingPage: page,
+        ),
       ),
     );
   }
