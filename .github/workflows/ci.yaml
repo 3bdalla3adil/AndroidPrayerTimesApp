@@ -1,5 +1,10 @@
 name: Flutter CI
 
+# Cancel superseded runs for the same branch while preserving independent branches.
+concurrency:
+  group: flutter-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches:
@@ -149,7 +154,12 @@ jobs:
         run: bash tool/fetch_athan_sounds.sh
 
       - name: Install ffmpeg for iOS Athan notification clips
-        run: brew install ffmpeg
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1 || ! command -v ffprobe >/dev/null 2>&1; then
+            brew install ffmpeg
+          fi
+          command -v ffmpeg
+          command -v ffprobe
 
       - name: Prepare iOS Athan notification sounds
         run: bash tool/prepare_ios_athan_sounds.sh
@@ -230,7 +240,7 @@ jobs:
           for sound in azan azan_madinah azan_dubai azan_fajr_madinah; do
             test -s "$APP_PATH/$sound.wav"
             # Apple requires custom notification sounds to remain under 30s.
-            duration="$(/usr/local/bin/ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$APP_PATH/$sound.wav" 2>/dev/null || /opt/homebrew/bin/ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$APP_PATH/$sound.wav")"
+            duration="$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$APP_PATH/$sound.wav")"
             python3 -c "d=float('$duration'); assert 0 < d < 30, d"
           done
 
