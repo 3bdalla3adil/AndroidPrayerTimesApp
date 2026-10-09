@@ -69,7 +69,7 @@ class _QiblaScreenState extends State<QiblaScreen> {
   Widget build(BuildContext context) {
     final accent = CupertinoColors.activeGreen.resolveFrom(context);
     return CupertinoPageScaffold(
-      navigationBar: const CupertinoNavigationBar(
+      navigationBar: CupertinoNavigationBar(
         middle: Text(LocaleController.isArabic ? 'اتجاه القبلة' : 'Qibla direction'),
       ),
       child: SafeArea(
