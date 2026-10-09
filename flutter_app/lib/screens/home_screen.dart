@@ -12,6 +12,7 @@ import 'prayer_screen.dart';
 import 'qibla_screen.dart';
 import 'tasbih_screen.dart';
 import '../theme/app_theme.dart';
+import '../services/locale_controller.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -116,7 +117,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 18),
                 if (_error != null) CupertinoListSection.insetGrouped(children: [
                   CupertinoListTile(leading: const Icon(CupertinoIcons.exclamationmark_triangle),
-                    title: const Text('Prayer times unavailable'), subtitle: Text(_error!)),
+                    title: const Text(LocaleController.isArabic ? 'مواقيت الصلاة غير متاحة' : 'Prayer times unavailable'), subtitle: Text(_error!)),
                 ]),
                 if (next != null) _NextPrayer(prayer: next, now: _now),
                 const SizedBox(height: 18),
@@ -149,7 +150,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 18),
                 CupertinoListSection.insetGrouped(children: [
                   if (_prayers.isEmpty) const CupertinoListTile(
-                    leading: Icon(CupertinoIcons.time), title: Text('Prayer times'),
+                    leading: Icon(CupertinoIcons.time), title: Text(LocaleController.isArabic ? 'مواقيت الصلاة' : 'Prayer times'),
                     subtitle: Text('Load your location to calculate today\'s prayers.'),
                   ) else for (final p in _prayers) CupertinoListTile(
                     leading: const Icon(CupertinoIcons.time), title: Text(p.name),
@@ -159,13 +160,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 ]),
                 CupertinoListSection.insetGrouped(children: [
                   CupertinoListTile(
-                    leading: const Icon(CupertinoIcons.book), title: const Text('Continue Quran'),
-                    subtitle: const Text('Offline Mushaf'), trailing: const CupertinoListTileChevron(),
+                    leading: const Icon(CupertinoIcons.book), title: const Text(LocaleController.isArabic ? 'متابعة القراءة' : 'Continue Quran'),
+                    subtitle: const Text(LocaleController.isArabic ? 'المصحف دون إنترنت' : 'Offline Mushaf'), trailing: const CupertinoListTileChevron(),
                     onTap: _continueQuran,
                   ),
                   CupertinoListTile(
-                    leading: const Icon(CupertinoIcons.bell), title: const Text('Athan reminders'),
-                    subtitle: const Text('Plays the bundled Athan at prayer time'),
+                    leading: const Icon(CupertinoIcons.bell), title: const Text(LocaleController.isArabic ? 'تنبيهات الأذان' : 'Athan reminders'),
+                    subtitle: const Text(LocaleController.isArabic ? 'تشغيل الأذان عند دخول وقت الصلاة' : 'Plays the bundled Athan at prayer time'),
                     trailing: CupertinoButton(
                       padding: EdgeInsets.zero,
                       minimumSize: const Size(36, 36),
