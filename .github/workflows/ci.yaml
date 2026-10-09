@@ -1,6 +1,5 @@
 name: Flutter CI
 
-# Cancel superseded runs for the same branch while preserving independent branches.
 concurrency:
   group: flutter-ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -26,21 +25,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Generate 604-page offline Mushaf
-        run: bash tool/generate_madinah_mushaf.sh
-
-      - name: Fetch KFGQPC Hafs Quran font
-        run: bash tool/fetch_quran_font.sh
+      - name: Prepare shared Flutter assets
+        uses: ./.github/actions/prepare-flutter-assets
 
       - name: Prepare bundled Athan sounds
         run: bash tool/fetch_athan_sounds.sh
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          flutter-version: 3.47.5
-          cache: true
 
       - name: Get dependencies
         run: flutter pub get
@@ -69,21 +58,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Fetch KFGQPC Hafs Quran font
-        run: bash tool/fetch_quran_font.sh
+      - name: Prepare shared Flutter assets
+        uses: ./.github/actions/prepare-flutter-assets
 
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          flutter-version: 3.47.5
-          cache: true
-
-      - name: Bootstrap Android project and sounds
+      - name: Bootstrap Android and install notification sounds
         run: bash tool/bootstrap_android.sh
-
-      - name: Generate 604-page offline Mushaf
-        run: bash tool/generate_madinah_mushaf.sh
 
       - name: Get dependencies
         run: flutter pub get
@@ -137,15 +116,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Fetch KFGQPC Hafs Quran font
-        run: bash tool/fetch_quran_font.sh
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          flutter-version: 3.47.5
-          cache: true
+      - name: Prepare shared Flutter assets
+        uses: ./.github/actions/prepare-flutter-assets
 
       - name: Generate iOS platform
         run: flutter create . --platforms=ios --org "com.salawat_quran" --project-name "salawat_quran"
@@ -153,7 +125,7 @@ jobs:
       - name: Prepare bundled Athan sounds
         run: bash tool/fetch_athan_sounds.sh
 
-      - name: Install ffmpeg for iOS Athan notification clips
+      - name: Install FFmpeg for iOS notification clips
         run: |
           if ! command -v ffmpeg >/dev/null 2>&1 || ! command -v ffprobe >/dev/null 2>&1; then
             brew install ffmpeg
@@ -164,7 +136,7 @@ jobs:
       - name: Prepare iOS Athan notification sounds
         run: bash tool/prepare_ios_athan_sounds.sh
 
-      - name: Install bundled Athan sounds for iOS
+      - name: Add notification sounds to iOS app resources
         run: |
           set -e
           for sound in azan azan_madinah azan_dubai azan_fajr_madinah; do
@@ -192,9 +164,6 @@ jobs:
           /usr/libexec/PlistBuddy -c "Add :NSLocationWhenInUseUsageDescription string Allow Quran Prayer Companion to use your location for prayer times and Qibla direction." ios/Runner/Info.plist || true
           /usr/libexec/PlistBuddy -c "Add :NSLocationAlwaysAndWhenInUseUsageDescription string Allow Quran Prayer Companion to use location for prayer times and Qibla direction." ios/Runner/Info.plist || true
           /usr/libexec/PlistBuddy -c "Add :NSFaceIDUsageDescription string Use Face ID to unlock Quran Prayer Companion." ios/Runner/Info.plist || true
-
-      - name: Generate 604-page offline Mushaf
-        run: bash tool/generate_madinah_mushaf.sh
 
       - name: Get dependencies
         run: flutter pub get
@@ -239,7 +208,6 @@ jobs:
           APP_PATH="build/ios/Build/Products/Release-iphoneos/Runner.app"
           for sound in azan azan_madinah azan_dubai azan_fajr_madinah; do
             test -s "$APP_PATH/$sound.wav"
-            # Apple requires custom notification sounds to remain under 30s.
             duration="$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$APP_PATH/$sound.wav")"
             python3 -c "d=float('$duration'); assert 0 < d < 30, d"
           done
