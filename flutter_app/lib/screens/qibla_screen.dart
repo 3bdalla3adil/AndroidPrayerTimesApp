@@ -5,6 +5,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_compass/flutter_compass.dart';
 import 'package:geolocator/geolocator.dart';
 
+import '../services/locale_controller.dart';
+
 class QiblaScreen extends StatefulWidget {
   const QiblaScreen({super.key});
 
@@ -19,7 +21,7 @@ class _QiblaScreenState extends State<QiblaScreen> {
   Future<void> calculate() async {
     try {
       if (!await Geolocator.isLocationServiceEnabled()) {
-        throw StateError('Location services are disabled.');
+        throw StateError(LocaleController.isArabic ? 'خدمات الموقع معطّلة.' : 'Location services are disabled.');
       }
 
       var permission = await Geolocator.checkPermission();
@@ -29,7 +31,7 @@ class _QiblaScreenState extends State<QiblaScreen> {
 
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
-        throw StateError('Location permission was not granted.');
+        throw StateError(LocaleController.isArabic ? 'لم يتم منح إذن الموقع.' : 'Location permission was not granted.');
       }
 
       final position = await Geolocator.getCurrentPosition(
@@ -43,7 +45,7 @@ class _QiblaScreenState extends State<QiblaScreen> {
       if (!mounted) return;
       setState(() {
         qiblaBearing = qibla;
-        status = 'Qibla is ${qibla.toStringAsFixed(1)}° from North.';
+        status = LocaleController.isArabic ? 'اتجاه القبلة ${qibla.toStringAsFixed(1)}° من الشمال.' : 'Qibla is ${qibla.toStringAsFixed(1)}° from North.';
       });
     } catch (e) {
       if (!mounted) return;
@@ -68,7 +70,7 @@ class _QiblaScreenState extends State<QiblaScreen> {
     final accent = CupertinoColors.activeGreen.resolveFrom(context);
     return CupertinoPageScaffold(
       navigationBar: const CupertinoNavigationBar(
-        middle: Text('Qibla direction'),
+        middle: Text(LocaleController.isArabic ? 'اتجاه القبلة' : 'Qibla direction'),
       ),
       child: SafeArea(
         child: StreamBuilder<CompassEvent>(
