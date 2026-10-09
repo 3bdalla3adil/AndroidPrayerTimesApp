@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 
 import '../services/locale_controller.dart';
+import '../services/root_tab_navigation.dart';
 
 import 'adhkar_screen.dart';
 import 'bookmarks_screen.dart';
@@ -96,10 +97,9 @@ class MoreScreen extends StatelessWidget {
                   leading: const Icon(CupertinoIcons.compass),
                   title: Text(LocaleController.isArabic ? 'القبلة' : 'Qibla'),
                   trailing: const CupertinoListTileChevron(),
-                  onTap: () => Navigator.push(
-                    context,
-                    CupertinoPageRoute(builder: (_) => const QiblaScreen()),
-                  ),
+                  onTap: () {
+                    RootTabNavigation.maybeOf(context)?.selectTab(3);
+                  },
                 ),
                 CupertinoListTile(
                   leading: const Icon(CupertinoIcons.gear),
