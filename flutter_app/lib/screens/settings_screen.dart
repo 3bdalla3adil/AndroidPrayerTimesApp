@@ -4,6 +4,7 @@ import '../services/athan_reminder_service.dart';
 import '../services/notification_service.dart';
 import '../services/prayer_service.dart';
 import '../services/storage_service.dart';
+import '../services/locale_controller.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -371,7 +372,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override Widget build(BuildContext context) {
     return CupertinoPageScaffold(
-      navigationBar: const CupertinoNavigationBar(middle: Text('Settings')),
+      navigationBar: CupertinoNavigationBar(middle: Text(LocaleController.isArabic ? 'الإعدادات' : 'Settings')),
       child: SafeArea(
         child: _loading && !_reminders
             ? const Center(child: CupertinoActivityIndicator())
@@ -379,7 +380,44 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 padding: const EdgeInsets.fromLTRB(12, 16, 12, 40),
                 children: [
                   CupertinoListSection.insetGrouped(
-                    header: const Text('PRAYER'),
+                    header: Text(LocaleController.isArabic ? 'اللغة' : 'LANGUAGE'),
+                    children: [
+                      CupertinoListTile(
+                        leading: const Icon(CupertinoIcons.globe),
+                        title: Text(LocaleController.isArabic ? 'لغة التطبيق' : 'App language'),
+                        subtitle: Text(LocaleController.isArabic ? 'العربية (الافتراضية)' : 'English'),
+                        trailing: const CupertinoListTileChevron(),
+                        onTap: () async {
+                          final selected = await showCupertinoModalPopup<String>(
+                            context: context,
+                            builder: (popupContext) => CupertinoActionSheet(
+                              title: Text(LocaleController.isArabic ? 'اختر لغة التطبيق' : 'Choose app language'),
+                              actions: [
+                                CupertinoActionSheetAction(
+                                  onPressed: () => Navigator.pop(popupContext, 'ar'),
+                                  child: const Text('العربية'),
+                                ),
+                                CupertinoActionSheetAction(
+                                  onPressed: () => Navigator.pop(popupContext, 'en'),
+                                  child: const Text('English'),
+                                ),
+                              ],
+                              cancelButton: CupertinoActionSheetAction(
+                                onPressed: () => Navigator.pop(popupContext),
+                                child: Text(LocaleController.isArabic ? 'إلغاء' : 'Cancel'),
+                              ),
+                            ),
+                          );
+                          if (selected != null) {
+                            await LocaleController.setLanguage(selected);
+                            if (mounted) setState(() {});
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                  CupertinoListSection.insetGrouped(
+                    header: Text(LocaleController.isArabic ? 'الصلاة' : 'PRAYER'),
                     children: [
                       CupertinoListTile(
                         leading: const Icon(CupertinoIcons.bell_fill),
