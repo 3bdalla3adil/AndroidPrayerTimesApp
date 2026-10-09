@@ -180,7 +180,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                 children: [
                                   Text(
                                     date.day.toString(),
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontWeight: isToday ? FontWeight.w800 : FontWeight.w600,
                                       color: isToday ? AppTheme.emerald : CupertinoColors.label.resolveFrom(context),
                                     ),
