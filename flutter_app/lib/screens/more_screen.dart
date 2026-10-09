@@ -6,6 +6,7 @@ import '../services/root_tab_navigation.dart';
 import 'adhkar_screen.dart';
 import 'bookmarks_screen.dart';
 import 'calendar_screen.dart';
+import 'dedication_screen.dart';
 import 'fasting_screen.dart';
 import 'reading_history_screen.dart';
 import 'settings_screen.dart';
@@ -107,6 +108,21 @@ class MoreScreen extends StatelessWidget {
                   onTap: () => Navigator.push(
                     context,
                     CupertinoPageRoute(builder: (_) => const SettingsScreen()),
+                  ),
+                ),
+              ],
+            ),
+            CupertinoListSection.insetGrouped(
+              header: Text(LocaleController.isArabic ? 'كلمة امتنان' : 'A NOTE OF GRATITUDE'),
+              children: [
+                CupertinoListTile(
+                  leading: const Icon(CupertinoIcons.gift, color: Color(0xFFC7A45A)),
+                  title: Text(LocaleController.isArabic ? 'إهداء وتقدير' : 'A Gift of Gratitude'),
+                  subtitle: Text(LocaleController.isArabic ? 'كلمات تقدير واحترام لوالد زوجتي العزيز' : 'A heartfelt dedication to my dear father-in-law'),
+                  trailing: const CupertinoListTileChevron(),
+                  onTap: () => Navigator.push(
+                    context,
+                    CupertinoPageRoute(builder: (_) => const DedicationScreen()),
                   ),
                 ),
               ],
