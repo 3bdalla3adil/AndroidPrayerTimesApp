@@ -238,7 +238,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
                 ),
                 CupertinoListTile(
                   leading: const Icon(CupertinoIcons.location_fill),
-                  title: const Text(LocaleController.isArabic ? 'استخدم موقعي الحالي' : 'Use my current location'),
+                  title: Text(LocaleController.isArabic ? 'استخدم موقعي الحالي' : 'Use my current location'),
                   onTap: _useDeviceLocation,
                 ),
               ],
@@ -264,7 +264,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
                 ),
               ),
             CupertinoListSection.insetGrouped(
-              header: const Text(LocaleController.isArabic ? 'اليوم' : 'TODAY'),
+              header: Text(LocaleController.isArabic ? 'اليوم' : 'TODAY'),
               children: [
                 for (final prayer in _prayers)
                   CupertinoListTile(
@@ -279,8 +279,8 @@ class _PrayerScreenState extends State<PrayerScreen> {
               children: [
                 CupertinoListTile(
                   leading: const Icon(CupertinoIcons.bell),
-                  title: const Text(LocaleController.isArabic ? 'تنبيهات الأذان' : 'Athan reminders'),
-                  subtitle: const Text(LocaleController.isArabic ? 'تشغيل الأذان عند دخول وقت كل صلاة' : 'Plays the bundled Athan at each prayer time'),
+                  title: Text(LocaleController.isArabic ? 'تنبيهات الأذان' : 'Athan reminders'),
+                  subtitle: Text(LocaleController.isArabic ? 'تشغيل الأذان عند دخول وقت كل صلاة' : 'Plays the bundled Athan at each prayer time'),
                   trailing: CupertinoSwitch(
                     value: _reminders,
                     onChanged: _toggleReminders,
