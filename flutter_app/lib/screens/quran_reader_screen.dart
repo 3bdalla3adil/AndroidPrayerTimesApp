@@ -37,7 +37,9 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
   static const totalReaderPages = totalQuranPages + 1;
 
   final _controller = ScrollController();
+  final _listViewportKey = GlobalKey();
   final _pageKeys = <int, GlobalKey>{};
+  final _pageExtents = <int, double>{};
   final _storage = StorageService();
   final _cache = <int, Map<String, dynamic>>{};
 
@@ -146,32 +148,109 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     return data;
   }
 
+  double _estimatedPageExtent() {
+    final extents = _pageExtents.values
+        .where((extent) => extent.isFinite && extent > 0)
+        .toList()
+      ..sort();
+    if (extents.isNotEmpty) return extents[extents.length ~/ 2];
+    if (_controller.hasClients) return _controller.position.viewportDimension;
+    return 600;
+  }
+
+  int? _nearestPageToViewport() {
+    final viewportObject = _listViewportKey.currentContext?.findRenderObject();
+    if (viewportObject is! RenderBox || !viewportObject.hasSize) return null;
+    final viewportRect = viewportObject.localToGlobal(Offset.zero) & viewportObject.size;
+    final centerY = viewportRect.center.dy;
+    var nearestPage = -1;
+    var nearestDistance = double.infinity;
+
+    for (final entry in _pageKeys.entries) {
+      final renderObject = entry.value.currentContext?.findRenderObject();
+      if (renderObject is! RenderBox || !renderObject.hasSize) continue;
+      final rect = renderObject.localToGlobal(Offset.zero) & renderObject.size;
+      _pageExtents[entry.key] = rect.height;
+      final distance = centerY < rect.top
+          ? rect.top - centerY
+          : centerY > rect.bottom
+              ? centerY - rect.bottom
+              : 0.0;
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearestPage = entry.key;
+      }
+    }
+    return nearestPage < 0 ? null : nearestPage;
+  }
+
   Future<void> _scrollToPage(int page, {bool animated = true}) async {
     if (page < 0 || page >= totalReaderPages) return;
     final key = _keyForPage(page);
+
+    for (var attempt = 0; attempt < 8; attempt++) {
+      if (!_controller.hasClients) {
+        await WidgetsBinding.instance.endOfFrame;
+        continue;
+      }
+
+      final target = key.currentContext;
+      if (target != null) {
+        await Scrollable.ensureVisible(
+          target,
+          duration: animated && attempt == 0
+              ? const Duration(milliseconds: 280)
+              : Duration.zero,
+          curve: Curves.easeOutCubic,
+          alignment: 0.02,
+        );
+        return;
+      }
+
+      final currentPage = _nearestPageToViewport() ?? _readerPage;
+      final pageDelta = page - currentPage;
+      final movement = pageDelta == 0
+          ? _controller.position.viewportDimension * (page >= currentPage ? 2 : -2)
+          : pageDelta * _estimatedPageExtent();
+      final offset = (_controller.offset + movement)
+          .clamp(0.0, _controller.position.maxScrollExtent)
+          .toDouble();
+      if ((offset - _controller.offset).abs() < 1) break;
+
+      if (animated && attempt == 0) {
+        await _controller.animateTo(
+          offset,
+          duration: const Duration(milliseconds: 260),
+          curve: Curves.easeOutCubic,
+        );
+      } else {
+        _controller.jumpTo(offset);
+      }
+      await WidgetsBinding.instance.endOfFrame;
+    }
+
     final target = key.currentContext;
     if (target != null) {
       await Scrollable.ensureVisible(
         target,
-        duration: animated ? const Duration(milliseconds: 320) : Duration.zero,
-        curve: Curves.easeOutCubic,
+        duration: Duration.zero,
         alignment: 0.02,
       );
+    }
+  }
+
+  void _handleReaderScroll(ScrollNotification notification) {
+    if (notification.depth != 0 || notification is! ScrollEndNotification) {
       return;
     }
-    if (!_controller.hasClients) return;
-    final viewport = _controller.position.viewportDimension;
-    final offset = (page * viewport).clamp(0.0, _controller.position.maxScrollExtent);
-    if (animated) {
-      await _controller.animateTo(offset, duration: const Duration(milliseconds: 220), curve: Curves.easeOutCubic);
-    } else {
-      _controller.jumpTo(offset);
-    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final builtTarget = key.currentContext;
-      if (builtTarget != null) {
-        Scrollable.ensureVisible(builtTarget, duration: animated ? const Duration(milliseconds: 180) : Duration.zero, alignment: 0.02);
+      if (!mounted) return;
+      final visiblePage = _nearestPageToViewport();
+      if (visiblePage == null) return;
+      if (visiblePage != _readerPage) {
+        setState(() => _readerPage = visiblePage);
       }
+      _rememberPage(visiblePage);
     });
   }
 
@@ -409,21 +488,11 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
             Expanded(
               child: NotificationListener<ScrollNotification>(
                 onNotification: (notification) {
-                  if (notification is ScrollEndNotification) {
-                    final viewport = notification.metrics.viewportDimension;
-                    if (viewport > 0) {
-                      final estimated = (notification.metrics.pixels / viewport)
-                          .round()
-                          .clamp(0, totalReaderPages - 1);
-                      if (estimated != _readerPage) {
-                        setState(() => _readerPage = estimated);
-                        _rememberPage(estimated);
-                      }
-                    }
-                  }
+                  _handleReaderScroll(notification);
                   return false;
                 },
                 child: ListView.builder(
+                  key: _listViewportKey,
                   controller: _controller,
                   physics: const BouncingScrollPhysics(),
                   padding: const EdgeInsets.only(bottom: 8),
@@ -619,10 +688,9 @@ class _DedicationPage extends StatelessWidget {
       child: SafeArea(
         top: false,
         bottom: false,
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 34),
-            child: Directionality(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 34),
+          child: Directionality(
               textDirection: arabic ? TextDirection.rtl : TextDirection.ltr,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -660,7 +728,6 @@ class _DedicationPage extends StatelessWidget {
                 ],
               ),
             ),
-          ),
         ),
       ),
     );
@@ -802,7 +869,7 @@ class _MushafPageState extends State<_MushafPage> {
             ),
           ],
         ),
-        child: SingleChildScrollView(
+        child: Padding(
           padding: const EdgeInsets.fromLTRB(18, 15, 18, 12),
           child: Column(
             children: [
