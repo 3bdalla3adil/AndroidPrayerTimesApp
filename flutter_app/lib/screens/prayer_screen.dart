@@ -9,6 +9,7 @@ import '../services/athan_reminder_service.dart';
 import '../services/prayer_service.dart';
 import '../services/storage_service.dart';
 import '../services/locale_controller.dart';
+import '../theme/app_theme.dart';
 
 class PrayerScreen extends StatefulWidget {
   const PrayerScreen({super.key});
@@ -252,7 +253,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
                 margin: const EdgeInsets.only(top: 8, bottom: 16),
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: CupertinoColors.activeGreen.resolveFrom(context),
+                  color: AppTheme.emerald,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Column(
