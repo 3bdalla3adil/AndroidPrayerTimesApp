@@ -1,10 +1,8 @@
 name: Prepare shared Flutter assets
-description: Set up Flutter and prepare the shared Quran font and offline Mushaf assets.
+description: Set up Flutter and prepare the shared Quran font and offline Mushaf assets on Linux and macOS runners.
 runs:
   using: composite
   steps:
-    - name: GitHub Workflow Cleaner Action
-      uses: rokibhasansagar/slimhub_actions@v25.42.5
     - name: Setup Flutter
       uses: subosito/flutter-action@v2
       with:
