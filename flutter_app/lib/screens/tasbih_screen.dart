@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 
 import '../services/storage_service.dart';
+import '../theme/app_theme.dart';
 
 class TasbihScreen extends StatefulWidget {
   const TasbihScreen({super.key});
@@ -147,7 +148,7 @@ class _TasbihScreenState extends State<TasbihScreen> {
                 height: 260,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: CupertinoColors.activeGreen.resolveFrom(context),
+                  color: AppTheme.emerald,
                 ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -190,7 +191,7 @@ class _TasbihScreenState extends State<TasbihScreen> {
                   widthFactor: progress,
                   child: Container(
                     decoration: BoxDecoration(
-                      color: CupertinoColors.activeGreen.resolveFrom(context),
+                      color: AppTheme.emerald,
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
