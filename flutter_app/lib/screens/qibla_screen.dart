@@ -6,6 +6,7 @@ import 'package:flutter_compass/flutter_compass.dart';
 import 'package:geolocator/geolocator.dart';
 
 import '../services/locale_controller.dart';
+import '../theme/app_theme.dart';
 
 class QiblaScreen extends StatefulWidget {
   const QiblaScreen({super.key});
@@ -67,7 +68,7 @@ class _QiblaScreenState extends State<QiblaScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final accent = CupertinoColors.activeGreen.resolveFrom(context);
+    final accent = AppTheme.emerald;
     return CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
         middle: Text(LocaleController.isArabic ? 'اتجاه القبلة' : 'Qibla direction'),
