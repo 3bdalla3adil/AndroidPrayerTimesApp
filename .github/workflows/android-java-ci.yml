@@ -13,8 +13,8 @@ jobs:
       contents: read
 
     steps:
-       - name: GitHub Workflow Cleaner Action
-         uses: rokibhasansagar/slimhub_actions@v25.42.5
+      - name: GitHub Workflow Cleaner Action
+        uses: rokibhasansagar/slimhub_actions@v25.42.5
       - name: Checkout
         uses: actions/checkout@v4
 
