@@ -30,6 +30,8 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^6.0.0
   shared_preferences_platform_interface: ^2.4.0
+  flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.6
 
 flutter:
   uses-material-design: false
@@ -45,3 +47,25 @@ flutter:
     - assets/audio/azan_madinah.mp3
     - assets/audio/azan_dubai.mp3
     - assets/audio/azan_fajr_madinah.mp3
+    - assets/232fe1b1-3db5-40fd-8462-bfb225f93163.jpeg
+
+# Generate native launcher icons from the supplied app artwork.
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/232fe1b1-3db5-40fd-8462-bfb225f93163.jpeg
+  remove_alpha_ios: true
+  adaptive_icon_background: "#104B3D"
+  adaptive_icon_foreground: assets/232fe1b1-3db5-40fd-8462-bfb225f93163.jpeg
+
+# Keep the launch screen aligned with the app's emerald-and-gold visual theme.
+flutter_native_splash:
+  color: "#071F1A"
+  image: assets/232fe1b1-3db5-40fd-8462-bfb225f93163.jpeg
+  android: true
+  ios: true
+  web: false
+  android_12:
+    color: "#071F1A"
+    image: assets/232fe1b1-3db5-40fd-8462-bfb225f93163.jpeg
+    icon_background_color: "#104B3D"
