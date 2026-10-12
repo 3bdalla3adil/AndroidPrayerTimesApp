@@ -63,6 +63,9 @@ jobs:
         uses: actions/checkout@v4
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          # "tools" is no longer a valid sdkmanager package on current SDK tools.
+          packages: platform-tools,platforms;android-35,build-tools;35.0.0
 
       - name: Prepare shared Flutter assets
         uses: ./.github/actions/prepare-flutter-assets
