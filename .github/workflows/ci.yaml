@@ -63,7 +63,8 @@ jobs:
         uses: actions/checkout@v4
       - name: Clean Ubuntu runner disk space
         uses: rokibhasansagar/slimhub_actions@v25.42.5
-
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
 
       - name: Prepare shared Flutter assets
         uses: ./.github/actions/prepare-flutter-assets
@@ -182,9 +183,9 @@ jobs:
 
       - name: Generate iOS launcher icon and splash screen
         run: |
-          # Flutter's generated template may contain an incomplete AppIcon set.
-          # Remove it so flutter_launcher_icons creates a complete set from source artwork.
-          rm -rf ios/Runner/Assets.xcassets/AppIcon.appiconset
+          # Keep Flutter's generated AppIcon asset catalog: flutter_launcher_icons
+          # overwrites the template icon files and expects the catalog to exist.
+          test -f ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-20x20@1x.png
           dart run flutter_launcher_icons -f flutter_launcher_icons_ios.yaml
           dart run flutter_native_splash:create
 
