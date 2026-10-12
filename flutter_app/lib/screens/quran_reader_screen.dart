@@ -50,6 +50,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
   bool _showToolbar = true;
   bool _darkPage = false;
   bool _pageTrackingScheduled = false;
+  bool _pageTrackingShouldRemember = false;
 
   @override
   void initState() {
@@ -250,12 +251,16 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     // Track the page while the finger is moving, not only after the gesture
     // ends. Coalesce updates to one post-frame measurement to avoid scheduling
     // hundreds of callbacks during a fast fling.
+    if (notification is ScrollEndNotification) {
+      _pageTrackingShouldRemember = true;
+    }
     if (_pageTrackingScheduled) return;
     _pageTrackingScheduled = true;
-    final shouldRemember = notification is ScrollEndNotification;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _pageTrackingScheduled = false;
       if (!mounted) return;
+      final shouldRemember = _pageTrackingShouldRemember;
+      _pageTrackingShouldRemember = false;
       final visiblePage = _nearestPageToViewport();
       if (visiblePage == null) return;
       if (visiblePage != _readerPage) {
