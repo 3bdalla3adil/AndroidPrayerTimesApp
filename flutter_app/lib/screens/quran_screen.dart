@@ -3,6 +3,7 @@ import 'package:quran/quran.dart' as quran;
 
 import 'quran_reader_screen.dart';
 import '../services/locale_controller.dart';
+import '../theme/app_theme.dart';
 
 class QuranScreen extends StatefulWidget {
   const QuranScreen({super.key});
@@ -240,7 +241,7 @@ class _NumberBadge extends StatelessWidget {
         height: 36,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: CupertinoColors.activeGreen.resolveFrom(context),
+          color: AppTheme.emerald,
         ),
         alignment: Alignment.center,
         child: Text(
