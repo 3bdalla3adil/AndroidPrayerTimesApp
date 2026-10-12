@@ -76,7 +76,7 @@ jobs:
 
       - name: Generate Android launcher icon and splash screen
         run: |
-          dart run flutter_launcher_icons
+          dart run flutter_launcher_icons -f flutter_launcher_icons_android.yaml
           dart run flutter_native_splash:create
 
       - name: Build release APK
@@ -182,7 +182,10 @@ jobs:
 
       - name: Generate iOS launcher icon and splash screen
         run: |
-          dart run flutter_launcher_icons
+          # Flutter's generated template may contain an incomplete AppIcon set.
+          # Remove it so flutter_launcher_icons creates a complete set from source artwork.
+          rm -rf ios/Runner/Assets.xcassets/AppIcon.appiconset
+          dart run flutter_launcher_icons -f flutter_launcher_icons_ios.yaml
           dart run flutter_native_splash:create
 
       - name: Prepare iOS Flutter project
