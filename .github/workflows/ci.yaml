@@ -71,6 +71,11 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
+      - name: Generate Android launcher icon and splash screen
+        run: |
+          dart run flutter_launcher_icons
+          dart run flutter_native_splash:create
+
       - name: Build release APK
         run: flutter build apk --release
 
@@ -171,6 +176,11 @@ jobs:
 
       - name: Get dependencies
         run: flutter pub get
+
+      - name: Generate iOS launcher icon and splash screen
+        run: |
+          dart run flutter_launcher_icons
+          dart run flutter_native_splash:create
 
       - name: Prepare iOS Flutter project
         run: flutter build ios --config-only --release --no-codesign
