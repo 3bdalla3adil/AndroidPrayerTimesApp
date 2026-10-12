@@ -704,7 +704,7 @@ class _DedicationPage extends StatelessWidget {
                       fontFamily: 'serif',
                       fontSize: arabic ? 24 : 21,
                       fontWeight: FontWeight.w700,
-                      color: const Color(0xFF356B49),
+                      color: const Color(0xFF176B52),
                     ),
                   ),
                   const SizedBox(height: 26),
@@ -850,10 +850,10 @@ class _MushafPageState extends State<_MushafPage> {
         : const Color(0xFF1B241E);
     final green = widget.darkPage
         ? const Color(0xFF9CC8A8)
-        : const Color(0xFF356B49);
+        : const Color(0xFF176B52);
     final border = widget.darkPage
         ? const Color(0xFF50675A)
-        : const Color(0xFFB8A66A);
+        : const Color(0xFFC7A45A);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(7, 8, 7, 8),
@@ -920,12 +920,12 @@ class _MushafPageState extends State<_MushafPage> {
                             color: _isHighlighted(verse)
                                 ? (widget.darkPage
                                     ? const Color(0xFFFFD54F)
-                                    : const Color(0xFF0B7A53))
+                                    : const Color(0xFF176B52))
                                 : ink,
                             backgroundColor: _isHighlighted(verse)
                                 ? (widget.darkPage
-                                    ? const Color(0x334CAF50)
-                                    : const Color(0x332E8B57))
+                                    ? const Color(0x33176B52)
+                                    : const Color(0x33176B52))
                                 : null,
                             fontWeight: FontWeight.w500,
                           ),
