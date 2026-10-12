@@ -7,6 +7,8 @@ import '../services/prayer_service.dart';
 import '../services/storage_service.dart';
 import 'quran_reader_screen.dart';
 import 'adhkar_screen.dart';
+import 'calendar_screen.dart';
+import 'settings_screen.dart';
 import 'tasbih_screen.dart';
 import '../theme/app_theme.dart';
 import '../services/locale_controller.dart';
@@ -126,19 +128,15 @@ class _HomeScreenState extends State<HomeScreen> {
                     title: Text(LocaleController.isArabic ? 'مواقيت الصلاة غير متاحة' : 'Prayer times unavailable'), subtitle: Text(_error!)),
                 ]),
                 if (next != null) _NextPrayer(prayer: next, now: _now),
-                const SizedBox(height: 18),
-                Text(LocaleController.isArabic ? 'اليوم' : 'Today', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
-                const SizedBox(height: 8),
+                const SizedBox(height: 22),
                 Text(
-                  LocaleController.isArabic ? 'وصول سريع' : 'Quick access',
-                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+                  LocaleController.isArabic ? 'استكشف التطبيق' : 'Explore',
+                  style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w700),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
                 _HomeFeatureGrid(
                   onQuran: _continueQuran,
-                  onPrayer: () {
-                    RootTabNavigation.maybeOf(context)?.selectTab(2);
-                  },
+                  onPrayer: () => RootTabNavigation.maybeOf(context)?.selectTab(2),
                   onTasbih: () => Navigator.push(
                     context,
                     CupertinoPageRoute(builder: (_) => const TasbihScreen()),
@@ -147,11 +145,19 @@ class _HomeScreenState extends State<HomeScreen> {
                     context,
                     CupertinoPageRoute(builder: (_) => const AdhkarScreen()),
                   ),
-                  onQibla: () {
-                    RootTabNavigation.maybeOf(context)?.selectTab(3);
-                  },
+                  onQibla: () => RootTabNavigation.maybeOf(context)?.selectTab(3),
+                  onCalendar: () => Navigator.push(
+                    context,
+                    CupertinoPageRoute(builder: (_) => const CalendarScreen()),
+                  ),
+                  onAthan: () => _toggle(!_reminders),
+                  onSettings: () => Navigator.push(
+                    context,
+                    CupertinoPageRoute(builder: (_) => const SettingsScreen()),
+                  ),
+                  remindersEnabled: _reminders,
                 ),
-                const SizedBox(height: 18),
+                const SizedBox(height: 22),
                 CupertinoListSection.insetGrouped(children: [
                   if (_prayers.isEmpty) CupertinoListTile(
                     leading: Icon(CupertinoIcons.time), title: Text(LocaleController.isArabic ? 'مواقيت الصلاة' : 'Prayer times'),
@@ -234,6 +240,10 @@ class _HomeFeatureGrid extends StatelessWidget {
     required this.onTasbih,
     required this.onDuaa,
     required this.onQibla,
+    required this.onCalendar,
+    required this.onAthan,
+    required this.onSettings,
+    required this.remindersEnabled,
   });
 
   final VoidCallback onQuran;
@@ -241,75 +251,100 @@ class _HomeFeatureGrid extends StatelessWidget {
   final VoidCallback onTasbih;
   final VoidCallback onDuaa;
   final VoidCallback onQibla;
+  final VoidCallback onCalendar;
+  final VoidCallback onAthan;
+  final VoidCallback onSettings;
+  final bool remindersEnabled;
 
   @override
   Widget build(BuildContext context) {
-    final items = [
-      ('القرآن الكريم', 'Quran', CupertinoIcons.book_fill, onQuran),
-      ('أوقات الصلاة', 'Prayer', CupertinoIcons.time_solid, onPrayer),
-      ('التسبيح', 'Tasbih', CupertinoIcons.circle_grid_3x3_fill, onTasbih),
-      ('الدعاء والأذكار', 'Duaa', CupertinoIcons.heart_fill, onDuaa),
-      ('القبلة', 'Qibla', CupertinoIcons.compass_fill, onQibla),
+    final arabic = LocaleController.isArabic;
+    final reading = <(String, String, IconData, VoidCallback)>[
+      (arabic ? 'القرآن الكريم' : 'Quran', arabic ? 'قراءة المصحف' : 'Read Quran', CupertinoIcons.book_fill, onQuran),
+      (arabic ? 'التسبيح' : 'Tasbih', arabic ? 'الذكر اليومي' : 'Daily dhikr', CupertinoIcons.circle_grid_3x3_fill, onTasbih),
+      (arabic ? 'الأذكار والأدعية' : 'Duas & Adhkar', arabic ? 'أذكار يومية' : 'Daily remembrance', CupertinoIcons.heart_fill, onDuaa),
+    ];
+    final prayer = <(String, String, IconData, VoidCallback)>[
+      (arabic ? 'مواقيت الصلاة' : 'Prayer times', arabic ? 'مواعيد اليوم' : 'Today’s schedule', CupertinoIcons.time, onPrayer),
+      (arabic ? 'اتجاه القبلة' : 'Qibla', arabic ? 'اتجاه مكة' : 'Direction to Makkah', CupertinoIcons.compass_fill, onQibla),
+      (arabic ? 'التقويم الهجري' : 'Hijri calendar', arabic ? 'التاريخ والمناسبات' : 'Dates & occasions', CupertinoIcons.calendar, onCalendar),
+    ];
+    final tools = <(String, String, IconData, VoidCallback)>[
+      (arabic ? 'تنبيهات الأذان' : 'Athan alerts', remindersEnabled ? (arabic ? 'مفعّلة' : 'Enabled') : (arabic ? 'غير مفعّلة' : 'Disabled'), remindersEnabled ? CupertinoIcons.bell_fill : CupertinoIcons.bell, onAthan),
+      (arabic ? 'إعدادات التطبيق' : 'App settings', arabic ? 'اللغة والمظهر' : 'Language & appearance', CupertinoIcons.gear, onSettings),
     ];
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final columns = constraints.maxWidth >= 560 ? 3 : 2;
-        final spacing = columns == 3 ? 12.0 : 10.0;
-        final width = (constraints.maxWidth - spacing * (columns - 1)) / columns;
-        return Wrap(
-          spacing: spacing,
-          runSpacing: spacing,
-          alignment: WrapAlignment.spaceEvenly,
+    Widget row(String title, List<(String, String, IconData, VoidCallback)> items) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            for (final item in items)
-              SizedBox(
-                width: width,
-                child: CupertinoButton(
-                  padding: EdgeInsets.zero,
-                  onPressed: item.$4,
-                  child: Container(
-                    height: 132,
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: CupertinoColors.secondarySystemGroupedBackground.resolveFrom(context),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: AppTheme.emerald.withValues(alpha: .18)),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppTheme.deepEmerald.withValues(alpha: .06),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 9),
+              child: Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: CupertinoColors.secondaryLabel)),
+            ),
+            SizedBox(
+              height: 126,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                itemCount: items.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 10),
+                itemBuilder: (context, index) {
+                  final item = items[index];
+                  return SizedBox(
+                    width: 148,
+                    child: CupertinoButton(
+                      padding: EdgeInsets.zero,
+                      onPressed: item.$4,
+                      child: Container(
+                        width: double.infinity,
+                        height: 122,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
+                        decoration: BoxDecoration(
+                          color: CupertinoColors.secondarySystemGroupedBackground.resolveFrom(context),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: CupertinoColors.separator.resolveFrom(context).withValues(alpha: .45)),
                         ),
-                      ],
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(item.$3, size: 25, color: AppTheme.emerald),
+                            const Spacer(),
+                            Text(
+                              item.$1,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              textDirection: arabic ? TextDirection.rtl : TextDirection.ltr,
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              item.$2,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 11, color: CupertinoColors.secondaryLabel),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(item.$3, size: 31, color: AppTheme.emerald),
-                        const SizedBox(height: 8),
-                        Text(
-                          item.$1,
-                          textAlign: TextAlign.center,
-                          textDirection: TextDirection.rtl,
-                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          item.$2,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: CupertinoColors.secondaryLabel,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                  );
+                },
               ),
+            ),
           ],
-        );
-      },
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        row(arabic ? 'القرآن والذكر' : 'Quran & remembrance', reading),
+        row(arabic ? 'الصلاة والقبلة' : 'Prayer & direction', prayer),
+        row(arabic ? 'التنبيهات والتخصيص' : 'Alerts & preferences', tools),
+      ],
     );
   }
 }
