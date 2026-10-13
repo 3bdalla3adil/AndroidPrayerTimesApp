@@ -47,18 +47,18 @@ flutter:
     - assets/audio/azan_madinah.mp3
     - assets/audio/azan_dubai.mp3
     - assets/audio/azan_fajr_madinah.mp3
-    - assets/232fe1b1-3db5-40fd-8462-bfb225f93163.jpeg
+    - assets/splash_screen.png
 
 # Launcher icon generation uses platform-specific config files in CI.
 
 # Keep the launch screen aligned with the app's emerald-and-gold visual theme.
 flutter_native_splash:
   color: "#071F1A"
-  image: assets/232fe1b1-3db5-40fd-8462-bfb225f93163.jpeg
+  image: assets/splash_screen.png
   android: true
   ios: true
   web: false
   android_12:
     color: "#071F1A"
-    image: assets/232fe1b1-3db5-40fd-8462-bfb225f93163.jpeg
+    image: assets/splash_screen.png
     icon_background_color: "#104B3D"
