@@ -32,6 +32,24 @@ class QuranReaderScreen extends StatefulWidget {
   State<QuranReaderScreen> createState() => _QuranReaderScreenState();
 }
 
+/// Keeps touch-driven scrolling responsive while reducing the long,
+/// high-speed ballistic glide that can make the Mushaf skip pages.
+class _GentleBouncingScrollPhysics extends BouncingScrollPhysics {
+  const _GentleBouncingScrollPhysics({super.parent});
+
+  @override
+  double get maxFlingVelocity => 1800;
+
+  @override
+  Simulation? createBallisticSimulation(
+    ScrollMetrics position,
+    double velocity,
+  ) {
+    // Reduce release momentum; direct finger movement remains unchanged.
+    return super.createBallisticSimulation(position, velocity * 0.35);
+  }
+}
+
 class _QuranReaderScreenState extends State<QuranReaderScreen> {
   static const totalQuranPages = 604;
   static const totalReaderPages = totalQuranPages + 1;
@@ -483,7 +501,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
                 child: ListView.builder(
                   key: _listViewportKey,
                   controller: _controller,
-                  physics: const BouncingScrollPhysics(),
+                  physics: const _GentleBouncingScrollPhysics(),
                   padding: const EdgeInsets.only(bottom: 8),
                   itemCount: totalReaderPages,
                   itemBuilder: (context, index) {
