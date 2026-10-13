@@ -50,7 +50,6 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
   bool _showToolbar = true;
   bool _darkPage = false;
   bool _pageTrackingScheduled = false;
-  bool _pageTrackingShouldRemember = false;
 
   @override
   void initState() {
@@ -244,29 +243,22 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
   void _handleReaderScroll(ScrollNotification notification) {
     if (notification.depth != 0 ||
         (notification is! ScrollUpdateNotification &&
-            notification is! ScrollEndNotification)) {
+            notification is! ScrollEndNotification &&
+            notification is! UserScrollNotification)) {
       return;
     }
 
-    // Track the page while the finger is moving, not only after the gesture
-    // ends. Coalesce updates to one post-frame measurement to avoid scheduling
-    // hundreds of callbacks during a fast fling.
-    if (notification is ScrollEndNotification) {
-      _pageTrackingShouldRemember = true;
-    }
+    // Update the displayed page during scrolling without writing the current
+    // page to storage. Keep measurements coalesced to avoid rebuilding the
+    // reader for every pixel of a fast fling.
     if (_pageTrackingScheduled) return;
     _pageTrackingScheduled = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _pageTrackingScheduled = false;
       if (!mounted) return;
-      final shouldRemember = _pageTrackingShouldRemember;
-      _pageTrackingShouldRemember = false;
       final visiblePage = _nearestPageToViewport();
-      if (visiblePage == null) return;
-      if (visiblePage != _readerPage) {
-        setState(() => _readerPage = visiblePage);
-      }
-      if (shouldRemember) _rememberPage(visiblePage);
+      if (visiblePage == null || visiblePage == _readerPage) return;
+      setState(() => _readerPage = visiblePage);
     });
   }
 
@@ -330,25 +322,6 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
         ],
       ),
     );
-  }
-
-  Future<void> _rememberPage(int index) async {
-    if (index < 1) return;
-    await _storage.saveReaderPage(index);
-    try {
-      final data = await _loadPage(index);
-      final verses = ((data['verses'] as List?) ?? const [])
-          .whereType<Map>()
-          .map((item) => item.cast<String, dynamic>())
-          .toList();
-      if (verses.isEmpty) return;
-      final surah = (verses.first['surah_number'] as num?)?.toInt();
-      final ayah = (verses.first['ayah_number'] as num?)?.toInt();
-      if (surah != null && ayah != null) {
-        await _storage.saveReaderPosition(surah, ayah);
-        await _storage.addReadingHistory(surah, ayah);
-      }
-    } catch (_) {}
   }
 
   void _jumpToPage() {
