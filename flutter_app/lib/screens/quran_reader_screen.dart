@@ -34,7 +34,7 @@ class QuranReaderScreen extends StatefulWidget {
 
 class _QuranReaderScreenState extends State<QuranReaderScreen> {
   static const totalQuranPages = 604;
-  static const totalReaderPages = totalQuranPages + 1;
+  static const totalReaderPages = totalQuranPages;
 
   final _controller = ScrollController();
   final _listViewportKey = GlobalKey();
@@ -42,7 +42,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
   final _storage = StorageService();
   final _cache = <int, Map<String, dynamic>>{};
 
-  int _readerPage = 0;
+  int _readerPage = 1;
   double _fontSize = 25;
   double _lineHeight = 1.75;
   bool _showTranslation = false;
@@ -101,9 +101,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
         }
       }
       final requestedReaderPage =
-          widget.startingPage == null && widget.surahNumber == 1
-              ? 0
-              : requestedQuranPage.clamp(1, totalQuranPages).toInt();
+          requestedQuranPage.clamp(1, totalQuranPages).toInt();
 
       if (!mounted) return;
       setState(() {
@@ -149,7 +147,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
   }
 
   Future<void> _scrollToPage(int page, {bool animated = true}) async {
-    if (page < 0 || page >= totalReaderPages) return;
+    if (page < 1 || page > totalReaderPages) return;
 
     final targetKey = _keyForPage(page);
     for (var attempt = 0; attempt < 6; attempt++) {
@@ -299,7 +297,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
   }
 
   void _jumpToPage() {
-    final input = TextEditingController(text: '${_readerPage == 0 ? 1 : _readerPage}');
+    final input = TextEditingController(text: '$_readerPage');
     showCupertinoDialog<void>(
       context: context,
       builder: (dialogContext) => CupertinoAlertDialog(
@@ -422,7 +420,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
               style: TextStyle(fontWeight: FontWeight.w700),
             ),
             Text(
-              _readerPage == 0 ? (LocaleController.isArabic ? 'صفحة الإهداء' : 'Dedication') : (LocaleController.isArabic ? 'صفحة $_readerPage من $totalQuranPages' : 'Page $_readerPage of $totalQuranPages'),
+              LocaleController.isArabic ? 'صفحة $_readerPage من $totalQuranPages' : 'Page $_readerPage of $totalQuranPages',
               style: const TextStyle(fontSize: 11),
             ),
           ],
@@ -506,13 +504,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
                   padding: const EdgeInsets.only(bottom: 8),
                   itemCount: totalReaderPages,
                   itemBuilder: (context, index) {
-                    final page = index;
-                    if (page == 0) {
-                      return KeyedSubtree(
-                        key: _keyForPage(page),
-                        child: const _DedicationPage(),
-                      );
-                    }
+                    final page = index + 1;
                     return KeyedSubtree(
                       key: _keyForPage(page),
                       child: FutureBuilder<Map<String, dynamic>>(
@@ -603,7 +595,7 @@ class _ReaderToolbar extends StatelessWidget {
           _ReaderButton(
             icon: CupertinoIcons.bookmark,
             label: LocaleController.isArabic ? 'حفظ' : 'Bookmark',
-            onPressed: page > 0 ? onBookmark : () {},
+            onPressed: page >= 1 ? onBookmark : null,
           ),
           const Spacer(),
           Text(
@@ -985,23 +977,16 @@ class _AyahMarker extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: Container(
-        width: 25,
-        height: 25,
-        margin: const EdgeInsets.symmetric(horizontal: 2),
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(color: color.withValues(alpha: .7), width: 1),
-        ),
-        alignment: Alignment.center,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 2),
         child: Text(
-          _arabicNumber(number),
+          '۝${_arabicNumber(number)}',
           textDirection: TextDirection.rtl,
           style: TextStyle(
             fontFamily: kQuranFont,
-            fontSize: 9,
+            fontSize: 12,
             color: darkPage ? const Color(0xFFE6E0C8) : color,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ),
@@ -1068,34 +1053,30 @@ class _SurahHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
-      decoration: BoxDecoration(
-        border: Border.all(color: border, width: .8),
-        borderRadius: BorderRadius.circular(9),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Column(
         children: [
           Text(
             arabic,
             textDirection: TextDirection.rtl,
+            textAlign: TextAlign.center,
             style: TextStyle(
               fontFamily: kQuranFont,
               fontFamilyFallback: const ['Noto Naskh Arabic', 'Arial', 'serif'],
-              fontSize: 21,
+              fontSize: 23,
               color: color,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 3),
           Text(
             english,
-            style: TextStyle(
-              fontSize: 9,
-              color: color.withValues(alpha: .8),
-            ),
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 11, color: color.withValues(alpha: .8)),
           ),
+          const SizedBox(height: 8),
+          Container(height: 1, color: border.withValues(alpha: .6)),
         ],
       ),
     );
@@ -1144,7 +1125,7 @@ class _PageControls extends StatelessWidget {
         children: [
           CupertinoButton(
             padding: const EdgeInsets.all(8),
-            onPressed: page > 0 ? onPrevious : null,
+            onPressed: page > 1 ? onPrevious : null,
             child: const Icon(CupertinoIcons.chevron_left),
           ),
           Expanded(
@@ -1160,7 +1141,7 @@ class _PageControls extends StatelessWidget {
           ),
           CupertinoButton(
             padding: const EdgeInsets.all(8),
-            onPressed: page < totalPages - 1 ? onNext : null,
+            onPressed: page < totalPages ? onNext : null,
             child: const Icon(CupertinoIcons.chevron_right),
           ),
         ],
