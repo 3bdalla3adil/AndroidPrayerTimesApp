@@ -1,11 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
-import 'screens/home_screen.dart';
-import 'screens/more_screen.dart';
-import 'screens/prayer_screen.dart';
-import 'screens/qibla_screen.dart';
-import 'screens/quran_screen.dart';
 import 'services/app_routes.dart';
 import 'services/locale_controller.dart';
 import 'services/notification_service.dart';
