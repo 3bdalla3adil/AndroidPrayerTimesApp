@@ -3,4 +3,4 @@ flutter_launcher_icons:
   ios: false
   image_path: assets/splash_screen.png
   adaptive_icon_background: "#104B3D"
-  adaptive_icon_foreground: assets/232fe1b1-3db5-40fd-8462-bfb225f93163.jpeg
+  adaptive_icon_foreground: assets/splash_screen.png
