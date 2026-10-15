@@ -46,8 +46,11 @@ class _GentleBouncingScrollPhysics extends BouncingScrollPhysics {
     ScrollMetrics position,
     double velocity,
   ) {
-    // Reduce release momentum; direct finger movement remains unchanged.
-    return super.createBallisticSimulation(position, velocity * 0.35);
+    // Do not let a released finger continue driving the Mushaf through dozens
+    // of pages. Finger-following drag remains unchanged; only edge bounce is
+    // retained when the scroll position is outside the valid range.
+    if (!position.outOfRange) return null;
+    return super.createBallisticSimulation(position, velocity * 0.2);
   }
 }
 
