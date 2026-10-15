@@ -800,21 +800,8 @@ class _MushafPageState extends State<_MushafPage> {
     setState(() {
       _highlightedAyah = _highlightedAyah == key ? null : key;
     });
-    if (surah != null && ayah != null) {
-      await StorageService().saveReaderPosition(surah, ayah);
-      await StorageService().saveReaderPage(widget.page);
-    }
+    // Highlighting is temporary. The reader deliberately does not persist the last page or ayah.
   }
-
-  Future<void> _restoreHighlight() async {
-    final (surah, ayah) = await StorageService().loadReaderPosition();
-    if (!mounted || surah == null || ayah == null) return;
-    final match = verses.any((verse) =>
-        (verse['surah_number'] as num?)?.toInt() == surah &&
-        (verse['ayah_number'] as num?)?.toInt() == ayah);
-    if (match) setState(() => _highlightedAyah = '$surah:$ayah');
-  }
-
 
   List<Map<String, dynamic>> get verses =>
       ((widget.data['verses'] as List?) ?? const [])
@@ -843,159 +830,128 @@ class _MushafPageState extends State<_MushafPage> {
   bool get _hasBasmala => _startsSurah && _firstSurah != 9;
 
   @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _restoreHighlight());
-  }
-
-  @override
   Widget build(BuildContext context) {
     final pageBg = widget.darkPage
         ? const Color(0xFF17211C)
-        : const Color(0xFFFFFDF5);
+        : const Color(0xFFFFFFFF);
     final ink = widget.darkPage
         ? const Color(0xFFECE8D9)
-        : const Color(0xFF1B241E);
+        : const Color(0xFF202124);
     final green = widget.darkPage
         ? const Color(0xFF9CC8A8)
         : const Color(0xFF176B52);
-    final border = widget.darkPage
+    final divider = widget.darkPage
         ? const Color(0xFF50675A)
-        : const Color(0xFFC7A45A);
+        : const Color(0xFFE0E0E0);
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(7, 8, 7, 8),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: pageBg,
-          borderRadius: BorderRadius.circular(5),
-          border: Border.all(color: border, width: 1.1),
-          boxShadow: const [
-            BoxShadow(
-              blurRadius: 7,
-              offset: Offset(0, 2),
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 14),
+      padding: const EdgeInsets.fromLTRB(8, 18, 8, 14),
+      decoration: BoxDecoration(
+        color: pageBg,
+        border: Border(bottom: BorderSide(color: divider, width: 1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (_startsSurah) ...[
+            _SurahHeader(
+              arabic: quran.getSurahNameArabic(_firstSurah),
+              english: quran.getSurahName(_firstSurah),
+              color: green,
+              border: divider,
             ),
-          ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(18, 15, 18, 12),
-          child: Column(
-            children: [
-              _PageOrnament(
-                page: widget.page,
-                color: green,
-                border: border,
-              ),
-              if (_startsSurah) ...[
-                const SizedBox(height: 10),
-                _SurahHeader(
-                  arabic: quran.getSurahNameArabic(_firstSurah),
-                  english: quran.getSurahName(_firstSurah),
-                  color: green,
-                  border: border,
-                ),
-              ],
-              if (_hasBasmala) ...[
-                const SizedBox(height: 10),
-                Text(
-                  'بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ',
-                  textDirection: TextDirection.rtl,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontFamily: kQuranFont,
-                    fontFamilyFallback: const ['Noto Naskh Arabic', 'Arial', 'serif'],
-                    fontSize: widget.fontSize - 2,
-                    height: 1.5,
-                    color: ink,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-              const SizedBox(height: 11),
-              Directionality(
-                textDirection: TextDirection.rtl,
-                child: Text.rich(
-                  TextSpan(
-                    children: [
-                      for (final verse in verses) ...[
-                        TextSpan(
-                          text: '${_verseText(verse)} ',
-                          style: TextStyle(
-                            fontFamily: kQuranFont,
-                            fontFamilyFallback: const ['Noto Naskh Arabic', 'Arial', 'serif'],
-                            fontSize: widget.fontSize,
-                            height: widget.lineHeight,
-                            color: _isHighlighted(verse)
-                                ? (widget.darkPage
-                                    ? const Color(0xFFFFD54F)
-                                    : const Color(0xFF176B52))
-                                : ink,
-                            backgroundColor: _isHighlighted(verse)
-                                ? (widget.darkPage
-                                    ? const Color(0x33176B52)
-                                    : const Color(0x33176B52))
-                                : null,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          recognizer: _recognizerFor(
-                            _ayahKey(verse),
-                            () => _toggleHighlight(verse),
-                          ),
-                        ),
-                        WidgetSpan(
-                          alignment: PlaceholderAlignment.middle,
-                          child: _AyahMarker(
-                            number:
-                                (verse['ayah_number'] as num?)?.toInt() ?? 0,
-                            color: green,
-                            darkPage: widget.darkPage,
-                            onTap: () {
-                              final surah =
-                                  (verse['surah_number'] as num?)?.toInt();
-                              final ayah =
-                                  (verse['ayah_number'] as num?)?.toInt();
-                              if (surah != null && ayah != null) {
-                                widget.onBookmarkAyah(surah, ayah);
-                              }
-                            },
-                          ),
-                        ),
-                        if (widget.showTranslation)
-                          TextSpan(
-                            text:
-                                '\n${_translation(verse)}\n',
-                            style: TextStyle(
-                              fontFamily: 'serif',
-                              fontSize: 13,
-                              height: 1.45,
-                              color: widget.darkPage
-                                  ? const Color(0xFFB9C5BD)
-                                  : const Color(0xFF657269),
-                            ),
-                          ),
-                      ],
-                    ],
-                  ),
-                  textAlign: TextAlign.justify,
-                ),
-              ),
-              const SizedBox(height: 14),
-              Container(
-                height: 1,
-                color: border.withValues(alpha: .45),
-              ),
-              const SizedBox(height: 6),
+            if (_hasBasmala) ...[
+              const SizedBox(height: 12),
               Text(
-                '${widget.page}',
+                'بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ',
+                textDirection: TextDirection.rtl,
+                textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 11,
-                  color: green,
-                  fontWeight: FontWeight.w700,
+                  fontFamily: kQuranFont,
+                  fontFamilyFallback: const ['Noto Naskh Arabic', 'Arial', 'serif'],
+                  fontSize: widget.fontSize - 2,
+                  height: 1.6,
+                  color: ink,
                 ),
               ),
             ],
+            const SizedBox(height: 12),
+          ],
+          Directionality(
+            textDirection: TextDirection.rtl,
+            child: Text.rich(
+              TextSpan(
+                children: [
+                  for (final verse in verses) ...[
+                    TextSpan(
+                      text: '${_verseText(verse)} ',
+                      style: TextStyle(
+                        fontFamily: kQuranFont,
+                        fontFamilyFallback: const ['Noto Naskh Arabic', 'Arial', 'serif'],
+                        fontSize: widget.fontSize,
+                        height: widget.lineHeight,
+                        color: _isHighlighted(verse)
+                            ? (widget.darkPage
+                                ? const Color(0xFFFFD54F)
+                                : const Color(0xFF176B52))
+                            : ink,
+                        backgroundColor: _isHighlighted(verse)
+                            ? const Color(0x33176B52)
+                            : null,
+                        fontWeight: FontWeight.w400,
+                      ),
+                      recognizer: _recognizerFor(
+                        _ayahKey(verse),
+                        () => _toggleHighlight(verse),
+                      ),
+                    ),
+                    WidgetSpan(
+                      alignment: PlaceholderAlignment.middle,
+                      child: _AyahMarker(
+                        number: (verse['ayah_number'] as num?)?.toInt() ?? 0,
+                        color: green,
+                        darkPage: widget.darkPage,
+                        onTap: () {
+                          final surah = (verse['surah_number'] as num?)?.toInt();
+                          final ayah = (verse['ayah_number'] as num?)?.toInt();
+                          if (surah != null && ayah != null) {
+                            widget.onBookmarkAyah(surah, ayah);
+                          }
+                        },
+                      ),
+                    ),
+                    if (widget.showTranslation)
+                      TextSpan(
+                        text: '\\n${_translation(verse)}\\n',
+                        style: TextStyle(
+                          fontFamily: 'serif',
+                          fontSize: 13,
+                          height: 1.45,
+                          color: widget.darkPage
+                              ? const Color(0xFFB9C5BD)
+                              : const Color(0xFF657269),
+                        ),
+                      ),
+                  ],
+                ],
+              ),
+              textAlign: TextAlign.justify,
+            ),
           ),
-        ),
+          const SizedBox(height: 14),
+          Center(
+            child: Text(
+              '— ${widget.page} —',
+              style: TextStyle(
+                fontSize: 11,
+                color: green,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
