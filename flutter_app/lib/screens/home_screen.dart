@@ -5,11 +5,7 @@ import '../models/prayer_entry.dart';
 import '../services/athan_reminder_service.dart';
 import '../services/prayer_service.dart';
 import '../services/storage_service.dart';
-import 'quran_reader_screen.dart';
-import 'adhkar_screen.dart';
-import 'calendar_screen.dart';
-import 'settings_screen.dart';
-import 'tasbih_screen.dart';
+import '../services/app_routes.dart';
 import '../theme/app_theme.dart';
 import '../services/locale_controller.dart';
 import '../services/root_tab_navigation.dart';
@@ -82,13 +78,12 @@ class _HomeScreenState extends State<HomeScreen> {
       RootTabNavigation.maybeOf(context)?.selectTab(1);
       return;
     }
-    Navigator.of(context).push(
-      CupertinoPageRoute(
-        builder: (_) => QuranReaderScreen(
-          surahNumber: surah,
-          startingAyah: ayah ?? 1,
-          startingPage: page,
-        ),
+    Navigator.of(context).pushNamed(
+      AppRoutes.quranReader,
+      arguments: QuranReaderRouteArgs(
+        surahNumber: surah,
+        startingAyah: ayah ?? 1,
+        startingPage: page,
       ),
     );
   }
