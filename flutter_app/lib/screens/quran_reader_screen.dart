@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
-import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
 import 'package:quran/quran.dart' as quran;
 
@@ -33,27 +32,6 @@ class QuranReaderScreen extends StatefulWidget {
   State<QuranReaderScreen> createState() => _QuranReaderScreenState();
 }
 
-/// Keeps touch-driven scrolling responsive while reducing the long,
-/// high-speed ballistic glide that can make the Mushaf skip pages.
-class _GentleBouncingScrollPhysics extends BouncingScrollPhysics {
-  const _GentleBouncingScrollPhysics({super.parent});
-
-  @override
-  double get maxFlingVelocity => 1800;
-
-  @override
-  Simulation? createBallisticSimulation(
-    ScrollMetrics position,
-    double velocity,
-  ) {
-    // Do not let a released finger continue driving the Mushaf through dozens
-    // of pages. Finger-following drag remains unchanged; only edge bounce is
-    // retained when the scroll position is outside the valid range.
-    if (!position.outOfRange) return null;
-    return super.createBallisticSimulation(position, velocity * 0.2);
-  }
-}
-
 class _QuranReaderScreenState extends State<QuranReaderScreen> {
   static const totalQuranPages = 604;
   static const totalReaderPages = totalQuranPages + 1;
@@ -61,7 +39,6 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
   final _controller = ScrollController();
   final _listViewportKey = GlobalKey();
   final _pageKeys = <int, GlobalKey>{};
-  final _pageExtents = <int, double>{};
   final _storage = StorageService();
   final _cache = <int, Map<String, dynamic>>{};
 
@@ -171,42 +148,6 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     return data;
   }
 
-  double _estimatedPageExtent() {
-    final extents = _pageExtents.values
-        .where((extent) => extent.isFinite && extent > 0)
-        .toList()
-      ..sort();
-    if (extents.isNotEmpty) return extents[extents.length ~/ 2];
-    if (_controller.hasClients) return _controller.position.viewportDimension;
-    return 600;
-  }
-
-  int? _nearestPageToViewport() {
-    final viewportObject = _listViewportKey.currentContext?.findRenderObject();
-    if (viewportObject is! RenderBox || !viewportObject.hasSize) return null;
-    final viewportRect = viewportObject.localToGlobal(Offset.zero) & viewportObject.size;
-    final centerY = viewportRect.center.dy;
-    var nearestPage = -1;
-    var nearestDistance = double.infinity;
-
-    for (final entry in _pageKeys.entries) {
-      final renderObject = entry.value.currentContext?.findRenderObject();
-      if (renderObject is! RenderBox || !renderObject.hasSize) continue;
-      final rect = renderObject.localToGlobal(Offset.zero) & renderObject.size;
-      _pageExtents[entry.key] = rect.height;
-      final distance = centerY < rect.top
-          ? rect.top - centerY
-          : centerY > rect.bottom
-              ? centerY - rect.bottom
-              : 0.0;
-      if (distance < nearestDistance) {
-        nearestDistance = distance;
-        nearestPage = entry.key;
-      }
-    }
-    return nearestPage < 0 ? null : nearestPage;
-  }
-
   Future<void> _scrollToPage(int page, {bool animated = true}) async {
     if (page < 0 || page >= totalReaderPages) return;
     final key = _keyForPage(page);
@@ -247,12 +188,85 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
           curve: Curves.easeOutCubic,
         );
       } else {
+        _controller  Future<void> _scrollToPage(int page, {bool animated = true}) async {
+    if (page < 0 || page >= totalReaderPages) return;
+
+    final targetKey = _keyForPage(page);
+    for (var attempt = 0; attempt < 6; attempt++) {
+      if (!_controller.hasClients) {
+        await WidgetsBinding.instance.endOfFrame;
+        continue;
+      }
+
+      final target = targetKey.currentContext;
+      if (target != null) {
+        await Scrollable.ensureVisible(
+          target,
+          duration: animated && attempt == 0
+              ? const Duration(milliseconds: 220)
+              : Duration.zero,
+          curve: Curves.easeOutCubic,
+          alignment: 0.02,
+        );
+        if (mounted && _readerPage != page) {
+          setState(() => _readerPage = page);
+        }
+        return;
+      }
+
+      // Estimate from currently built pages, then let ListView lazily build
+      // the destination. All scroll calculations stay in this one function.
+      final viewport = _listViewportKey.currentContext?.findRenderObject();
+      final centerY = viewport is RenderBox && viewport.hasSize
+          ? (viewport.localToGlobal(Offset.zero) & viewport.size).center.dy
+          : 0.0;
+      var nearestPage = _readerPage;
+      var nearestDistance = double.infinity;
+      final heights = <double>[];
+
+      for (final entry in _pageKeys.entries) {
+        final renderObject = entry.value.currentContext?.findRenderObject();
+        if (renderObject is! RenderBox || !renderObject.hasSize) continue;
+        heights.add(renderObject.size.height);
+        final rect = renderObject.localToGlobal(Offset.zero) & renderObject.size;
+        final distance = centerY < rect.top
+            ? rect.top - centerY
+            : centerY > rect.bottom
+                ? centerY - rect.bottom
+                : 0.0;
+        if (distance < nearestDistance) {
+          nearestDistance = distance;
+          nearestPage = entry.key;
+        }
+      }
+
+      heights.sort();
+      final pageExtent = heights.isEmpty
+          ? _controller.position.viewportDimension
+          : heights[heights.length ~/ 2];
+      final delta = page - nearestPage;
+      final offset = (_controller.offset +
+              (delta == 0
+                  ? (page >= nearestPage ? 1 : -1) *
+                      _controller.position.viewportDimension
+                  : delta * pageExtent))
+          .clamp(0.0, _controller.position.maxScrollExtent)
+          .toDouble();
+
+      if ((offset - _controller.offset).abs() < 1) break;
+      if (animated && attempt == 0) {
+        await _controller.animateTo(
+          offset,
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+        );
+      } else {
         _controller.jumpTo(offset);
       }
       await WidgetsBinding.instance.endOfFrame;
     }
 
-    final target = key.currentContext;
+    final target = targetKey.currentContext;
     if (target != null) {
       await Scrollable.ensureVisible(
         target,
@@ -260,31 +274,8 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
         alignment: 0.02,
       );
     }
+    if (mounted) setState(() => _readerPage = page);
   }
-
-  void _handleReaderScroll(ScrollNotification notification) {
-    if (notification.depth != 0 ||
-        (notification is! ScrollUpdateNotification &&
-            notification is! ScrollEndNotification &&
-            notification is! UserScrollNotification)) {
-      return;
-    }
-
-    // Update the displayed page during scrolling without writing the current
-    // page to storage. Keep measurements coalesced to avoid rebuilding the
-    // reader for every pixel of a fast fling.
-    if (_pageTrackingScheduled) return;
-    _pageTrackingScheduled = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _pageTrackingScheduled = false;
-      if (!mounted) return;
-      final visiblePage = _nearestPageToViewport();
-      if (visiblePage == null || visiblePage == _readerPage) return;
-      setState(() => _readerPage = visiblePage);
-    });
-  }
-
-  Future<void> _goToPage(int page) => _scrollToPage(page);
 
   Future<void> _bookmarkCurrentPage() async {
     if (_readerPage < 1) return;
@@ -499,13 +490,58 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
             Expanded(
               child: NotificationListener<ScrollNotification>(
                 onNotification: (notification) {
-                  _handleReaderScroll(notification);
+                  if (notification.depth != 0 ||
+                      (notification is! ScrollUpdateNotification &&
+                          notification is! ScrollEndNotification &&
+                          notification is! UserScrollNotification) ||
+                      _pageTrackingScheduled) {
+                    return false;
+                  }
+
+                  _pageTrackingScheduled = true;
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    _pageTrackingScheduled = false;
+                    if (!mounted) return;
+
+                    final viewport =
+                        _listViewportKey.currentContext?.findRenderObject();
+                    if (viewport is! RenderBox || !viewport.hasSize) return;
+                    final centerY =
+                        (viewport.localToGlobal(Offset.zero) & viewport.size)
+                            .center
+                            .dy;
+                    var visiblePage = -1;
+                    var nearestDistance = double.infinity;
+
+                    for (final entry in _pageKeys.entries) {
+                      final renderObject =
+                          entry.value.currentContext?.findRenderObject();
+                      if (renderObject is! RenderBox || !renderObject.hasSize) {
+                        continue;
+                      }
+                      final rect =
+                          renderObject.localToGlobal(Offset.zero) & renderObject.size;
+                      final distance = centerY < rect.top
+                          ? rect.top - centerY
+                          : centerY > rect.bottom
+                              ? centerY - rect.bottom
+                              : 0.0;
+                      if (distance < nearestDistance) {
+                        nearestDistance = distance;
+                        visiblePage = entry.key;
+                      }
+                    }
+
+                    if (visiblePage >= 0 && visiblePage != _readerPage) {
+                      setState(() => _readerPage = visiblePage);
+                    }
+                  });
                   return false;
                 },
                 child: ListView.builder(
                   key: _listViewportKey,
                   controller: _controller,
-                  physics: const _GentleBouncingScrollPhysics(),
+                  physics: const ClampingScrollPhysics(),
                   padding: const EdgeInsets.only(bottom: 8),
                   itemCount: totalReaderPages,
                   itemBuilder: (context, index) {
