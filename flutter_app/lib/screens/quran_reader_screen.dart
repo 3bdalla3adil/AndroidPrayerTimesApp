@@ -296,6 +296,245 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     );
   }
 
+  Future<int?> _askNumber({
+    required String title,
+    required String placeholder,
+    required int min,
+    required int max,
+  }) async {
+    final input = TextEditingController();
+    final value = await showCupertinoDialog<int>(
+      context: context,
+      builder: (dialogContext) => CupertinoAlertDialog(
+        title: Text(title),
+        content: Padding(
+          padding: const EdgeInsets.only(top: 14),
+          child: CupertinoTextField(
+            controller: input,
+            keyboardType: TextInputType.number,
+            textAlign: TextAlign.center,
+            placeholder: placeholder,
+          ),
+        ),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(LocaleController.isArabic ? 'إلغاء' : 'Cancel'),
+          ),
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            onPressed: () {
+              final number = int.tryParse(input.text.trim());
+              if (number != null && number >= min && number <= max) {
+                Navigator.pop(dialogContext, number);
+              }
+            },
+            child: Text(LocaleController.isArabic ? 'انتقال' : 'Go'),
+          ),
+        ],
+      ),
+    );
+    input.dispose();
+    return value;
+  }
+
+  Future<void> _openNavigator() async {
+    await showCupertinoModalPopup<void>(
+      context: context,
+      builder: (popupContext) => CupertinoActionSheet(
+        title: Text(LocaleController.isArabic ? 'التنقّل في القرآن' : 'Browse Quran'),
+        message: Text(LocaleController.isArabic
+            ? 'انتقل حسب السورة أو الآية أو الصفحة أو الجزء'
+            : 'Jump to a surah, ayah, page, or juz'),
+        actions: [
+          CupertinoActionSheetAction(
+            onPressed: () {
+              Navigator.pop(popupContext);
+              _askNumber(
+                title: LocaleController.isArabic ? 'رقم السورة' : 'Surah number',
+                placeholder: '1 - 114',
+                min: 1,
+                max: 114,
+              ).then((surah) {
+                if (surah != null) {
+                  _scrollToPage(quran.getPageNumber(surah, 1));
+                }
+              });
+            },
+            child: Text(LocaleController.isArabic ? 'حسب السورة' : 'Go to surah'),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () {
+              Navigator.pop(popupContext);
+              _askNumber(
+                title: LocaleController.isArabic ? 'رقم الآية' : 'Ayah number',
+                placeholder: 'Surah:Ayah',
+                min: 1,
+                max: 6236,
+              ).then((globalAyah) {
+                if (globalAyah == null) return;
+                var remaining = globalAyah;
+                for (var surah = 1; surah <= quran.totalSurahCount; surah++) {
+                  final count = quran.getVerseCount(surah);
+                  if (remaining <= count) {
+                    _scrollToPage(quran.getPageNumber(surah, remaining));
+                    return;
+                  }
+                  remaining -= count;
+                }
+              });
+            },
+            child: Text(LocaleController.isArabic ? 'حسب رقم الآية' : 'Go to ayah (global number)'),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () {
+              Navigator.pop(popupContext);
+              _askNumber(
+                title: LocaleController.isArabic ? 'رقم الصفحة' : 'Page number',
+                placeholder: '1 - 604',
+                min: 1,
+                max: totalQuranPages,
+              ).then((page) {
+                if (page != null) _scrollToPage(page);
+              });
+            },
+            child: Text(LocaleController.isArabic ? 'حسب الصفحة' : 'Go to page'),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () {
+              Navigator.pop(popupContext);
+              _askNumber(
+                title: LocaleController.isArabic ? 'رقم الجزء' : 'Juz number',
+                placeholder: '1 - 30',
+                min: 1,
+                max: 30,
+              ).then((juz) {
+                if (juz == null) return;
+                final verses = quran.getSurahAndVersesFromJuz(juz);
+                if (verses.isEmpty) return;
+                final firstSurah = verses.keys.toList()..sort();
+                final surah = firstSurah.first;
+                final ayah = verses[surah]?.first ?? 1;
+                _scrollToPage(quran.getPageNumber(surah, ayah));
+              });
+            },
+            child: Text(LocaleController.isArabic ? 'حسب الجزء' : 'Go to juz'),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () {
+              Navigator.pop(popupContext);
+              _searchQuran();
+            },
+            child: Text(LocaleController.isArabic ? 'البحث في القرآن' : 'Search Quran'),
+          ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          onPressed: () => Navigator.pop(popupContext),
+          child: Text(LocaleController.isArabic ? 'إلغاء' : 'Cancel'),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _searchQuran() async {
+    final input = TextEditingController();
+    final query = await showCupertinoDialog<String>(
+      context: context,
+      builder: (dialogContext) => CupertinoAlertDialog(
+        title: Text(LocaleController.isArabic ? 'البحث في القرآن' : 'Search Quran'),
+        content: Padding(
+          padding: const EdgeInsets.only(top: 14),
+          child: CupertinoTextField(
+            controller: input,
+            autofocus: true,
+            placeholder: LocaleController.isArabic
+                ? 'اكتب كلمة أو عبارة'
+                : 'Enter a word or phrase',
+          ),
+        ),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(LocaleController.isArabic ? 'إلغاء' : 'Cancel'),
+          ),
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            onPressed: () {
+              final value = input.text.trim();
+              if (value.isNotEmpty) Navigator.pop(dialogContext, value);
+            },
+            child: Text(LocaleController.isArabic ? 'بحث' : 'Search'),
+          ),
+        ],
+      ),
+    );
+    input.dispose();
+    if (query == null || query.trim().isEmpty || !mounted) return;
+
+    final needle = query.trim().toLowerCase();
+    final matches = <({int surah, int ayah, int page, String text})>[];
+    for (var surah = 1; surah <= quran.totalSurahCount; surah++) {
+      for (var ayah = 1; ayah <= quran.getVerseCount(surah); ayah++) {
+        final arabic = quran.getVerse(surah, ayah);
+        final translation = quran.getVerseTranslation(surah, ayah);
+        if (arabic.toLowerCase().contains(needle) ||
+            translation.toLowerCase().contains(needle)) {
+          matches.add((
+            surah: surah,
+            ayah: ayah,
+            page: quran.getPageNumber(surah, ayah),
+            text: arabic,
+          ));
+          if (matches.length == 40) break;
+        }
+      }
+      if (matches.length == 40) break;
+    }
+
+    if (!mounted) return;
+    await showCupertinoModalPopup<void>(
+      context: context,
+      builder: (popupContext) => CupertinoActionSheet(
+        title: Text(LocaleController.isArabic
+            ? 'نتائج البحث: ${matches.length}'
+            : 'Search results: ${matches.length}'),
+        message: matches.isEmpty
+            ? Text(LocaleController.isArabic ? 'لا توجد نتائج' : 'No results found')
+            : null,
+        actions: [
+          for (final match in matches)
+            CupertinoActionSheetAction(
+              onPressed: () {
+                Navigator.pop(popupContext);
+                _scrollToPage(match.page);
+              },
+              child: Column(
+                children: [
+                  Text(
+                    '${quran.getSurahNameArabic(match.surah)} • ${match.surah}:${match.ayah}',
+                    textDirection: TextDirection.rtl,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    match.text,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textDirection: TextDirection.rtl,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                ],
+              ),
+            ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          onPressed: () => Navigator.pop(popupContext),
+          child: Text(LocaleController.isArabic ? 'إغلاق' : 'Close'),
+        ),
+      ),
+    );
+  }
+
   void _jumpToPage() {
     final input = TextEditingController(text: '$_readerPage');
     showCupertinoDialog<void>(
@@ -441,6 +680,8 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
           children: [
             if (_showToolbar) _ReaderToolbar(
               onJump: _jumpToPage,
+              onNavigate: _openNavigator,
+              onSearch: _searchQuran,
               onSettings: _openReaderSettings,
               onBookmark: _bookmarkCurrentPage,
               page: _readerPage,
@@ -554,6 +795,8 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
 class _ReaderToolbar extends StatelessWidget {
   const _ReaderToolbar({
     required this.onJump,
+    required this.onNavigate,
+    required this.onSearch,
     required this.onSettings,
     required this.onBookmark,
     required this.page,
@@ -561,6 +804,8 @@ class _ReaderToolbar extends StatelessWidget {
   });
 
   final VoidCallback onJump;
+  final VoidCallback onNavigate;
+  final VoidCallback onSearch;
   final VoidCallback onSettings;
   final VoidCallback onBookmark;
   final int page;
@@ -582,11 +827,15 @@ class _ReaderToolbar extends StatelessWidget {
       child: Row(
         children: [
           _ReaderButton(
-            icon: CupertinoIcons.search,
-            label: LocaleController.isArabic ? 'صفحة' : 'Page',
-            onPressed: onJump,
+            icon: CupertinoIcons.list_bullet,
+            label: LocaleController.isArabic ? 'تنقّل' : 'Browse',
+            onPressed: onNavigate,
           ),
-          const SizedBox(width: 8),
+          _ReaderButton(
+            icon: CupertinoIcons.search,
+            label: LocaleController.isArabic ? 'بحث' : 'Search',
+            onPressed: onSearch,
+          ),
           _ReaderButton(
             icon: CupertinoIcons.slider_horizontal_3,
             label: LocaleController.isArabic ? 'المظهر' : 'Appearance',
