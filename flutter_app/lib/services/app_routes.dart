@@ -58,6 +58,22 @@ abstract final class AppRoutes {
     dedication,
   ];
 
+  static Widget tabScreenForIndex(int index) {
+    switch (index) {
+      case 1:
+        return const QuranScreen();
+      case 2:
+        return const PrayerScreen();
+      case 3:
+        return const QiblaScreen();
+      case 4:
+        return const MoreScreen();
+      case 0:
+      default:
+        return const HomeScreen();
+    }
+  }
+
   static String tabRouteForIndex(int index) {
     final safeIndex = index < 0
         ? 0
@@ -65,8 +81,8 @@ abstract final class AppRoutes {
     return tabRoutes[safeIndex];
   }
 
-  static Route<dynamic> onGenerateRoute(RouteSettings settings) {
-    final name = settings.name ?? home;
+  static Route<dynamic> onGenerateRoute(RouteSettings routeSettings) {
+    final name = routeSettings.name ?? home;
     final WidgetBuilder builder;
 
     switch (name) {
@@ -86,7 +102,7 @@ abstract final class AppRoutes {
         builder = (_) => const MoreScreen();
         break;
       case quranReader:
-        final args = settings.arguments;
+        final args = routeSettings.arguments;
         final readerArgs = args is QuranReaderRouteArgs
             ? args
             : const QuranReaderRouteArgs(surahNumber: 1);
@@ -125,7 +141,7 @@ abstract final class AppRoutes {
     }
 
     return CupertinoPageRoute<dynamic>(
-      settings: settings,
+      settings: routeSettings,
       builder: builder,
     );
   }
