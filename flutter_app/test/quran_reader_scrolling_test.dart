@@ -14,6 +14,23 @@ void main() {
     LocaleController.locale.value = const Locale('ar');
   });
 
+  testWidgets('Quran reader does not coast across many pages after a fling',
+      (tester) async {
+    await tester.pumpWidget(
+      const CupertinoApp(home: QuranReaderScreen(surahNumber: 1)),
+    );
+    await tester.pumpAndSettle(const Duration(milliseconds: 100));
+
+    final listFinder = find.byType(ListView);
+    final controller = tester.widget<ListView>(listFinder).controller!;
+    await tester.fling(listFinder, const Offset(0, -120), 12000);
+    await tester.pumpAndSettle(const Duration(milliseconds: 100));
+
+    // The drag itself is short, so the reader must not continue coasting
+    // hundreds of thousands of pixels after the gesture is released.
+    expect(controller.offset, lessThan(1500));
+  });
+
   testWidgets('Quran reader scrolls continuously without nested vertical scrollers',
       (tester) async {
     await tester.pumpWidget(
