@@ -24,10 +24,7 @@ class MoreScreen extends StatelessWidget {
                   title: Text(LocaleController.isArabic ? 'العلامات المرجعية' : 'Bookmarks'),
                   subtitle: Text(LocaleController.isArabic ? 'الآيات المحفوظة' : 'Saved Quran ayahs'),
                   trailing: const CupertinoListTileChevron(),
-                  onTap: () => Navigator.push(
-                    context,
-                    CupertinoPageRoute(builder: (_) => const BookmarksScreen()),
-                  ),
+                  onTap: () => Navigator.of(context).pushNamed(AppRoutes.bookmarks),
                 ),
 
                 CupertinoListTile(
@@ -35,30 +32,21 @@ class MoreScreen extends StatelessWidget {
                   title: Text(LocaleController.isArabic ? 'سجل القراءة' : 'Reading history'),
                   subtitle: Text(LocaleController.isArabic ? 'آخر مواضع القرآن التي قرأتها' : 'Recently opened Quran passages'),
                   trailing: const CupertinoListTileChevron(),
-                  onTap: () => Navigator.push(
-                    context,
-                    CupertinoPageRoute(builder: (_) => const ReadingHistoryScreen()),
-                  ),
+                  onTap: () => Navigator.of(context).pushNamed(AppRoutes.readingHistory),
                 ),
                 CupertinoListTile(
                   leading: const Icon(CupertinoIcons.circle_grid_3x3),
                   title: Text(LocaleController.isArabic ? 'التسبيح' : 'Tasbih'),
                   subtitle: Text(LocaleController.isArabic ? 'عداد ذكر يعمل دون إنترنت' : 'Offline dhikr counter'),
                   trailing: const CupertinoListTileChevron(),
-                  onTap: () => Navigator.push(
-                    context,
-                    CupertinoPageRoute(builder: (_) => const TasbihScreen()),
-                  ),
+                  onTap: () => Navigator.of(context).pushNamed(AppRoutes.tasbih),
                 ),
                 CupertinoListTile(
                   leading: const Icon(CupertinoIcons.bookmark),
                   title: Text(LocaleController.isArabic ? 'أذكار يومية' : 'Daily Adhkar'),
                   subtitle: Text(LocaleController.isArabic ? 'مجموعة أذكار دون إنترنت' : 'Offline remembrance collection'),
                   trailing: const CupertinoListTileChevron(),
-                  onTap: () => Navigator.push(
-                    context,
-                    CupertinoPageRoute(builder: (_) => const AdhkarScreen()),
-                  ),
+                  onTap: () => Navigator.of(context).pushNamed(AppRoutes.adhkar),
                 ),
 
                 CupertinoListTile(
@@ -66,20 +54,14 @@ class MoreScreen extends StatelessWidget {
                   title: Text(LocaleController.isArabic ? 'الصيام' : 'Fasting'),
                   subtitle: Text(LocaleController.isArabic ? 'رمضان ومواقيت الصيام دون إنترنت' : 'Offline Ramadan and fasting times'),
                   trailing: const CupertinoListTileChevron(),
-                  onTap: () => Navigator.push(
-                    context,
-                    CupertinoPageRoute(builder: (_) => const FastingScreen()),
-                  ),
+                  onTap: () => Navigator.of(context).pushNamed(AppRoutes.fasting),
                 ),
                 CupertinoListTile(
                   leading: const Icon(CupertinoIcons.calendar),
                   title: Text(LocaleController.isArabic ? 'التقويم' : 'Calendar'),
                   subtitle: Text(LocaleController.isArabic ? 'التاريخ الميلادي والهجري التقريبي' : 'Gregorian and approximate Hijri date'),
                   trailing: const CupertinoListTileChevron(),
-                  onTap: () => Navigator.push(
-                    context,
-                    CupertinoPageRoute(builder: (_) => const CalendarScreen()),
-                  ),
+                  onTap: () => Navigator.of(context).pushNamed(AppRoutes.calendar),
                 ),
               ],
             ),
@@ -98,10 +80,7 @@ class MoreScreen extends StatelessWidget {
                   leading: const Icon(CupertinoIcons.gear),
                   title: Text(LocaleController.isArabic ? 'الإعدادات' : 'Settings'),
                   trailing: const CupertinoListTileChevron(),
-                  onTap: () => Navigator.push(
-                    context,
-                    CupertinoPageRoute(builder: (_) => const SettingsScreen()),
-                  ),
+                  onTap: () => Navigator.of(context).pushNamed(AppRoutes.settings),
                 ),
               ],
             ),
@@ -113,10 +92,7 @@ class MoreScreen extends StatelessWidget {
                   title: Text(LocaleController.isArabic ? 'إهداء وتقدير' : 'A Gift of Gratitude'),
                   subtitle: Text(LocaleController.isArabic ? 'كلمات تقدير واحترام لوالد زوجتي العزيز' : 'A heartfelt dedication to my dear father-in-law'),
                   trailing: const CupertinoListTileChevron(),
-                  onTap: () => Navigator.push(
-                    context,
-                    CupertinoPageRoute(builder: (_) => const DedicationScreen()),
-                  ),
+                  onTap: () => Navigator.of(context).pushNamed(AppRoutes.dedication),
                 ),
               ],
             ),
