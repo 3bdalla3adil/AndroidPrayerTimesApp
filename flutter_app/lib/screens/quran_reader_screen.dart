@@ -150,46 +150,6 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
 
   Future<void> _scrollToPage(int page, {bool animated = true}) async {
     if (page < 0 || page >= totalReaderPages) return;
-    final key = _keyForPage(page);
-
-    for (var attempt = 0; attempt < 8; attempt++) {
-      if (!_controller.hasClients) {
-        await WidgetsBinding.instance.endOfFrame;
-        continue;
-      }
-
-      final target = key.currentContext;
-      if (target != null) {
-        await Scrollable.ensureVisible(
-          target,
-          duration: animated && attempt == 0
-              ? const Duration(milliseconds: 280)
-              : Duration.zero,
-          curve: Curves.easeOutCubic,
-          alignment: 0.02,
-        );
-        return;
-      }
-
-      final currentPage = _nearestPageToViewport() ?? _readerPage;
-      final pageDelta = page - currentPage;
-      final movement = pageDelta == 0
-          ? _controller.position.viewportDimension * (page >= currentPage ? 2 : -2)
-          : pageDelta * _estimatedPageExtent();
-      final offset = (_controller.offset + movement)
-          .clamp(0.0, _controller.position.maxScrollExtent)
-          .toDouble();
-      if ((offset - _controller.offset).abs() < 1) break;
-
-      if (animated && attempt == 0) {
-        await _controller.animateTo(
-          offset,
-          duration: const Duration(milliseconds: 260),
-          curve: Curves.easeOutCubic,
-        );
-      } else {
-        _controller  Future<void> _scrollToPage(int page, {bool animated = true}) async {
-    if (page < 0 || page >= totalReaderPages) return;
 
     final targetKey = _keyForPage(page);
     for (var attempt = 0; attempt < 6; attempt++) {
@@ -214,8 +174,9 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
         return;
       }
 
-      // Estimate from currently built pages, then let ListView lazily build
-      // the destination. All scroll calculations stay in this one function.
+      // Estimate the destination from the pages already laid out. ListView
+      // builds the next range on each jump, so distant targets need no
+      // separate measurement or page-estimation helper.
       final viewport = _listViewportKey.currentContext?.findRenderObject();
       final centerY = viewport is RenderBox && viewport.hasSize
           ? (viewport.localToGlobal(Offset.zero) & viewport.size).center.dy
@@ -241,7 +202,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
       }
 
       heights.sort();
-      final pageExtent = heights.isEmpty
+      final extent = heights.isEmpty
           ? _controller.position.viewportDimension
           : heights[heights.length ~/ 2];
       final delta = page - nearestPage;
@@ -249,7 +210,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
               (delta == 0
                   ? (page >= nearestPage ? 1 : -1) *
                       _controller.position.viewportDimension
-                  : delta * pageExtent))
+                  : delta * extent))
           .clamp(0.0, _controller.position.maxScrollExtent)
           .toDouble();
 
@@ -363,7 +324,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
             onPressed: () {
               final value = int.tryParse(input.text.trim());
               Navigator.pop(dialogContext);
-              if (value != null) _goToPage(value.clamp(1, totalQuranPages).toInt());
+              if (value != null) _scrollToPage(value.clamp(1, totalQuranPages).toInt());
             },
           ),
         ],
@@ -587,8 +548,8 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
             _PageControls(
               page: _readerPage,
               totalPages: totalReaderPages,
-              onPrevious: () => _goToPage(_readerPage - 1),
-              onNext: () => _goToPage(_readerPage + 1),
+              onPrevious: () => _scrollToPage(_readerPage - 1),
+              onNext: () => _scrollToPage(_readerPage + 1),
               onJump: _jumpToPage,
             ),
           ],
