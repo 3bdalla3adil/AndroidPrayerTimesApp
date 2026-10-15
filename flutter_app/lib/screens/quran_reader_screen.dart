@@ -857,7 +857,7 @@ class _ReaderToolbar extends StatelessWidget {
           _ReaderButton(
             icon: CupertinoIcons.bookmark,
             label: LocaleController.isArabic ? 'حفظ' : 'Bookmark',
-            onPressed: page >= 1 ? onBookmark : null,
+            onPressed: onBookmark,
           ),
           const Spacer(),
           Text(
