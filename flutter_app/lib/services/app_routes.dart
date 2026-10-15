@@ -41,6 +41,23 @@ abstract final class AppRoutes {
     more,
   ];
 
+  static const allRoutes = <String>[
+    home,
+    quran,
+    prayer,
+    qibla,
+    more,
+    quranReader,
+    bookmarks,
+    readingHistory,
+    adhkar,
+    tasbih,
+    fasting,
+    calendar,
+    settings,
+    dedication,
+  ];
+
   static String tabRouteForIndex(int index) {
     final safeIndex = index < 0
         ? 0
