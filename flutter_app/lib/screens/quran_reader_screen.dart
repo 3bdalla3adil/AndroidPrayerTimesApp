@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:quran/quran.dart' as quran;
 
@@ -120,7 +119,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     }
   }
 
-  Future<Map<String, dynamic>> _loadPage(int page) async {
+  Future<Map<String, dynamic>> _loadPage(int page, {bool prefetch = true}) async {
     final cached = _cache[page];
     if (cached != null) return cached;
 
@@ -134,12 +133,15 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     final data = decoded.cast<String, dynamic>();
     _cache[page] = data;
 
-    // Keep the adjacent page warm for instant swiping.
-    for (final adjacent in [page - 1, page + 1]) {
-      if (adjacent >= 1 &&
-          adjacent <= totalQuranPages &&
-          !_cache.containsKey(adjacent)) {
-        _loadPage(adjacent).ignore();
+    // Warm only the two adjacent pages. Those requests must not recursively
+    // warm their own neighbors, otherwise opening one page loads the whole Quran.
+    if (prefetch) {
+      for (final adjacent in [page - 1, page + 1]) {
+        if (adjacent >= 1 &&
+            adjacent <= totalQuranPages &&
+            !_cache.containsKey(adjacent)) {
+          _loadPage(adjacent, prefetch: false).ignore();
+        }
       }
     }
 
@@ -150,7 +152,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     if (page < 1 || page > totalReaderPages) return;
 
     final targetKey = _keyForPage(page);
-    for (var attempt = 0; attempt < 6; attempt++) {
+    for (var attempt = 0; attempt < 20; attempt++) {
       if (!_controller.hasClients) {
         await WidgetsBinding.instance.endOfFrame;
         continue;
@@ -232,8 +234,8 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
         duration: Duration.zero,
         alignment: 0.02,
       );
+      if (mounted) setState(() => _readerPage = page);
     }
-    if (mounted) setState(() => _readerPage = page);
   }
 
   Future<void> _bookmarkCurrentPage() async {
@@ -756,7 +758,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
                 child: ListView.builder(
                   key: _listViewportKey,
                   controller: _controller,
-                  physics: const ClampingScrollPhysics(),
+                  physics: const _ControlledReaderScrollPhysics(),
                   padding: const EdgeInsets.only(bottom: 8),
                   itemCount: totalReaderPages,
                   itemBuilder: (context, index) {
@@ -901,6 +903,265 @@ class _ReaderButton extends StatelessWidget {
   }
 }
 
+class _MushafPage extends StatefulWidget {
+  const _MushafPage({
+    required this.page,
+    required this.data,
+    required this.fontSize,
+    required this.lineHeight,
+    required this.showTranslation,
+    required this.darkPage,
+    required this.onBookmarkAyah,
+  });
+
+  final int page;
+  final Map<String, dynamic> data;
+  final double fontSize;
+  final double lineHeight;
+  final bool showTranslation;
+  final bool darkPage;
+  final Future<void> Function(int surah, int ayah) onBookmarkAyah;
+  @override
+  State<_MushafPage> createState() => _MushafPageState();
+}
+
+class _MushafPageState extends State<_MushafPage> {
+  final Map<String, TapGestureRecognizer> _ayahRecognizers = {};
+  String? _highlightedAyah;
+
+  @override
+  void dispose() {
+    for (final recognizer in _ayahRecognizers.values) {
+      recognizer.dispose();
+    }
+    super.dispose();
+  }
+
+  TapGestureRecognizer _recognizerFor(String key, VoidCallback onTap) {
+    final existing = _ayahRecognizers[key];
+    if (existing != null) return existing;
+    final recognizer = TapGestureRecognizer()..onTap = onTap;
+    _ayahRecognizers[key] = recognizer;
+    return recognizer;
+  }
+
+  String _ayahKey(Map<String, dynamic> verse) {
+    final surah = (verse['surah_number'] as num?)?.toInt() ?? 0;
+    final ayah = (verse['ayah_number'] as num?)?.toInt() ?? 0;
+    return '$surah:$ayah';
+  }
+
+  bool _isHighlighted(Map<String, dynamic> verse) =>
+      _highlightedAyah == _ayahKey(verse);
+
+  void _toggleHighlight(Map<String, dynamic> verse) {
+    final key = _ayahKey(verse);
+    setState(() {
+      _highlightedAyah = _highlightedAyah == key ? null : key;
+    });
+    // Highlighting is temporary; never persist the last page or ayah.
+  }
+
+  List<Map<String, dynamic>> get verses =>
+      ((widget.data['verses'] as List?) ?? const [])
+          .whereType<Map>()
+          .map((item) => item.cast<String, dynamic>())
+          .toList();
+
+  String _verseText(Map<String, dynamic> verse) {
+    final words = ((verse['words'] as List?) ?? const [])
+        .whereType<Map>()
+        .map((word) => (word['text'] ?? '').toString())
+        .where((text) => text.isNotEmpty)
+        .join(' ');
+    return words.isEmpty
+        ? (verse['text'] ?? '').toString()
+        : words;
+  }
+
+  int get _firstSurah =>
+      (verses.isEmpty ? 1 : (verses.first['surah_number'] as num?)?.toInt() ?? 1);
+
+  bool get _startsSurah =>
+      verses.isNotEmpty &&
+      ((verses.first['ayah_number'] as num?)?.toInt() ?? 0) == 1;
+
+  bool get _hasBasmala => _startsSurah && _firstSurah != 9;
+
+  @override
+  Widget build(BuildContext context) {
+    final pageBg = widget.darkPage
+        ? const Color(0xFF17211C)
+        : const Color(0xFFFFFFFF);
+    final ink = widget.darkPage
+        ? const Color(0xFFECE8D9)
+        : const Color(0xFF202124);
+    final green = widget.darkPage
+        ? const Color(0xFF9CC8A8)
+        : const Color(0xFF176B52);
+    final divider = widget.darkPage
+        ? const Color(0xFF50675A)
+        : const Color(0xFFE0E0E0);
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 14),
+      padding: const EdgeInsets.fromLTRB(8, 18, 8, 14),
+      decoration: BoxDecoration(
+        color: pageBg,
+        border: Border(bottom: BorderSide(color: divider, width: 1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (_startsSurah) ...[
+            _SurahHeader(
+              arabic: quran.getSurahNameArabic(_firstSurah),
+              english: quran.getSurahName(_firstSurah),
+              color: green,
+              border: divider,
+            ),
+            if (_hasBasmala) ...[
+              const SizedBox(height: 12),
+              Text(
+                'بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ',
+                textDirection: TextDirection.rtl,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: kQuranFont,
+                  fontFamilyFallback: const ['Noto Naskh Arabic', 'Arial', 'serif'],
+                  fontSize: widget.fontSize - 2,
+                  height: 1.6,
+                  color: ink,
+                ),
+              ),
+            ],
+            const SizedBox(height: 12),
+          ],
+          Directionality(
+            textDirection: TextDirection.rtl,
+            child: Text.rich(
+              TextSpan(
+                children: [
+                  for (final verse in verses) ...[
+                    TextSpan(
+                      text: '${_verseText(verse)} ',
+                      style: TextStyle(
+                        fontFamily: kQuranFont,
+                        fontFamilyFallback: const ['Noto Naskh Arabic', 'Arial', 'serif'],
+                        fontSize: widget.fontSize,
+                        height: widget.lineHeight,
+                        color: _isHighlighted(verse)
+                            ? (widget.darkPage
+                                ? const Color(0xFFFFD54F)
+                                : const Color(0xFF176B52))
+                            : ink,
+                        backgroundColor: _isHighlighted(verse)
+                            ? const Color(0x33176B52)
+                            : null,
+                        fontWeight: FontWeight.w400,
+                      ),
+                      recognizer: _recognizerFor(
+                        _ayahKey(verse),
+                        () => _toggleHighlight(verse),
+                      ),
+                    ),
+                    WidgetSpan(
+                      alignment: PlaceholderAlignment.middle,
+                      child: _AyahMarker(
+                        number: (verse['ayah_number'] as num?)?.toInt() ?? 0,
+                        color: green,
+                        darkPage: widget.darkPage,
+                        onTap: () {
+                          final surah = (verse['surah_number'] as num?)?.toInt();
+                          final ayah = (verse['ayah_number'] as num?)?.toInt();
+                          if (surah != null && ayah != null) {
+                            widget.onBookmarkAyah(surah, ayah);
+                          }
+                        },
+                      ),
+                    ),
+                    if (widget.showTranslation)
+                      TextSpan(
+                        text: '\n${_translation(verse)}\n',
+                        style: TextStyle(
+                          fontFamily: 'serif',
+                          fontSize: 13,
+                          height: 1.45,
+                          color: widget.darkPage
+                              ? const Color(0xFFB9C5BD)
+                              : const Color(0xFF657269),
+                        ),
+                      ),
+                  ],
+                ],
+              ),
+              textAlign: TextAlign.justify,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Center(
+            child: Text(
+              '— ${widget.page} —',
+              style: TextStyle(
+                fontSize: 11,
+                color: green,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _translation(Map<String, dynamic> verse) {
+    final surah = (verse['surah_number'] as num?)?.toInt();
+    final ayah = (verse['ayah_number'] as num?)?.toInt();
+    if (surah == null || ayah == null) return '';
+    try {
+      return quran.getVerseTranslation(surah, ayah);
+    } catch (_) {
+      return '';
+    }
+  }
+}
+class _AyahMarker extends StatelessWidget {
+  const _AyahMarker({
+    required this.number,
+    required this.color,
+    required this.darkPage,
+    required this.onTap,
+  });
+
+  final int number;
+  final Color color;
+  final bool darkPage;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 2),
+        child: Text(
+          '۝${_arabicNumber(number)}',
+          textDirection: TextDirection.rtl,
+          style: TextStyle(
+            fontFamily: kQuranFont,
+            fontSize: 12,
+            color: darkPage ? const Color(0xFFE6E0C8) : color,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
 class _SurahHeader extends StatelessWidget {
   const _SurahHeader({
     required this.arabic,
@@ -1028,4 +1289,18 @@ class _ErrorPage extends StatelessWidget {
       ),
     );
   }
+}
+
+
+/// Prevents a fast flick from carrying the reader across dozens of pages.
+/// Direct dragging remains enabled; navigation buttons/search can still jump.
+class _ControlledReaderScrollPhysics extends ClampingScrollPhysics {
+  const _ControlledReaderScrollPhysics({super.parent});
+
+  @override
+  Simulation? createBallisticSimulation(ScrollMetrics position, double velocity) => null;
+
+  @override
+  _ControlledReaderScrollPhysics applyTo(ScrollPhysics? ancestor) =>
+      _ControlledReaderScrollPhysics(parent: buildParent(ancestor));
 }
