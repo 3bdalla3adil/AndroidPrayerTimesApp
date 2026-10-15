@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:quran/quran.dart' as quran;
 
-import 'quran_reader_screen.dart';
+import '../services/app_routes.dart';
 import '../services/locale_controller.dart';
 import '../theme/app_theme.dart';
 
@@ -26,13 +26,12 @@ class _QuranScreenState extends State<QuranScreen> {
   }
 
   void _openReader(int surah, {int ayah = 1, int? page}) {
-    Navigator.of(context).push(
-      CupertinoPageRoute(
-        builder: (_) => QuranReaderScreen(
-          surahNumber: surah,
-          startingAyah: ayah,
-          startingPage: page,
-        ),
+    Navigator.of(context).pushNamed(
+      AppRoutes.quranReader,
+      arguments: QuranReaderRouteArgs(
+        surahNumber: surah,
+        startingAyah: ayah,
+        startingPage: page,
       ),
     );
   }
