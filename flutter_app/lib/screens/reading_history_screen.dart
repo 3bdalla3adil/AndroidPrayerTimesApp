@@ -2,8 +2,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:intl/intl.dart';
 import 'package:quran/quran.dart' as quran;
 
+import '../services/app_routes.dart';
 import '../services/storage_service.dart';
-import 'quran_reader_screen.dart';
 
 class ReadingHistoryScreen extends StatefulWidget {
   const ReadingHistoryScreen({super.key});
