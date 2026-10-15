@@ -41,8 +41,12 @@ abstract final class AppRoutes {
     more,
   ];
 
-  static String tabRouteForIndex(int index) =>
-      tabRoutes[index.clamp(0, tabRoutes.length - 1)];
+  static String tabRouteForIndex(int index) {
+    final safeIndex = index < 0
+        ? 0
+        : (index >= tabRoutes.length ? tabRoutes.length - 1 : index);
+    return tabRoutes[safeIndex];
+  }
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     final name = settings.name ?? home;
