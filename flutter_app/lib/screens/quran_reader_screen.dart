@@ -476,7 +476,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
 
     String normalize(String value) => value
         .toLowerCase()
-        .replaceAll(RegExp(r'[\\u064B-\\u065F\\u0670\\u06D6-\\u06ED]'), '')
+        .replaceAll(RegExp(r'[\u064B-\u065F\u0670\u06D6-\u06ED]'), '')
         .replaceAll(RegExp(r'[أإآٱ]'), 'ا')
         .replaceAll('ى', 'ي')
         .replaceAll('ـ', '')
