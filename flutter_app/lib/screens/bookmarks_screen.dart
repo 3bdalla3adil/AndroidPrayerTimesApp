@@ -94,10 +94,11 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
                                 onPressed: () => _confirmRemove(bookmark),
                                 child: const Icon(CupertinoIcons.trash),
                               ),
-                              onTap: () => Navigator.push(
-                                context,
-                                CupertinoPageRoute(
-                                  builder: (_) => QuranReaderScreen(surahNumber: bookmark.$1, startingAyah: bookmark.$2),
+                              onTap: () => Navigator.of(context).pushNamed(
+                                AppRoutes.quranReader,
+                                arguments: QuranReaderRouteArgs(
+                                  surahNumber: bookmark.$1,
+                                  startingAyah: bookmark.$2,
                                 ),
                               ),
                             ),
