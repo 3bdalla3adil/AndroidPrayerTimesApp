@@ -132,24 +132,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 _HomeFeatureGrid(
                   onQuran: _continueQuran,
                   onPrayer: () => RootTabNavigation.maybeOf(context)?.selectTab(2),
-                  onTasbih: () => Navigator.push(
-                    context,
-                    CupertinoPageRoute(builder: (_) => const TasbihScreen()),
-                  ),
-                  onDuaa: () => Navigator.push(
-                    context,
-                    CupertinoPageRoute(builder: (_) => const AdhkarScreen()),
-                  ),
+                  onTasbih: () => Navigator.of(context).pushNamed(AppRoutes.tasbih),
+                  onDuaa: () => Navigator.of(context).pushNamed(AppRoutes.adhkar),
                   onQibla: () => RootTabNavigation.maybeOf(context)?.selectTab(3),
-                  onCalendar: () => Navigator.push(
-                    context,
-                    CupertinoPageRoute(builder: (_) => const CalendarScreen()),
-                  ),
+                  onCalendar: () => Navigator.of(context).pushNamed(AppRoutes.calendar),
                   onAthan: () => _toggle(!_reminders),
-                  onSettings: () => Navigator.push(
-                    context,
-                    CupertinoPageRoute(builder: (_) => const SettingsScreen()),
-                  ),
+                  onSettings: () => Navigator.of(context).pushNamed(AppRoutes.settings),
                   remindersEnabled: _reminders,
                 ),
                 const SizedBox(height: 22),
