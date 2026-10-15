@@ -474,24 +474,33 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     input.dispose();
     if (query == null || query.trim().isEmpty || !mounted) return;
 
-    final needle = query.trim().toLowerCase();
+    String normalize(String value) => value
+        .toLowerCase()
+        .replaceAll(RegExp(r'[\\u064B-\\u065F\\u0670\\u06D6-\\u06ED]'), '')
+        .replaceAll(RegExp(r'[أإآٱ]'), 'ا')
+        .replaceAll('ى', 'ي')
+        .replaceAll('ـ', '')
+        .trim();
+    final needle = normalize(query);
     final matches = <({int surah, int ayah, int page, String text})>[];
+    var totalMatches = 0;
     for (var surah = 1; surah <= quran.totalSurahCount; surah++) {
       for (var ayah = 1; ayah <= quran.getVerseCount(surah); ayah++) {
         final arabic = quran.getVerse(surah, ayah);
         final translation = quran.getVerseTranslation(surah, ayah);
-        if (arabic.toLowerCase().contains(needle) ||
+        if (normalize(arabic).contains(needle) ||
             translation.toLowerCase().contains(needle)) {
-          matches.add((
-            surah: surah,
-            ayah: ayah,
-            page: quran.getPageNumber(surah, ayah),
-            text: arabic,
-          ));
-          if (matches.length == 40) break;
+          totalMatches++;
+          if (matches.length < 40) {
+            matches.add((
+              surah: surah,
+              ayah: ayah,
+              page: quran.getPageNumber(surah, ayah),
+              text: arabic,
+            ));
+          }
         }
       }
-      if (matches.length == 40) break;
     }
 
     if (!mounted) return;
@@ -499,11 +508,15 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
       context: context,
       builder: (popupContext) => CupertinoActionSheet(
         title: Text(LocaleController.isArabic
-            ? 'نتائج البحث: ${matches.length}'
-            : 'Search results: ${matches.length}'),
-        message: matches.isEmpty
+            ? 'نتائج البحث: $totalMatches'
+            : 'Search results: $totalMatches'),
+        message: totalMatches == 0
             ? Text(LocaleController.isArabic ? 'لا توجد نتائج' : 'No results found')
-            : null,
+            : (totalMatches > matches.length
+                ? Text(LocaleController.isArabic
+                    ? 'يتم عرض أول ${matches.length} نتيجة'
+                    : 'Showing the first ${matches.length} results')
+                : null),
         actions: [
           for (final match in matches)
             CupertinoActionSheetAction(
