@@ -225,7 +225,7 @@ class _RootShellState extends State<RootShell> {
           tabBuilder: (context, index) => CupertinoTabView(
             // Each tab has a named root route, and every secondary screen is
             // resolved by the same central route table.
-            initialRoute: AppRoutes.tabRouteForIndex(index),
+            builder: (_) => AppRoutes.tabScreenForIndex(index),
             onGenerateRoute: AppRoutes.onGenerateRoute,
           ),
         ),
