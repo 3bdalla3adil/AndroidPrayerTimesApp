@@ -366,25 +366,9 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
           CupertinoActionSheetAction(
             onPressed: () {
               Navigator.pop(popupContext);
-              _askNumber(
-                title: LocaleController.isArabic ? 'رقم الآية' : 'Ayah number',
-                placeholder: 'Surah:Ayah',
-                min: 1,
-                max: 6236,
-              ).then((globalAyah) {
-                if (globalAyah == null) return;
-                var remaining = globalAyah;
-                for (var surah = 1; surah <= quran.totalSurahCount; surah++) {
-                  final count = quran.getVerseCount(surah);
-                  if (remaining <= count) {
-                    _scrollToPage(quran.getPageNumber(surah, remaining));
-                    return;
-                  }
-                  remaining -= count;
-                }
-              });
+              _navigateByAyah();
             },
-            child: Text(LocaleController.isArabic ? 'حسب رقم الآية' : 'Go to ayah (global number)'),
+            child: Text(LocaleController.isArabic ? 'حسب السورة والآية' : 'Go to surah and ayah'),
           ),
           CupertinoActionSheetAction(
             onPressed: () {
@@ -434,6 +418,25 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _navigateByAyah() async {
+    final surah = await _askNumber(
+      title: LocaleController.isArabic ? 'رقم السورة' : 'Surah number',
+      placeholder: '1 - 114',
+      min: 1,
+      max: 114,
+    );
+    if (surah == null || !mounted) return;
+    final ayah = await _askNumber(
+      title: LocaleController.isArabic
+          ? 'رقم الآية في سورة ${quran.getSurahNameArabic(surah)}'
+          : 'Ayah in ${quran.getSurahName(surah)}',
+      placeholder: '1 - ${quran.getVerseCount(surah)}',
+      min: 1,
+      max: quran.getVerseCount(surah),
+    );
+    if (ayah != null) _scrollToPage(quran.getPageNumber(surah, ayah));
   }
 
   Future<void> _searchQuran() async {
@@ -679,7 +682,6 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
         child: Column(
           children: [
             if (_showToolbar) _ReaderToolbar(
-              onJump: _jumpToPage,
               onNavigate: _openNavigator,
               onSearch: _searchQuran,
               onSettings: _openReaderSettings,
@@ -794,7 +796,6 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
 
 class _ReaderToolbar extends StatelessWidget {
   const _ReaderToolbar({
-    required this.onJump,
     required this.onNavigate,
     required this.onSearch,
     required this.onSettings,
@@ -803,7 +804,6 @@ class _ReaderToolbar extends StatelessWidget {
     required this.totalPages,
   });
 
-  final VoidCallback onJump;
   final VoidCallback onNavigate;
   final VoidCallback onSearch;
   final VoidCallback onSettings;
@@ -1165,7 +1165,7 @@ class _MushafPageState extends State<_MushafPage> {
                     ),
                     if (widget.showTranslation)
                       TextSpan(
-                        text: '\\n${_translation(verse)}\\n',
+                        text: '\n${_translation(verse)}\n',
                         style: TextStyle(
                           fontFamily: 'serif',
                           fontSize: 13,
