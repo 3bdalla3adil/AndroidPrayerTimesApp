@@ -62,13 +62,11 @@ class _ReadingHistoryScreenState extends State<ReadingHistoryScreen> {
                               title: Text(quran.getSurahName(item.$1)),
                               subtitle: Text('Ayah ${item.$2} • ${DateFormat('d MMM, h:mm a').format(item.$3)}'),
                               trailing: const CupertinoListTileChevron(),
-                              onTap: () => Navigator.push(
-                                context,
-                                CupertinoPageRoute(
-                                  builder: (_) => QuranReaderScreen(
-                                    surahNumber: item.$1,
-                                    startingAyah: item.$2,
-                                  ),
+                              onTap: () => Navigator.of(context).pushNamed(
+                                AppRoutes.quranReader,
+                                arguments: QuranReaderRouteArgs(
+                                  surahNumber: item.$1,
+                                  startingAyah: item.$2,
                                 ),
                               ).then((_) => _load()),
                             ),
