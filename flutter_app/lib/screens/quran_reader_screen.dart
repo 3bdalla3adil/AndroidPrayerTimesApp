@@ -724,6 +724,20 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
                     return false;
                   }
 
+                  // Some scroll activities report their first user
+                  // direction through UserScrollNotification rather than a
+                  // ScrollStartNotification with dragDetails. Capture that
+                  // first directional update as a fallback so the snap still
+                  // runs on devices/test environments with different gesture
+                  // notification timing.
+                  if (notification is UserScrollNotification &&
+                      notification.direction != ScrollDirection.idle &&
+                      _userScrollStartPage == null) {
+                    _userScrollStartPage = _readerPage;
+                    _userScrollStartOffset = notification.metrics.pixels;
+                    return false;
+                  }
+
                   if (notification is ScrollEndNotification) {
                     final startPage = _userScrollStartPage;
                     final startOffset = _userScrollStartOffset;
