@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import '../core/adaptive_page_scaffold.dart';
 
 import '../services/app_routes.dart';
 import '../services/locale_controller.dart';
@@ -10,7 +11,7 @@ class MoreScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CupertinoPageScaffold(
+    return AdaptivePageScaffold(
       navigationBar: CupertinoNavigationBar(middle: Text(LocaleController.isArabic ? 'المزيد' : 'More')),
       child: SafeArea(
         child: ListView(

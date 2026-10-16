@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import '../core/adaptive_page_scaffold.dart';
 import 'package:quran/quran.dart' as quran;
 
 import '../services/app_routes.dart';
@@ -176,7 +177,7 @@ class _QuranScreenState extends State<QuranScreen> {
   @override
   Widget build(BuildContext context) {
     final items = _items;
-    return CupertinoPageScaffold(
+    return AdaptivePageScaffold(
       navigationBar: CupertinoNavigationBar(
         middle: Text(LocaleController.isArabic ? 'القرآن الكريم' : 'The Holy Quran'),
         trailing: CupertinoButton(

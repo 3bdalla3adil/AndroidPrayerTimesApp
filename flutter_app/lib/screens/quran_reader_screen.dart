@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/cupertino.dart';
+import '../core/adaptive_page_scaffold.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
@@ -668,7 +669,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     final background = CupertinoColors.systemGroupedBackground
         .resolveFrom(context);
 
-    return CupertinoPageScaffold(
+    return AdaptivePageScaffold(
       backgroundColor: background,
       navigationBar: CupertinoNavigationBar(
         middle: Column(
@@ -725,12 +726,13 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
                     final viewport =
                         _listViewportKey.currentContext?.findRenderObject();
                     if (viewport is! RenderBox || !viewport.hasSize) return;
-                    final centerY =
-                        (viewport.localToGlobal(Offset.zero) & viewport.size)
-                            .center
-                            .dy;
+                    final viewportRect =
+                        viewport.localToGlobal(Offset.zero) & viewport.size;
+                    final centerY = viewportRect.center.dy;
                     var visiblePage = -1;
                     var nearestDistance = double.infinity;
+                    var topAlignedPage = -1;
+                    var nearestTopDistance = double.infinity;
 
                     for (final entry in _pageKeys.entries) {
                       final renderObject =
@@ -740,19 +742,39 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
                       }
                       final rect =
                           renderObject.localToGlobal(Offset.zero) & renderObject.size;
-                      final distance = centerY < rect.top
+                      final centerDistance = centerY < rect.top
                           ? rect.top - centerY
                           : centerY > rect.bottom
                               ? centerY - rect.bottom
                               : 0.0;
-                      if (distance < nearestDistance) {
-                        nearestDistance = distance;
+                      if (centerDistance < nearestDistance) {
+                        nearestDistance = centerDistance;
                         visiblePage = entry.key;
+                      }
+
+                      // Page snapping uses the page whose top edge is closest
+                      // to the viewport's top edge, rather than allowing a fling
+                      // to leave the reader resting between two Mushaf pages.
+                      final topDistance = (rect.top - viewportRect.top).abs();
+                      if (topDistance < nearestTopDistance) {
+                        nearestTopDistance = topDistance;
+                        topAlignedPage = entry.key;
                       }
                     }
 
-                    if (visiblePage >= 0 && visiblePage != _readerPage) {
-                      setState(() => _readerPage = visiblePage);
+                    final pageToShow =
+                        notification is ScrollEndNotification &&
+                                topAlignedPage > 0
+                            ? topAlignedPage
+                            : visiblePage;
+                    if (pageToShow >= 0 && pageToShow != _readerPage) {
+                      setState(() => _readerPage = pageToShow);
+                    }
+
+                    if (notification is ScrollEndNotification &&
+                        topAlignedPage > 0 &&
+                        nearestTopDistance > 18) {
+                      _scrollToPage(topAlignedPage);
                     }
                   });
                   return false;
@@ -1294,13 +1316,20 @@ class _ErrorPage extends StatelessWidget {
 }
 
 
-/// Prevents a fast flick from carrying the reader across dozens of pages.
-/// Direct dragging remains enabled; navigation buttons/search can still jump.
+/// Keeps the reader's scrolling natural while limiting excessive fling
+/// momentum. Direct finger dragging and explicit page navigation remain enabled.
 class _ControlledReaderScrollPhysics extends ClampingScrollPhysics {
   const _ControlledReaderScrollPhysics({super.parent});
 
+  static const double _maximumFlingVelocity = 1600;
+
   @override
-  Simulation? createBallisticSimulation(ScrollMetrics position, double velocity) => null;
+  Simulation? createBallisticSimulation(ScrollMetrics position, double velocity) {
+    final boundedVelocity = velocity
+        .clamp(-_maximumFlingVelocity, _maximumFlingVelocity)
+        .toDouble();
+    return super.createBallisticSimulation(position, boundedVelocity);
+  }
 
   @override
   _ControlledReaderScrollPhysics applyTo(ScrollPhysics? ancestor) =>

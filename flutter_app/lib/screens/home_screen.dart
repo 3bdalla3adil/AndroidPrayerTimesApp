@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/cupertino.dart';
+import '../core/adaptive_page_scaffold.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 import '../models/prayer_entry.dart';
 import '../services/athan_reminder_service.dart';
@@ -82,7 +83,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override Widget build(BuildContext context) {
     final next = _next;
-    return CupertinoPageScaffold(
+    return AdaptivePageScaffold(
       navigationBar: CupertinoNavigationBar(
         middle: const Text('Salawat'),
         trailing: CupertinoButton(

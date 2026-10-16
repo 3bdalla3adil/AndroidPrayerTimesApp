@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import '../core/adaptive_page_scaffold.dart';
 
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
@@ -108,7 +109,7 @@ class _TasbihScreenState extends State<TasbihScreen> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const CupertinoPageScaffold(
+      return const AdaptivePageScaffold(
         navigationBar: CupertinoNavigationBar(middle: Text('Tasbih')),
         child: Center(child: CupertinoActivityIndicator()),
       );
@@ -116,7 +117,7 @@ class _TasbihScreenState extends State<TasbihScreen> {
 
     final progress = _target == 0 ? 0.0 : (_count / _target).clamp(0.0, 1.0);
 
-    return CupertinoPageScaffold(
+    return AdaptivePageScaffold(
       navigationBar: CupertinoNavigationBar(
         middle: const Text('Tasbih'),
         trailing: CupertinoButton(

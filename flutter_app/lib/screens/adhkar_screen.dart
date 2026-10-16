@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import '../core/adaptive_page_scaffold.dart';
 
 class AdhkarScreen extends StatelessWidget {
   const AdhkarScreen({super.key});
@@ -14,7 +15,7 @@ class AdhkarScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CupertinoPageScaffold(
+    return AdaptivePageScaffold(
       navigationBar: const CupertinoNavigationBar(middle: Text('Daily Adhkar')),
       child: SafeArea(
         child: ListView(

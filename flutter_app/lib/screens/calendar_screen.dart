@@ -1,6 +1,7 @@
 import 'dart:ui' as ui;
 
 import 'package:flutter/cupertino.dart';
+import '../core/adaptive_page_scaffold.dart';
 import 'package:hijri_core/hijri_core.dart';
 import 'package:intl/intl.dart';
 
@@ -68,7 +69,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     final first = DateTime(_visibleMonth.year, _visibleMonth.month, 1);
     final offset = first.weekday % 7;
 
-    return CupertinoPageScaffold(
+    return AdaptivePageScaffold(
       navigationBar: CupertinoNavigationBar(
         middle: const Text('Calendar'),
         trailing: CupertinoButton(

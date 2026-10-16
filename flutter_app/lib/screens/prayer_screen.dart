@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
+import '../core/adaptive_page_scaffold.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 
 import '../models/prayer_city.dart';
@@ -214,7 +215,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
   Widget build(BuildContext context) {
     final next = _next;
 
-    return CupertinoPageScaffold(
+    return AdaptivePageScaffold(
       navigationBar: CupertinoNavigationBar(
         middle: const Text('Prayer times'),
         trailing: CupertinoButton(

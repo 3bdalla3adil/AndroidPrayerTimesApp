@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import '../core/adaptive_page_scaffold.dart';
 import 'package:quran/quran.dart' as quran;
 import '../services/app_routes.dart';
 import '../services/storage_service.dart';
@@ -53,7 +54,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
   }
 
   @override Widget build(BuildContext context) {
-    return CupertinoPageScaffold(
+    return AdaptivePageScaffold(
       navigationBar: const CupertinoNavigationBar(middle: Text('Bookmarks')),
       child: SafeArea(
         child: _loading

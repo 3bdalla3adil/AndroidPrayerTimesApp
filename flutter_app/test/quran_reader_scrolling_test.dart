@@ -1,10 +1,19 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 
 import 'package:salawat_quran/screens/quran_reader_screen.dart';
 import 'package:salawat_quran/services/locale_controller.dart';
+
+Future<void> pumpReaderFrames(WidgetTester tester) async {
+  // The reader loads bundled page data asynchronously and has ongoing app
+  // timers. pumpAndSettle can wait forever for unrelated transient callbacks.
+  for (var frame = 0; frame < 8; frame++) {
+    await tester.pump(const Duration(milliseconds: 50));
+  }
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -17,9 +26,9 @@ void main() {
   testWidgets('Quran reader does not coast across many pages after a fling',
       (tester) async {
     await tester.pumpWidget(
-      const CupertinoApp(home: QuranReaderScreen(surahNumber: 1)),
+      const MaterialApp(home: QuranReaderScreen(surahNumber: 1)),
     );
-    await tester.pumpAndSettle(const Duration(milliseconds: 100));
+    await pumpReaderFrames(tester);
 
     final listFinder = find.byType(ListView);
     final controller = tester.widget<ListView>(listFinder).controller!;
@@ -34,9 +43,9 @@ void main() {
   testWidgets('Quran reader scrolls continuously without nested vertical scrollers',
       (tester) async {
     await tester.pumpWidget(
-      const CupertinoApp(home: QuranReaderScreen(surahNumber: 1)),
+      const MaterialApp(home: QuranReaderScreen(surahNumber: 1)),
     );
-    await tester.pumpAndSettle(const Duration(milliseconds: 100));
+    await pumpReaderFrames(tester);
 
     final listFinder = find.byType(ListView);
     expect(listFinder, findsOneWidget);
