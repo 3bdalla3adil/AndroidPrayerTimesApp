@@ -69,7 +69,10 @@ class _QiblaScreenState extends State<QiblaScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final accent = AppTheme.emerald;
+    final isDark = CupertinoTheme.brightnessOf(context) == Brightness.dark;
+    final accent = isDark ? const Color(0xFF82D6B2) : AppTheme.emerald;
+    final primaryText = CupertinoColors.label.resolveFrom(context);
+    final secondaryText = CupertinoColors.secondaryLabel.resolveFrom(context);
     return AdaptivePageScaffold(
       navigationBar: CupertinoNavigationBar(
         middle: Text(LocaleController.isArabic ? 'اتجاه القبلة' : 'Qibla direction'),
@@ -158,7 +161,7 @@ class _QiblaScreenState extends State<QiblaScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  Text(status, textAlign: TextAlign.center),
+                  Text(status, textAlign: TextAlign.center, style: TextStyle(color: secondaryText)),
                   const SizedBox(height: 18),
                   CupertinoButton.filled(
                     onPressed: calculate,
