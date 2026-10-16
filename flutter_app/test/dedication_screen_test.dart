@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:salawat_quran/screens/dedication_screen.dart';
@@ -14,7 +15,7 @@ void main() {
   testWidgets('dedication card shows respectful Arabic dedication', (tester) async {
     LocaleController.locale.value = const Locale('ar');
     await tester.pumpWidget(
-      const CupertinoApp(home: DedicationScreen()),
+      const MaterialApp(home: DedicationScreen()),
     );
     await tester.pump(const Duration(milliseconds: 100));
 
@@ -27,7 +28,7 @@ void main() {
   testWidgets('dedication card supports English', (tester) async {
     LocaleController.locale.value = const Locale('en');
     await tester.pumpWidget(
-      const CupertinoApp(home: DedicationScreen()),
+      const MaterialApp(home: DedicationScreen()),
     );
     await tester.pump(const Duration(milliseconds: 100));
 
