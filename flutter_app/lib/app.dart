@@ -39,85 +39,183 @@ class _RootShellState extends State<RootShell> {
   Future<void> _showOpeningDedication() async {
     if (_openingDedicationShown || !mounted) return;
     _openingDedicationShown = true;
+
     final isArabic = LocaleController.isArabic;
-    const background = Color(0xFF103C32);
+    const background = Color(0xFF071F1A);
+    const cardColor = Color(0xFF103C32);
     const gold = Color(0xFFFFE7A3);
+    const mutedGold = Color(0xFFC7A45A);
     const bodyColor = Color(0xFFF5F0E4);
-    if (_isIOS) {
-      await showCupertinoDialog<void>(
-        context: context,
-        barrierDismissible: false,
-        builder: (dialogContext) => CupertinoAlertDialog(
-          title: Column(
-            children: [
-              const Icon(CupertinoIcons.gift_fill, color: Color(0xFFC7A45A), size: 28),
-              const SizedBox(height: 8),
-              Text(isArabic ? 'إهداء وتقدير — كلمات من القلب' : 'A Gift of Gratitude'),
-            ],
-          ),
-          content: SizedBox(
-            height: 300,
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.only(top: 12),
-                child: Text(
-                  isArabic
-                      ? 'إلى والد زوجتي العزيز، وأمير قلبها،\\n\\nأهديك هذه الكلمات المتواضعة تقديرًا لمقامك، واحترامًا لشخصك الكريم، وامتنانًا للمكانة العزيزة التي تحملها في قلوبنا.\\n\\nلك مني خالص التقدير وصادق الدعاء؛ أسأل الله أن يبارك في عمرك وصحتك، وأن يجزيك خير الجزاء، ويديم عليك السكينة والرضا، ويحفظ لك من تحب.\\n\\nقد لا تفي الكلمات حقك، لكنها تحمل احترامًا صادقًا ومودةً خالصة.'
-                      : 'To my dear father-in-law, and the cherished father of my beloved,\\n\\nPlease accept this humble dedication as a sign of my respect for you and gratitude for the valued place you hold in our family.\\n\\nWith sincere appreciation and prayers, may Allah bless you with health, a long life filled with goodness, peace of heart, and the happiness of those you love.\\n\\nWords may never fully express my esteem, but these come with genuine respect and affection.',
-                  textAlign: TextAlign.center,
-                  textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
-                  style: const TextStyle(height: 1.8),
-                ),
-              ),
-            ),
-          ),
-          actions: [
-            CupertinoDialogAction(
-              isDefaultAction: true,
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: Text(isArabic ? 'الدخول إلى التطبيق' : 'Enter app'),
-            ),
-          ],
-        ),
-      );
-      return;
-    }
-    await material.showDialog<void>(
+    final dedication = isArabic
+        ? 'إلى والد زوجتي العزيز، وأمير قلبها،\\n\\nأهديك هذه الكلمات المتواضعة تقديرًا لمقامك، واحترامًا لشخصك الكريم، وامتنانًا للمكانة العزيزة التي تحملها في قلوبنا.\\n\\nلك مني خالص التقدير وصادق الدعاء؛ أسأل الله أن يبارك في عمرك وصحتك، وأن يجزيك خير الجزاء، ويديم عليك السكينة والرضا، ويحفظ لك من تحب.\\n\\nقد لا تفي الكلمات حقك، لكنها تحمل احترامًا صادقًا ومودةً خالصة.'
+        : 'To my dear father-in-law, and the cherished father of my beloved,\\n\\nPlease accept this humble dedication as a sign of my respect for you and gratitude for the valued place you hold in our family.\\n\\nWith sincere appreciation and prayers, may Allah bless you with health, a long life filled with goodness, peace of heart, and the happiness of those you love.\\n\\nWords may never fully express my esteem, but these come with genuine respect and affection.';
+
+    await material.showGeneralDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (dialogContext) => material.AlertDialog(
-        backgroundColor: background,
-        icon: const Icon(CupertinoIcons.gift_fill, color: Color(0xFFC7A45A), size: 30),
-        title: Text(
-          isArabic ? 'إهداء وتقدير — كلمات من القلب' : 'A Gift of Gratitude',
-          textAlign: TextAlign.center,
-          style: const TextStyle(color: gold, fontWeight: FontWeight.w700),
-        ),
-        content: SizedBox(
-          height: 300,
-          width: 420,
-          child: SingleChildScrollView(
-            child: Text(
-              isArabic
-                  ? 'إلى والد زوجتي العزيز، وأمير قلبها،\\n\\nأهديك هذه الكلمات المتواضعة تقديرًا لمقامك، واحترامًا لشخصك الكريم، وامتنانًا للمكانة العزيزة التي تحملها في قلوبنا.\\n\\nلك مني خالص التقدير وصادق الدعاء؛ أسأل الله أن يبارك في عمرك وصحتك، وأن يجزيك خير الجزاء، ويديم عليك السكينة والرضا، ويحفظ لك من تحب.\\n\\nقد لا تفي الكلمات حقك، لكنها تحمل احترامًا صادقًا ومودةً خالصة.'
-                  : 'To my dear father-in-law, and the cherished father of my beloved,\\n\\nPlease accept this humble dedication as a sign of my respect for you and gratitude for the valued place you hold in our family.\\n\\nWith sincere appreciation and prayers, may Allah bless you with health, a long life filled with goodness, peace of heart, and the happiness of those you love.\\n\\nWords may never fully express my esteem, but these come with genuine respect and affection.',
-              textAlign: TextAlign.center,
-              textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
-              style: const TextStyle(color: bodyColor, height: 1.8),
+      barrierLabel: isArabic ? 'إهداء وتقدير' : 'A Gift of Gratitude',
+      barrierColor: const Color(0xE6000000),
+      transitionDuration: const Duration(milliseconds: 220),
+      pageBuilder: (dialogContext, animation, secondaryAnimation) {
+        return material.Material(
+          color: background,
+          child: SafeArea(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SizedBox(
+                  width: constraints.maxWidth,
+                  height: constraints.maxHeight,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
+                    child: Column(
+                      children: [
+                        const Icon(
+                          CupertinoIcons.gift_fill,
+                          color: mutedGold,
+                          size: 38,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          isArabic ? 'إهداء وتقدير' : 'A Gift of Gratitude',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: gold,
+                            fontSize: 25,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          isArabic ? 'كلمات من القلب' : 'A Note from the Heart',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: mutedGold,
+                            fontSize: 17,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        Expanded(
+                          child: Container(
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  Color(0xFF1C5948),
+                                  cardColor,
+                                  Color(0xFF0C2C25),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(22),
+                              border: Border.all(color: mutedGold, width: 1.2),
+                            ),
+                            child: SingleChildScrollView(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 22,
+                                vertical: 24,
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    CupertinoIcons.sparkles,
+                                    color: gold,
+                                    size: 22,
+                                  ),
+                                  const SizedBox(height: 20),
+                                  Text(
+                                    isArabic
+                                        ? 'إلى والد زوجتي العزيز، وأمير قلبها،'
+                                        : 'To my dear father-in-law, and the cherished father of my beloved,',
+                                    textAlign: TextAlign.center,
+                                    textDirection: isArabic
+                                        ? TextDirection.rtl
+                                        : TextDirection.ltr,
+                                    style: const TextStyle(
+                                      color: gold,
+                                      fontSize: 21,
+                                      fontWeight: FontWeight.w700,
+                                      height: 1.7,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 22),
+                                  Text(
+                                    dedication.substring(dedication.indexOf('\\n\\n') + 4),
+                                    textAlign: TextAlign.center,
+                                    textDirection: isArabic
+                                        ? TextDirection.rtl
+                                        : TextDirection.ltr,
+                                    style: const TextStyle(
+                                      color: bodyColor,
+                                      fontSize: 17,
+                                      height: 1.9,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 24),
+                                  const Divider(color: mutedGold),
+                                  const SizedBox(height: 14),
+                                  Text(
+                                    isArabic
+                                        ? 'بكل احترام وامتنان'
+                                        : 'With respect and gratitude',
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                      color: gold,
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 54,
+                          child: material.FilledButton(
+                            style: material.FilledButton.styleFrom(
+                              backgroundColor: mutedGold,
+                              foregroundColor: const Color(0xFF071F1A),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            onPressed: () => Navigator.of(dialogContext).pop(),
+                            child: Text(
+                              isArabic ? 'الدخول إلى التطبيق' : 'Enter app',
+                              style: const TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
             ),
           ),
-        ),
-        actions: [
-          material.FilledButton(
-            style: material.FilledButton.styleFrom(
-              backgroundColor: const Color(0xFFC7A45A),
-              foregroundColor: const Color(0xFF071F1A),
-            ),
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: Text(isArabic ? 'الدخول إلى التطبيق' : 'Enter app'),
+        );
+      },
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        final curved = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+        );
+        return FadeTransition(
+          opacity: curved,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.985, end: 1).animate(curved),
+            child: child,
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
