@@ -5,8 +5,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/adaptive_page_scaffold.dart';
 import 'package:flutter/gestures.dart';
-import 'package:flutter/physics.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:quran/quran.dart' as quran;
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
@@ -78,9 +76,8 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
 
   bool get _darkPage => ref.read(readerProvider).darkMode;
   set _darkPage(bool value) => ref.read(readerProvider.notifier).setDarkMode(value);
-  int? _userScrollStartPage;
-  double? _userScrollStartOffset;
-  int _userScrollDirection = 0;
+  int? _pointerStartPage;
+  double? _pointerStartY;
 
   @override
   void initState() {
@@ -178,9 +175,8 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
 
     final generation = ++_navigationGeneration;
     _isProgrammaticNavigation = true;
-    _userScrollStartPage = null;
-    _userScrollStartOffset = null;
-    _userScrollDirection = 0;
+    _pointerStartPage = null;
+    _pointerStartY = null;
 
     try {
       if (!_itemScrollController.isAttached) {
@@ -216,10 +212,44 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
     }
   }
 
+  void _handlePointerDown(PointerDownEvent event) {
+    if (_isProgrammaticNavigation) return;
+    _pointerStartPage = _readerPage;
+    _pointerStartY = event.position.dy;
+  }
+
+  void _handlePointerUp(PointerEvent event) {
+    final startPage = _pointerStartPage;
+    final startY = _pointerStartY;
+    _pointerStartPage = null;
+    _pointerStartY = null;
+
+    if (startPage == null || startY == null || _isProgrammaticNavigation) {
+      return;
+    }
+
+    final deltaY = event.position.dy - startY;
+    // Ignore taps and small incidental movement. Pointer tracking does not
+    // compete with the scrollable's gesture recognizer, so fling physics still
+    // works; the final target is nevertheless bounded to one adjacent page.
+    if (deltaY.abs() < 35) return;
+
+    final targetPage = (startPage + (deltaY < 0 ? 1 : -1))
+        .clamp(1, totalReaderPages)
+        .toInt();
+    _isProgrammaticNavigation = true;
+    _scrollToPage(targetPage, animated: true);
+  }
+
+  void _handlePointerCancel(PointerCancelEvent event) {
+    _pointerStartPage = null;
+    _pointerStartY = null;
+  }
+
   void _handleItemPositionsChanged() {
     if (!mounted ||
         _isProgrammaticNavigation ||
-        _userScrollStartPage != null) {
+        _pointerStartPage != null) {
       return;
     }
 
@@ -684,61 +714,10 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
               totalPages: totalReaderPages,
             ),
             Expanded(
-              child: NotificationListener<ScrollNotification>(
-                onNotification: (notification) {
-                  if (_isProgrammaticNavigation) return false;
-
-                  // Capture the page at the start of a real finger drag.
-                  // When it ends, settle at only one adjacent page, even
-                  // when the release velocity is high.
-                  if (notification is ScrollStartNotification) {
-                    _userScrollStartPage ??= _readerPage;
-                    _userScrollStartOffset ??= notification.metrics.pixels;
-                    _userScrollDirection = 0;
-                  }
-
-                  if (notification is UserScrollNotification &&
-                      notification.direction != ScrollDirection.idle) {
-                    _userScrollDirection =
-                        notification.direction == ScrollDirection.reverse
-                            ? 1
-                            : -1;
-                    _userScrollStartPage ??= _readerPage;
-                    _userScrollStartOffset ??= notification.metrics.pixels;
-                  }
-
-                  if (notification is ScrollEndNotification) {
-                    final startPage = _userScrollStartPage;
-                    final startOffset = _userScrollStartOffset;
-                    final direction = _userScrollDirection;
-                    _userScrollStartPage = null;
-                    _userScrollStartOffset = null;
-                    _userScrollDirection = 0;
-
-                    if (startPage != null && startOffset != null) {
-                      final delta = notification.metrics.pixels - startOffset;
-                      final resolvedDirection = direction != 0
-                          ? direction
-                          : delta.abs() < 20
-                              ? 0
-                              : (delta > 0 ? 1 : -1);
-                      final targetPage = (startPage + resolvedDirection)
-                          .clamp(1, totalReaderPages)
-                          .toInt();
-
-                      // Suppress item-position updates between gesture end and
-                      // the deterministic snap to the adjacent page.
-                      _isProgrammaticNavigation = true;
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        if (!mounted) return;
-                        _scrollToPage(targetPage, animated: false);
-                      });
-                      return false;
-                    }
-                  }
-
-                  return false;
-                },
+              child: Listener(
+                onPointerDown: _handlePointerDown,
+                onPointerUp: _handlePointerUp,
+                onPointerCancel: _handlePointerCancel,
                 child: ScrollablePositionedList.builder(
                   itemScrollController: _itemScrollController,
                   itemPositionsListener: _itemPositionsListener,
