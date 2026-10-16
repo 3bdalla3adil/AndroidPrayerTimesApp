@@ -24,9 +24,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   int _preReminderMinutes = 0;
   String _athanSound = 'default';
   double _quranFontSize = 28;
-  double _quranLineHeight = 1.75;
   bool _quranTranslation = false;
-  bool _quranDarkPage = false;
   int _tasbihTarget = 33;
 
   static const _methods = <int, String>{
@@ -55,9 +53,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final preReminderMinutes = await _storage.loadPrePrayerReminderMinutes();
     final athanSound = await _storage.loadAthanSound();
     final quranFontSize = await _storage.loadQuranFontSize();
-    final quranLineHeight = await _storage.loadQuranLineHeight();
     final quranTranslation = await _storage.loadQuranShowTranslation();
-    final quranDarkPage = await _storage.loadQuranDarkPage();
     final tasbih = await _storage.loadTasbih();
     if (!mounted) return;
     setState(() {
@@ -70,9 +66,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _preReminderMinutes = preReminderMinutes;
       _athanSound = NotificationService.soundLabels.containsKey(athanSound) ? athanSound : 'default';
       _quranFontSize = quranFontSize.clamp(20, 38).toDouble();
-      _quranLineHeight = quranLineHeight.clamp(1.35, 2.15).toDouble();
       _quranTranslation = quranTranslation;
-      _quranDarkPage = quranDarkPage;
       _tasbihTarget = tasbih.$2;
       _loading = false;
     });
