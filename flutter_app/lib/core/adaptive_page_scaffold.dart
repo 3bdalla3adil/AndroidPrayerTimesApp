@@ -47,8 +47,8 @@ class AdaptivePageScaffold extends StatelessWidget {
     }
 
     return material.Scaffold(
-      appBar: appBar as material.AppBar?,
-      backgroundColor: backgroundColor,
+      appBar: appBar,
+      backgroundColor: backgroundColor ?? const Color(0xFFF5F3EA),
       resizeToAvoidBottomInset: resizeToAvoidBottomInset,
       body: child,
     );
