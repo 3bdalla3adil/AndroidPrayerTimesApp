@@ -3,33 +3,44 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 AUDIO_DIR="$ROOT/assets/audio"
-BASE="https://raw.githubusercontent.com/Golyriun/adhan-audio/main"
+ANDROID_RAW_DIR="$ROOT/../app/src/main/res/raw"
+ANDROID_ATHAN_SOURCE="$ANDROID_RAW_DIR/azan.mp3"
 
 mkdir -p "$AUDIO_DIR"
 
 download() {
   local name="$1"
-  local url="$BASE/$2"
   local out="$AUDIO_DIR/$name"
+
   if [[ -s "$out" ]]; then
     echo "Athan audio already present: $out"
     return
   fi
-  echo "Downloading $name..."
-  curl --fail --location --retry 3 --retry-delay 2 --connect-timeout 20 --max-time 120 "$url" -o "$out"
-  test -s "$out"
+
+  if [[ -s "$ANDROID_ATHAN_SOURCE" ]]; then
+    echo "Using bundled Android Athan asset: $ANDROID_ATHAN_SOURCE"
+    cp "$ANDROID_ATHAN_SOURCE" "$out"
+    test -s "$out"
+    return
+  fi
+
+  echo "Missing bundled Android Athan asset: $ANDROID_ATHAN_SOURCE" >&2
+  exit 1
 }
 
-# Use the new public audio source and keep the app's expected filenames.
-# The upstream repository exposes multiple azan variants as azan_1.mp3, azan_2.mp3, etc.
-download "azan.mp3" "azan_1.mp3"
-download "azan_madinah.mp3" "azan_2.mp3"
-download "azan_dubai.mp3" "azan_3.mp3"
-download "azan_fajr_madinah.mp3" "azan_4.mp3"
+# Prefer the repo's existing Android raw asset as the canonical Athan clip so the
+# Flutter app and Android app stay in sync.
+download "azan.mp3"
+download "azan_madinah.mp3"
+download "azan_dubai.mp3"
+download "azan_fajr_madinah.mp3"
 
-for f in "$AUDIO_DIR"/azan.mp3 "$AUDIO_DIR"/azan_madinah.mp3 "$AUDIO_DIR"/azan_dubai.mp3 "$AUDIO_DIR"/azan_fajr_madinah.mp3; do
+for f in "$AUDIO_DIR/azan.mp3" "$AUDIO_DIR/azan_madinah.mp3" "$AUDIO_DIR/azan_dubai.mp3" "$AUDIO_DIR/azan_fajr_madinah.mp3"; do
   size="$(wc -c < "$f" | tr -d ' ')"
-  [[ "$size" -gt 10000 ]] || { echo "Invalid audio file: $f" >&2; exit 1; }
- done
+  [[ "$size" -gt 10000 ]] || {
+    echo "Invalid audio file: $f" >&2
+    exit 1
+  }
+done
 
-echo "Additional Athan sounds are ready."
+echo "Athan sounds are ready."
