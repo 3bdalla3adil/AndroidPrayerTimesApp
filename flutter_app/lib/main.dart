@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app.dart';
 import 'services/locale_controller.dart';
@@ -10,5 +11,5 @@ Future<void> main() async {
   await LocaleController.load();
   await PrayerService.initialize();
   await NotificationService.initialize();
-  runApp(const SalawatQuranApp());
+  runApp(const ProviderScope(child: SalawatQuranApp()));
 }
