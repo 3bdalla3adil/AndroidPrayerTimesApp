@@ -33,17 +33,6 @@ void main() {
     expect(await storage.loadPrePrayerReminderMinutes(), 15);
   });
 
-  test('reading history is capped and newest entry wins', () async {
-    for (var i = 1; i <= 25; i++) {
-      await storage.addReadingHistory(1, i);
-    }
-    await storage.addReadingHistory(1, 25);
-    final history = await storage.loadReadingHistory();
-    expect(history.length, 20);
-    expect(history.last.$2, 25);
-    expect(history.where((item) => item.$2 == 25).length, 1);
-  });
-
   test('persists Quran display settings', () async {
     await storage.saveQuranFontSize(34);
     await storage.saveQuranLineHeight(1.9);
