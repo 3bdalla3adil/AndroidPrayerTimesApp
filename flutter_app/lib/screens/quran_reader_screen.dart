@@ -178,6 +178,13 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
     _dragStartPage = null;
     _verticalDragDistance = 0;
 
+    // Update the page indicator immediately. Waiting for scrollTo to finish
+    // leaves the UI stale while the indexed list animates (and can make
+    // gesture tests race the animation future).
+    if (mounted && _readerPage != page) {
+      setState(() => _readerPage = page);
+    }
+
     try {
       if (!_itemScrollController.isAttached) {
         await WidgetsBinding.instance.endOfFrame;
@@ -202,7 +209,6 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
       }
 
       if (mounted && generation == _navigationGeneration) {
-        setState(() => _readerPage = page);
         _repository.prefetchAround(page);
       }
     } finally {
@@ -213,18 +219,15 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
   }
 
   void _handleVerticalDragStart(DragStartDetails details) {
-    if (_isProgrammaticNavigation) {
-      _dragStartPage = null;
-      _verticalDragDistance = 0;
-      return;
-    }
+    // Always capture the current page. Startup restoration or another
+    // programmatic jump must not silently discard the user's first swipe.
     _dragStartPage = _readerPage;
     _verticalDragDistance = 0;
   }
 
   void _handleVerticalDragUpdate(DragUpdateDetails details) {
-    if (_dragStartPage == null || _isProgrammaticNavigation) return;
-    _verticalDragDistance += details.primaryDelta ?? 0;
+    if (_dragStartPage == null) return;
+    _verticalDragDistance += details.delta.dy;
   }
 
   void _handleVerticalDragEnd(DragEndDetails details) {
@@ -233,14 +236,21 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
     final velocity = details.primaryVelocity ?? 0;
     _dragStartPage = null;
     _verticalDragDistance = 0;
-    if (startPage == null || _isProgrammaticNavigation) return;
+    if (startPage == null) return;
+
     final isFling = velocity.abs() >= 700;
     if (distance.abs() < 40 && !isFling) return;
+
+    // Distance takes precedence when the user clearly dragged. Velocity is
+    // only used for short, fast flicks; either way a gesture advances once.
     final direction = distance.abs() >= 40
         ? (distance < 0 ? 1 : -1)
         : (velocity < 0 ? 1 : -1);
-    final targetPage = (startPage + direction).clamp(1, totalReaderPages).toInt();
-    if (targetPage != startPage) _scrollToPage(targetPage, animated: true);
+    final targetPage =
+        (startPage + direction).clamp(1, totalReaderPages).toInt();
+    if (targetPage != startPage) {
+      _scrollToPage(targetPage, animated: true);
+    }
   }
 
   void _handleVerticalDragCancel() {
