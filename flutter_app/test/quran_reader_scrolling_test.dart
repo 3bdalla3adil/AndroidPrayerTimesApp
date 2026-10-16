@@ -44,7 +44,9 @@ void main() {
 
     final controller = tester.widget<ListView>(listFinder).controller!;
     await tester.drag(listFinder, const Offset(0, -900));
-    await tester.pumpAndSettle(const Duration(milliseconds: 100));
+    // The reader may start asynchronous page loading after a drag. Pump a
+    // bounded frame instead of waiting for every transient animation to settle.
+    await tester.pump(const Duration(milliseconds: 250));
 
     expect(controller.offset, greaterThan(0));
   });
