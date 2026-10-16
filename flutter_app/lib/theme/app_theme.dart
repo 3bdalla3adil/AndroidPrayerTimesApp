@@ -65,6 +65,40 @@ class AppTheme {
         ),
       );
 
+  static material.ThemeData get materialDarkData => material.ThemeData(
+        useMaterial3: true,
+        brightness: material.Brightness.dark,
+        colorScheme: material.ColorScheme.fromSeed(
+          seedColor: emerald,
+          brightness: material.Brightness.dark,
+          primary: const Color(0xFF82D6B2),
+          secondary: antiqueGold,
+          surface: darkSurface,
+        ),
+        scaffoldBackgroundColor: midnightGreen,
+        appBarTheme: const material.AppBarTheme(
+          centerTitle: false,
+          elevation: 0,
+          scrolledUnderElevation: 1,
+          backgroundColor: darkSurface,
+          foregroundColor: warmIvory,
+        ),
+        cardTheme: const material.CardThemeData(
+          color: darkCard,
+          elevation: 0,
+          margin: EdgeInsets.zero,
+        ),
+        listTileTheme: const material.ListTileThemeData(
+          iconColor: Color(0xFF82D6B2),
+          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        ),
+        navigationBarTheme: const material.NavigationBarThemeData(
+          backgroundColor: darkSurface,
+          indicatorColor: deepEmerald,
+          labelBehavior: material.NavigationDestinationLabelBehavior.alwaysShow,
+        ),
+      );
+
   static CupertinoThemeData get data => const CupertinoThemeData(
         primaryColor: emerald,
         scaffoldBackgroundColor: groupedBackground,
