@@ -11,9 +11,6 @@ class StorageService {
   static const _quranLineHeight = 'quran_line_height';
   static const _quranShowTranslation = 'quran_show_translation';
   static const _quranDarkPage = 'quran_dark_page';
-  static const _lastSurah = 'last_surah';
-  static const _lastAyah = 'last_ayah';
-  static const _lastReaderPage = 'last_reader_page';
   static const _bookmarks = 'quran_bookmarks';
   static const _athanReminders = 'athan_reminders_enabled';
   static const _athanPrayers = 'athan_enabled_prayers';
@@ -23,7 +20,6 @@ class StorageService {
   static const _tasbihCount = 'tasbih_count';
   static const _tasbihTarget = 'tasbih_target';
   static const _madhab = 'prayer_madhab';
-  static const _readingHistory = 'quran_reading_history';
 
   static const prayerNames = <String>['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
 
@@ -60,14 +56,6 @@ class StorageService {
     await prefs.remove(_method);
   }
 
-  Future<void> saveReaderPosition(int surah, int ayah) async {
-    await prefs.setInt(_lastSurah, surah);
-    await prefs.setInt(_lastAyah, ayah);
-  }
-
-  Future<(int?, int?)> loadReaderPosition() async => (await prefs.getInt(_lastSurah), await prefs.getInt(_lastAyah));
-  Future<void> saveReaderPage(int page) async => prefs.setInt(_lastReaderPage, page);
-  Future<int?> loadReaderPage() async => prefs.getInt(_lastReaderPage);
   Future<void> saveQuranFontSize(double size) => prefs.setDouble(_quranFontSize, size);
 
   Future<(int, int)> loadTasbih() async => (await prefs.getInt(_tasbihCount) ?? 0, await prefs.getInt(_tasbihTarget) ?? 33);
@@ -158,27 +146,5 @@ class StorageService {
     await prefs.setStringList(_prayerAdjustments, values);
   }
 
-  Future<List<(int, int, DateTime)>> loadReadingHistory() async {
-    final values = await prefs.getStringList(_readingHistory) ?? const [];
-    final result = <(int, int, DateTime)>[];
-    for (final value in values) {
-      final parts = value.split(':');
-      if (parts.length != 3) continue;
-      final surah = int.tryParse(parts[0]);
-      final ayah = int.tryParse(parts[1]);
-      final timestamp = int.tryParse(parts[2]);
-      if (surah == null || ayah == null || timestamp == null || surah < 1 || surah > 114 || ayah < 1) continue;
-      result.add((surah, ayah, DateTime.fromMillisecondsSinceEpoch(timestamp)));
-    }
-    return result;
-  }
 
-  Future<void> addReadingHistory(int surah, int ayah) async {
-    if (surah < 1 || surah > 114 || ayah < 1) return;
-    final history = await loadReadingHistory();
-    history.removeWhere((item) => item.$1 == surah && item.$2 == ayah);
-    history.add((surah, ayah, DateTime.now()));
-    if (history.length > 20) history.removeRange(0, history.length - 20);
-    await prefs.setStringList(_readingHistory, history.map((item) => '${item.$1}:${item.$2}:${item.$3.millisecondsSinceEpoch}').toList());
-  }
 }
