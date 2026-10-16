@@ -49,8 +49,8 @@ void main() {
     await tester.drag(listFinder, const Offset(0, -650));
     await pumpReaderFrames(tester, frames: 12);
 
-    expect(find.textContaining('صفحة 2 من 604'), findsOneWidget);
-    expect(find.textContaining('صفحة 3 من 604'), findsNothing);
+    expect(find.textContaining('صفحة 2 / 604'), findsOneWidget);
+    expect(find.textContaining('صفحة 3 / 604'), findsNothing);
   });
 
   testWidgets('Quran reader fling settles at one adjacent page only',
@@ -62,7 +62,7 @@ void main() {
     await tester.fling(listFinder, const Offset(0, -120), 12000);
     await pumpReaderFrames(tester, frames: 20);
 
-    expect(find.textContaining('صفحة 2 من 604'), findsOneWidget);
-    expect(find.textContaining('صفحة 3 من 604'), findsNothing);
+    expect(find.textContaining('صفحة 2 / 604'), findsOneWidget);
+    expect(find.textContaining('صفحة 3 / 604'), findsNothing);
   });
 }
