@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:convert';
 
 import 'package:flutter/cupertino.dart';
@@ -52,6 +53,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
   late final _bookmarkService = BookmarkService(_storage);
   late final _settingsService = SettingsService(_storage);
   final _repository = QuranRepository(const AssetQuranPageDataSource(), maximumCachedPages: 20);
+  final LinkedHashMap<int, Future<QuranPage>> _pageFutures = LinkedHashMap();
   final _searchService = QuranSearchService();
 
   int _readerPage = 1;
@@ -133,6 +135,21 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     final data = await _repository.loadPage(page);
     if (prefetch) _repository.prefetchAround(page);
     return data;
+  }
+
+  Future<QuranPage> _pageFuture(int page) {
+    final existing = _pageFutures.remove(page);
+    if (existing != null) {
+      _pageFutures[page] = existing;
+      return existing;
+    }
+
+    final future = _loadPage(page);
+    _pageFutures[page] = future;
+    while (_pageFutures.length > 24) {
+      _pageFutures.remove(_pageFutures.keys.first);
+    }
+    return future;
   }
 
   Future<void> _scrollToPage(int page, {bool animated = true}) async {
@@ -779,7 +796,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
                     return KeyedSubtree(
                       key: _keyForPage(page),
                       child: FutureBuilder<QuranPage>(
-                        future: _loadPage(page),
+                        future: _pageFuture(page),
                         builder: (context, snapshot) {
                           if (snapshot.connectionState != ConnectionState.done) {
                             return const Center(
@@ -789,7 +806,10 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
                           if (snapshot.hasError || snapshot.data == null) {
                             return _ErrorPage(
                               page: page,
-                              onRetry: () => setState(() {}),
+                              onRetry: () {
+                                _pageFutures.remove(page);
+                                setState(() {});
+                              },
                             );
                           }
                           return _MushafPage(
