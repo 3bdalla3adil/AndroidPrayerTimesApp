@@ -4,7 +4,6 @@ import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/adaptive_page_scaffold.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:quran/quran.dart' as quran;
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
@@ -76,8 +75,8 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
 
   bool get _darkPage => ref.read(readerProvider).darkMode;
   set _darkPage(bool value) => ref.read(readerProvider.notifier).setDarkMode(value);
-  int? _pointerStartPage;
-  double? _pointerStartY;
+  int? _dragStartPage;
+  double _verticalDragDistance = 0;
 
   @override
   void initState() {
@@ -212,44 +211,46 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
     }
   }
 
-  void _handlePointerDown(PointerDownEvent event) {
-    if (_isProgrammaticNavigation) return;
-    _pointerStartPage = _readerPage;
-    _pointerStartY = event.position.dy;
-  }
-
-  void _handlePointerUp(PointerEvent event) {
-    final startPage = _pointerStartPage;
-    final startY = _pointerStartY;
-    _pointerStartPage = null;
-    _pointerStartY = null;
-
-    if (startPage == null || startY == null || _isProgrammaticNavigation) {
+  void _handleVerticalDragStart(DragStartDetails details) {
+    if (_isProgrammaticNavigation) {
+      _dragStartPage = null;
+      _verticalDragDistance = 0;
       return;
     }
-
-    final deltaY = event.position.dy - startY;
-    // Ignore taps and small incidental movement. Pointer tracking does not
-    // compete with the scrollable's gesture recognizer, so fling physics still
-    // works; the final target is nevertheless bounded to one adjacent page.
-    if (deltaY.abs() < 35) return;
-
-    final targetPage = (startPage + (deltaY < 0 ? 1 : -1))
-        .clamp(1, totalReaderPages)
-        .toInt();
-    _isProgrammaticNavigation = true;
-    _scrollToPage(targetPage, animated: true);
+    _dragStartPage = _readerPage;
+    _verticalDragDistance = 0;
   }
 
-  void _handlePointerCancel(PointerCancelEvent event) {
-    _pointerStartPage = null;
-    _pointerStartY = null;
+  void _handleVerticalDragUpdate(DragUpdateDetails details) {
+    if (_dragStartPage == null || _isProgrammaticNavigation) return;
+    _verticalDragDistance += details.primaryDelta ?? 0;
+  }
+
+  void _handleVerticalDragEnd(DragEndDetails details) {
+    final startPage = _dragStartPage;
+    final distance = _verticalDragDistance;
+    final velocity = details.primaryVelocity ?? 0;
+    _dragStartPage = null;
+    _verticalDragDistance = 0;
+    if (startPage == null || _isProgrammaticNavigation) return;
+    final isFling = velocity.abs() >= 700;
+    if (distance.abs() < 40 && !isFling) return;
+    final direction = distance.abs() >= 40
+        ? (distance < 0 ? 1 : -1)
+        : (velocity < 0 ? 1 : -1);
+    final targetPage = (startPage + direction).clamp(1, totalReaderPages).toInt();
+    if (targetPage != startPage) _scrollToPage(targetPage, animated: true);
+  }
+
+  void _handleVerticalDragCancel() {
+    _dragStartPage = null;
+    _verticalDragDistance = 0;
   }
 
   void _handleItemPositionsChanged() {
     if (!mounted ||
         _isProgrammaticNavigation ||
-        _pointerStartPage != null) {
+        _dragStartPage != null) {
       return;
     }
 
@@ -714,12 +715,13 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
               totalPages: totalReaderPages,
             ),
             Expanded(
-              child: Listener(
+              child: GestureDetector(
                 key: const ValueKey('quran-reader-swipe-area'),
                 behavior: HitTestBehavior.opaque,
-                onPointerDown: _handlePointerDown,
-                onPointerUp: _handlePointerUp,
-                onPointerCancel: _handlePointerCancel,
+                onVerticalDragStart: _handleVerticalDragStart,
+                onVerticalDragUpdate: _handleVerticalDragUpdate,
+                onVerticalDragEnd: _handleVerticalDragEnd,
+                onVerticalDragCancel: _handleVerticalDragCancel,
                 child: IgnorePointer(
                   child: ScrollablePositionedList.builder(
                   itemScrollController: _itemScrollController,
