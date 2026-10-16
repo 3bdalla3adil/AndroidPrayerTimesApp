@@ -47,7 +47,7 @@ abstract final class AppRoutes {
   ];
 
   static String tabRouteForIndex(int index) =>
-      tabRoutes[index.clamp(0, tabRoutes.length - 1)];
+      tabRoutes[index.clamp(0, tabRoutes.length - 1).toInt()];
 
   static Widget tabScreenForIndex(int index) =>
       screenForRoute(tabRouteForIndex(index));
