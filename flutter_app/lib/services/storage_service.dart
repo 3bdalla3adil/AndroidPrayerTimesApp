@@ -21,6 +21,47 @@ class StorageService {
   static const _tasbihTarget = 'tasbih_target';
   static const _madhab = 'prayer_madhab';
 
+  static const _memorizedAyahs = 'quran_memorized_ayahs';
+  static const _reviewAyahs = 'quran_memorization_review_ayahs';
+  static const _memorizationSession = 'quran_memorization_session';
+
+  Future<Set<String>> loadMemorizedAyahs() async =>
+      (await prefs.getStringList(_memorizedAyahs) ?? const <String>[]).toSet();
+
+  Future<void> saveMemorizedAyahs(Set<String> values) =>
+      prefs.setStringList(_memorizedAyahs, values.toList()..sort());
+
+  Future<Set<String>> loadMemorizationReviewAyahs() async =>
+      (await prefs.getStringList(_reviewAyahs) ?? const <String>[]).toSet();
+
+  Future<void> saveMemorizationReviewAyahs(Set<String> values) =>
+      prefs.setStringList(_reviewAyahs, values.toList()..sort());
+
+  Future<Map<String, int>> loadMemorizationSession() async {
+    final values = await prefs.getStringList(_memorizationSession) ?? const <String>[];
+    final result = <String, int>{};
+    for (final value in values) {
+      final parts = value.split(':');
+      if (parts.length != 2) continue;
+      final parsed = int.tryParse(parts[1]);
+      if (parsed != null) result[parts[0]] = parsed;
+    }
+    return result;
+  }
+
+  Future<void> saveMemorizationSession({
+    required int surah,
+    required int startAyah,
+    required int endAyah,
+    required int currentAyah,
+  }) => prefs.setStringList(_memorizationSession, [
+    'surah:$surah',
+    'start:$startAyah',
+    'end:$endAyah',
+    'current:$currentAyah',
+  ]);
+
+
   static const prayerNames = <String>['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
 
   final SharedPreferencesAsync prefs = SharedPreferencesAsync();
