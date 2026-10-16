@@ -28,7 +28,97 @@ class _RootShellState extends State<RootShell> {
     _controller = CupertinoTabController();
     _materialIndex = ValueNotifier<int>(0);
     NotificationService.lastPayload.addListener(_handleNotificationPayload);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _handleNotificationPayload());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _showOpeningDedication();
+      _handleNotificationPayload();
+    });
+  }
+
+  bool _openingDedicationShown = false;
+
+  Future<void> _showOpeningDedication() async {
+    if (_openingDedicationShown || !mounted) return;
+    _openingDedicationShown = true;
+    final isArabic = LocaleController.isArabic;
+    const background = Color(0xFF103C32);
+    const gold = Color(0xFFFFE7A3);
+    const bodyColor = Color(0xFFF5F0E4);
+    if (_isIOS) {
+      await showCupertinoDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => CupertinoAlertDialog(
+          title: Column(
+            children: [
+              const Icon(CupertinoIcons.gift_fill, color: Color(0xFFC7A45A), size: 28),
+              const SizedBox(height: 8),
+              Text(isArabic ? 'إهداء وتقدير — كلمات من القلب' : 'A Gift of Gratitude'),
+            ],
+          ),
+          content: SizedBox(
+            height: 300,
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Text(
+                  isArabic
+                      ? 'إلى والد زوجتي العزيز، وأمير قلبها،\\n\\nأهديك هذه الكلمات المتواضعة تقديرًا لمقامك، واحترامًا لشخصك الكريم، وامتنانًا للمكانة العزيزة التي تحملها في قلوبنا.\\n\\nلك مني خالص التقدير وصادق الدعاء؛ أسأل الله أن يبارك في عمرك وصحتك، وأن يجزيك خير الجزاء، ويديم عليك السكينة والرضا، ويحفظ لك من تحب.\\n\\nقد لا تفي الكلمات حقك، لكنها تحمل احترامًا صادقًا ومودةً خالصة.'
+                      : 'To my dear father-in-law, and the cherished father of my beloved,\\n\\nPlease accept this humble dedication as a sign of my respect for you and gratitude for the valued place you hold in our family.\\n\\nWith sincere appreciation and prayers, may Allah bless you with health, a long life filled with goodness, peace of heart, and the happiness of those you love.\\n\\nWords may never fully express my esteem, but these come with genuine respect and affection.',
+                  textAlign: TextAlign.center,
+                  textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
+                  style: const TextStyle(height: 1.8),
+                ),
+              ),
+            ),
+          ),
+          actions: [
+            CupertinoDialogAction(
+              isDefaultAction: true,
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(isArabic ? 'الدخول إلى التطبيق' : 'Enter app'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    await material.showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => material.AlertDialog(
+        backgroundColor: background,
+        icon: const Icon(CupertinoIcons.gift_fill, color: Color(0xFFC7A45A), size: 30),
+        title: Text(
+          isArabic ? 'إهداء وتقدير — كلمات من القلب' : 'A Gift of Gratitude',
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: gold, fontWeight: FontWeight.w700),
+        ),
+        content: SizedBox(
+          height: 300,
+          width: 420,
+          child: SingleChildScrollView(
+            child: Text(
+              isArabic
+                  ? 'إلى والد زوجتي العزيز، وأمير قلبها،\\n\\nأهديك هذه الكلمات المتواضعة تقديرًا لمقامك، واحترامًا لشخصك الكريم، وامتنانًا للمكانة العزيزة التي تحملها في قلوبنا.\\n\\nلك مني خالص التقدير وصادق الدعاء؛ أسأل الله أن يبارك في عمرك وصحتك، وأن يجزيك خير الجزاء، ويديم عليك السكينة والرضا، ويحفظ لك من تحب.\\n\\nقد لا تفي الكلمات حقك، لكنها تحمل احترامًا صادقًا ومودةً خالصة.'
+                  : 'To my dear father-in-law, and the cherished father of my beloved,\\n\\nPlease accept this humble dedication as a sign of my respect for you and gratitude for the valued place you hold in our family.\\n\\nWith sincere appreciation and prayers, may Allah bless you with health, a long life filled with goodness, peace of heart, and the happiness of those you love.\\n\\nWords may never fully express my esteem, but these come with genuine respect and affection.',
+              textAlign: TextAlign.center,
+              textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
+              style: const TextStyle(color: bodyColor, height: 1.8),
+            ),
+          ),
+        ),
+        actions: [
+          material.FilledButton(
+            style: material.FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFC7A45A),
+              foregroundColor: const Color(0xFF071F1A),
+            ),
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(isArabic ? 'الدخول إلى التطبيق' : 'Enter app'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _handleNotificationPayload() {
