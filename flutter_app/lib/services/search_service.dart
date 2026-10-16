@@ -15,6 +15,7 @@ final class QuranSearchService {
   final List<_IndexedVerse> _verses = [];
   final Map<String, Set<int>> _postings = {};
   bool _built = false;
+  Future<void>? _building;
 
   bool get isBuilt => _built;
 
@@ -30,9 +31,12 @@ final class QuranSearchService {
       .replaceAll('ـ', '')
       .trim();
 
-  Future<void> build() async {
-    if (_built) return;
+  Future<void> build() {
+    if (_built) return Future<void>.value();
+    return _building ??= _buildIndex();
+  }
 
+  Future<void> _buildIndex() async {
     // The quran package is bundled locally; no network requests are performed.
     for (var surah = 1; surah <= quran.totalSurahCount; surah++) {
       final count = quran.getVerseCount(surah);
@@ -67,6 +71,7 @@ final class QuranSearchService {
     }
 
     _built = true;
+    _building = null;
   }
 
   QuranSearchResponse search(String rawQuery, {int limit = 40}) {
@@ -101,7 +106,7 @@ final class QuranSearchService {
     }
 
     final indexes = canUseIndex && candidates != null
-        ? candidates.toList()
+        ? (candidates.toList()..sort())
         : List<int>.generate(_verses.length, (index) => index);
     final results = <SearchResult>[];
     var totalMatches = 0;
