@@ -47,8 +47,8 @@ class _RootShellState extends State<RootShell> {
     const mutedGold = Color(0xFFC7A45A);
     const bodyColor = Color(0xFFF5F0E4);
     final dedication = isArabic
-        ? 'إلى والد زوجتي العزيز، وأمير قلبها،\\n\\nأهديك هذه الكلمات المتواضعة تقديرًا لمقامك، واحترامًا لشخصك الكريم، وامتنانًا للمكانة العزيزة التي تحملها في قلوبنا.\\n\\nلك مني خالص التقدير وصادق الدعاء؛ أسأل الله أن يبارك في عمرك وصحتك، وأن يجزيك خير الجزاء، ويديم عليك السكينة والرضا، ويحفظ لك من تحب.\\n\\nقد لا تفي الكلمات حقك، لكنها تحمل احترامًا صادقًا ومودةً خالصة.'
-        : 'To my dear father-in-law, and the cherished father of my beloved,\\n\\nPlease accept this humble dedication as a sign of my respect for you and gratitude for the valued place you hold in our family.\\n\\nWith sincere appreciation and prayers, may Allah bless you with health, a long life filled with goodness, peace of heart, and the happiness of those you love.\\n\\nWords may never fully express my esteem, but these come with genuine respect and affection.';
+        ? 'إلى والد زوجتي العزيز، وأمير قلبها،\n\nأهديك هذه الكلمات المتواضعة تقديرًا لمقامك، واحترامًا لشخصك الكريم، وامتنانًا للمكانة العزيزة التي تحملها في قلوبنا.\n\nلك مني خالص التقدير وصادق الدعاء؛ أسأل الله أن يبارك في عمرك وصحتك، وأن يجزيك خير الجزاء، ويديم عليك السكينة والرضا، ويحفظ لك من تحب.\n\nقد لا تفي الكلمات حقك، لكنها تحمل احترامًا صادقًا ومودةً خالصة.'
+        : 'To my dear father-in-law, and the cherished father of my beloved,\n\nPlease accept this humble dedication as a sign of my respect for you and gratitude for the valued place you hold in our family.\n\nWith sincere appreciation and prayers, may Allah bless you with health, a long life filled with goodness, peace of heart, and the happiness of those you love.\n\nWords may never fully express my esteem, but these come with genuine respect and affection.';
 
     await material.showGeneralDialog<void>(
       context: context,
@@ -142,7 +142,7 @@ class _RootShellState extends State<RootShell> {
                                   ),
                                   const SizedBox(height: 22),
                                   Text(
-                                    dedication.substring(dedication.indexOf('\\n\\n') + 4),
+                                    dedication.substring(dedication.indexOf('\n\n') + 4),
                                     textAlign: TextAlign.center,
                                     textDirection: isArabic
                                         ? TextDirection.rtl
