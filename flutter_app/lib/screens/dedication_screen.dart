@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import '../core/adaptive_page_scaffold.dart';
 
 import '../services/locale_controller.dart';
 import '../theme/app_theme.dart';
@@ -27,7 +28,7 @@ class _DedicationScreenState extends State<DedicationScreen>
   @override
   Widget build(BuildContext context) {
     final isArabic = LocaleController.isArabic;
-    return CupertinoPageScaffold(
+    return AdaptivePageScaffold(
       backgroundColor: const Color(0xFF071F1A),
       navigationBar: CupertinoNavigationBar(
         backgroundColor: const Color(0xEE071F1A),
