@@ -467,11 +467,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         trailing: const CupertinoListTileChevron(),
                         onTap: _loading ? null : _choosePreReminder,
                       ),
-                      const CupertinoListTile(
-                        leading: Icon(CupertinoIcons.info_circle),
-                        title: Text('Prayer time adjustment'),
-                        subtitle: Text('Long-press a prayer to adjust it by 5-minute steps.'),
-                      ),
                     ],
                   ),
                   CupertinoListSection.insetGrouped(
@@ -494,79 +489,42 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ],
                   ),
                   CupertinoListSection.insetGrouped(
-                    header: const Text('ATHAN SOUND'),
+                    header: Text(LocaleController.isArabic ? 'صوت الأذان' : 'ATHAN SOUND'),
                     children: [
                       CupertinoListTile(
                         leading: const Icon(CupertinoIcons.music_note),
-                        title: const Text('Athan sound'),
+                        title: Text(LocaleController.isArabic ? 'صوت الأذان' : 'Athan sound'),
                         subtitle: Text(NotificationService.soundLabels[_athanSound] ?? 'Athan — Default'),
                         trailing: const CupertinoListTileChevron(),
                         onTap: _loading ? null : _chooseAthanSound,
                       ),
                       CupertinoListTile(
                         leading: const Icon(CupertinoIcons.play_circle_fill),
-                        title: const Text('Test Athan sound'),
-                        subtitle: const Text('Play the selected Athan immediately to verify the bundled audio recording.'),
+                        title: Text(LocaleController.isArabic ? 'تجربة صوت الأذان' : 'Test Athan'),
+                        subtitle: Text(LocaleController.isArabic ? 'تشغيل الصوت المختار للتحقق منه' : 'Play the selected sound'),
                         onTap: _loading ? null : _testAthan,
-                      ),
-                      CupertinoListTile(
-                        leading: const Icon(CupertinoIcons.sunrise_fill),
-                        title: const Text('Test Fajr Athan'),
-                        subtitle: const Text('Play the dedicated Madinah Fajr Athan immediately.'),
-                        onTap: _loading ? null : () => _testAthan(fajr: true),
                       ),
                     ],
                   ),
                   CupertinoListSection.insetGrouped(
-                    header: const Text('QURAN / MUSHAF'),
+                    header: Text(LocaleController.isArabic ? 'القرآن الكريم' : 'QURAN'),
                     children: [
                       CupertinoListTile(
                         leading: const Icon(CupertinoIcons.textformat_size),
-                        title: const Text('Arabic / Uthmani font size'),
+                        title: Text(LocaleController.isArabic ? 'حجم خط المصحف' : 'Mushaf font size'),
                         subtitle: Text('${_quranFontSize.round()} pt'),
                         trailing: const CupertinoListTileChevron(),
                         onTap: _loading ? null : _chooseQuranFontSize,
                       ),
                       CupertinoListTile(
-                        leading: const Icon(CupertinoIcons.line_horizontal_3),
-                        title: const Text('Ayah line spacing'),
-                        subtitle: Text(_quranLineHeight.toStringAsFixed(2)),
-                        trailing: SizedBox(
-                          width: 150,
-                          child: CupertinoSlider(
-                            min: 1.35,
-                            max: 2.15,
-                            value: _quranLineHeight,
-                            onChanged: _loading
-                                ? null
-                                : (value) async {
-                                    setState(() => _quranLineHeight = value);
-                                    await _storage.saveQuranLineHeight(value);
-                                  },
-                          ),
-                        ),
-                      ),
-                      CupertinoListTile(
                         leading: const Icon(CupertinoIcons.globe),
-                        title: const Text('English translation'),
-                        subtitle: const Text('Show translation below each ayah'),
+                        title: Text(LocaleController.isArabic ? 'إظهار الترجمة الإنجليزية' : 'English translation'),
+                        subtitle: Text(LocaleController.isArabic ? 'عرض الترجمة أسفل الآيات' : 'Show translation below each ayah'),
                         trailing: CupertinoSwitch(
                           value: _quranTranslation,
                           onChanged: _loading ? null : (value) async {
                             await _storage.saveQuranShowTranslation(value);
                             if (mounted) setState(() => _quranTranslation = value);
-                          },
-                        ),
-                      ),
-                      CupertinoListTile(
-                        leading: const Icon(CupertinoIcons.moon),
-                        title: const Text('Dark Mushaf page'),
-                        subtitle: const Text('Use a dark reading page'),
-                        trailing: CupertinoSwitch(
-                          value: _quranDarkPage,
-                          onChanged: _loading ? null : (value) async {
-                            await _storage.saveQuranDarkPage(value);
-                            if (mounted) setState(() => _quranDarkPage = value);
                           },
                         ),
                       ),
@@ -585,21 +543,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ],
                   ),
 
-                  CupertinoListSection.insetGrouped(
-                    header: const Text('PRIVACY & OFFLINE'),
-                    children: [
-                      const CupertinoListTile(
-                        leading: Icon(CupertinoIcons.person_crop_circle_badge_checkmark),
-                        title: Text('No account'),
-                        subtitle: Text('No login or cloud profile is required.'),
-                      ),
-                      const CupertinoListTile(
-                        leading: Icon(CupertinoIcons.wifi_slash),
-                        title: Text('Offline Quran'),
-                        subtitle: Text('The 604-page Mushaf is bundled in the app.'),
-                      ),
-                    ],
-                  ),
                 ],
               ),
       ),
