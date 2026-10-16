@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import '../core/adaptive_page_scaffold.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/physics.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:quran/quran.dart' as quran;
 
