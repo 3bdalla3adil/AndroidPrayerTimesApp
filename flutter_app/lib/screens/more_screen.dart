@@ -28,13 +28,6 @@ class MoreScreen extends StatelessWidget {
                 ),
 
                 CupertinoListTile(
-                  leading: const Icon(CupertinoIcons.clock),
-                  title: Text(LocaleController.isArabic ? 'سجل القراءة' : 'Reading history'),
-                  subtitle: Text(LocaleController.isArabic ? 'آخر مواضع القرآن التي قرأتها' : 'Recently opened Quran passages'),
-                  trailing: const CupertinoListTileChevron(),
-                  onTap: () => Navigator.of(context).pushNamed(AppRoutes.readingHistory),
-                ),
-                CupertinoListTile(
                   leading: const Icon(CupertinoIcons.circle_grid_3x3),
                   title: Text(LocaleController.isArabic ? 'التسبيح' : 'Tasbih'),
                   subtitle: Text(LocaleController.isArabic ? 'عداد ذكر يعمل دون إنترنت' : 'Offline dhikr counter'),
