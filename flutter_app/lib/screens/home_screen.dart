@@ -278,7 +278,7 @@ class _HomeFeatureGrid extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(item.$3, size: 25, color: AppTheme.emerald),
+                            Icon(item.$3, size: 25, color: CupertinoTheme.brightnessOf(context) == Brightness.dark ? const Color(0xFF82D6B2) : AppTheme.emerald),
                             const Spacer(),
                             Text(
                               item.$1,
