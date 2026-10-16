@@ -67,25 +67,9 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (e) { if (mounted) _dialog(LocaleController.isArabic ? 'تعذّر إعداد الأذان' : 'Athan setup failed', e.toString()); }
   }
 
-  Future<void> _continueQuran() async {
-    final storage = StorageService();
-    final (surah, ayah) = await storage.loadReaderPosition();
-    final page = await storage.loadReaderPage();
-    if (!mounted) return;
-    if (surah == null) {
-      // No saved reading position yet: use the Quran's main tab instead of
-      // creating a second copy of the surah-selection screen on the Home stack.
-      RootTabNavigation.maybeOf(context)?.selectTab(1);
-      return;
-    }
-    Navigator.of(context).pushNamed(
-      AppRoutes.quranReader,
-      arguments: QuranReaderRouteArgs(
-        surahNumber: surah,
-        startingAyah: ayah ?? 1,
-        startingPage: page,
-      ),
-    );
+  void _continueQuran() {
+    // Open the single Quran tab. Never restore or persist the last-read page.
+    RootTabNavigation.maybeOf(context)?.selectTab(1);
   }
 
   void _dialog(String title, String message) => showCupertinoDialog<void>(
