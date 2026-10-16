@@ -44,7 +44,7 @@ void main() {
     await tester.pumpWidget(
       const CupertinoApp(home: QuranReaderScreen(surahNumber: 1)),
     );
-    await tester.pumpAndSettle(const Duration(milliseconds: 100));
+    await pumpReaderFrames(tester);
 
     final listFinder = find.byType(ListView);
     expect(listFinder, findsOneWidget);
