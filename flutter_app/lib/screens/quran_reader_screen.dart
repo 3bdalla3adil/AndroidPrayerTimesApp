@@ -1294,13 +1294,20 @@ class _ErrorPage extends StatelessWidget {
 }
 
 
-/// Prevents a fast flick from carrying the reader across dozens of pages.
-/// Direct dragging remains enabled; navigation buttons/search can still jump.
+/// Keeps the reader's scrolling natural while limiting excessive fling
+/// momentum. Direct finger dragging and explicit page navigation remain enabled.
 class _ControlledReaderScrollPhysics extends ClampingScrollPhysics {
   const _ControlledReaderScrollPhysics({super.parent});
 
+  static const double _maximumFlingVelocity = 1600;
+
   @override
-  Simulation? createBallisticSimulation(ScrollMetrics position, double velocity) => null;
+  Simulation? createBallisticSimulation(ScrollMetrics position, double velocity) {
+    final boundedVelocity = velocity
+        .clamp(-_maximumFlingVelocity, _maximumFlingVelocity)
+        .toDouble();
+    return super.createBallisticSimulation(position, boundedVelocity);
+  }
 
   @override
   _ControlledReaderScrollPhysics applyTo(ScrollPhysics? ancestor) =>
