@@ -8,8 +8,6 @@ import 'package:salawat_quran/screens/quran_reader_screen.dart';
 import 'package:salawat_quran/services/locale_controller.dart';
 
 Future<void> pumpReaderFrames(WidgetTester tester, {int frames = 8}) async {
-  // Page data is loaded asynchronously and the app may have repeating timers.
-  // Use bounded pumping so tests do not wait forever for unrelated callbacks.
   for (var frame = 0; frame < frames; frame++) {
     await tester.pump(const Duration(milliseconds: 50));
   }
@@ -24,53 +22,44 @@ void main() {
     LocaleController.locale.value = const Locale('ar');
   });
 
-  testWidgets('Quran reader scrolls vertically without nested scrollers',
-      (tester) async {
+  Future<ScrollController> mountReader(WidgetTester tester) async {
     await tester.binding.setSurfaceSize(const Size(900, 1400));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-
     await tester.pumpWidget(
       const MaterialApp(home: QuranReaderScreen(surahNumber: 1)),
     );
     await pumpReaderFrames(tester);
-
     final listFinder = find.byType(ListView);
     expect(listFinder, findsOneWidget);
     expect(find.byType(PageView), findsNothing);
     expect(find.byType(SingleChildScrollView), findsNothing);
+    return tester.widget<ListView>(listFinder).controller!;
+  }
 
-    final list = tester.widget<ListView>(listFinder);
-    final controller = list.controller;
-    expect(controller, isNotNull);
+  testWidgets('Quran reader settles one adjacent page per vertical drag',
+      (tester) async {
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final controller = await mountReader(tester);
+    final listFinder = find.byType(ListView);
+    final startOffset = controller.offset;
 
-    final startOffset = controller!.offset;
-    await tester.drag(listFinder, const Offset(0, -500));
-    await pumpReaderFrames(tester, frames: 4);
+    await tester.drag(listFinder, const Offset(0, -650));
+    await pumpReaderFrames(tester, frames: 12);
 
+    expect(find.textContaining('صفحة 2 من 604'), findsOneWidget);
     expect(controller.offset, greaterThan(startOffset));
   });
 
-  testWidgets('Quran reader limits vertical fling momentum',
+  testWidgets('Quran reader fling settles at one adjacent page only',
       (tester) async {
-    await tester.binding.setSurfaceSize(const Size(900, 1400));
     addTearDown(() => tester.binding.setSurfaceSize(null));
-
-    await tester.pumpWidget(
-      const MaterialApp(home: QuranReaderScreen(surahNumber: 1)),
-    );
-    await pumpReaderFrames(tester);
-
+    final controller = await mountReader(tester);
     final listFinder = find.byType(ListView);
-    expect(listFinder, findsOneWidget);
-    final controller = tester.widget<ListView>(listFinder).controller!;
     final startOffset = controller.offset;
 
     await tester.fling(listFinder, const Offset(0, -120), 12000);
-    await pumpReaderFrames(tester, frames: 12);
+    await pumpReaderFrames(tester, frames: 20);
 
-    // The custom physics caps velocity; a short gesture must not coast through
-    // a large portion of the Mushaf after release.
-    expect(controller.offset - startOffset, lessThan(1500));
+    expect(find.textContaining('صفحة 2 من 604'), findsOneWidget);
     expect(controller.offset, greaterThan(startOffset));
   });
 }
