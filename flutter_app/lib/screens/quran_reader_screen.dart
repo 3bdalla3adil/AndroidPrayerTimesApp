@@ -51,6 +51,8 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
   bool _showToolbar = true;
   bool _darkPage = false;
   bool _pageTrackingScheduled = false;
+  int? _userScrollStartPage;
+  double? _userScrollStartOffset;
 
   @override
   void initState() {
@@ -710,14 +712,47 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
             Expanded(
               child: NotificationListener<ScrollNotification>(
                 onNotification: (notification) {
-                  if (notification.depth != 0 ||
-                      (notification is! ScrollUpdateNotification &&
-                          notification is! ScrollEndNotification &&
-                          notification is! UserScrollNotification) ||
-                      (_pageTrackingScheduled &&
-                          notification is! ScrollEndNotification)) {
+                  if (notification.depth != 0) return false;
+
+                  // Capture the page at the start of a real finger drag.
+                  // When it ends, settle at only one adjacent page, even
+                  // when the release velocity is high.
+                  if (notification is ScrollStartNotification &&
+                      notification.dragDetails != null) {
+                    _userScrollStartPage = _readerPage;
+                    _userScrollStartOffset = notification.metrics.pixels;
                     return false;
                   }
+
+                  if (notification is ScrollEndNotification) {
+                    final startPage = _userScrollStartPage;
+                    final startOffset = _userScrollStartOffset;
+                    _userScrollStartPage = null;
+                    _userScrollStartOffset = null;
+
+                    if (startPage != null && startOffset != null) {
+                      final delta = notification.metrics.pixels - startOffset;
+                      final targetPage = delta.abs() < 20
+                          ? startPage
+                          : (startPage + (delta > 0 ? 1 : -1))
+                              .clamp(1, totalReaderPages)
+                              .toInt();
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (!mounted) return;
+                        if (_readerPage != targetPage) {
+                          setState(() => _readerPage = targetPage);
+                        }
+                        _scrollToPage(targetPage);
+                      });
+                      return false;
+                    }
+                  }
+
+                  if (notification is! ScrollUpdateNotification &&
+                      notification is! UserScrollNotification) {
+                    return false;
+                  }
+                  if (_pageTrackingScheduled) return false;
 
                   _pageTrackingScheduled = true;
                   WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -732,8 +767,6 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
                     final centerY = viewportRect.center.dy;
                     var visiblePage = -1;
                     var nearestDistance = double.infinity;
-                    var topAlignedPage = -1;
-                    var nearestTopDistance = double.infinity;
 
                     for (final entry in _pageKeys.entries) {
                       final renderObject =
@@ -743,39 +776,19 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
                       }
                       final rect =
                           renderObject.localToGlobal(Offset.zero) & renderObject.size;
-                      final centerDistance = centerY < rect.top
+                      final distance = centerY < rect.top
                           ? rect.top - centerY
                           : centerY > rect.bottom
                               ? centerY - rect.bottom
                               : 0.0;
-                      if (centerDistance < nearestDistance) {
-                        nearestDistance = centerDistance;
+                      if (distance < nearestDistance) {
+                        nearestDistance = distance;
                         visiblePage = entry.key;
                       }
-
-                      // Page snapping uses the page whose top edge is closest
-                      // to the viewport's top edge, rather than allowing a fling
-                      // to leave the reader resting between two Mushaf pages.
-                      final topDistance = (rect.top - viewportRect.top).abs();
-                      if (topDistance < nearestTopDistance) {
-                        nearestTopDistance = topDistance;
-                        topAlignedPage = entry.key;
-                      }
                     }
 
-                    final pageToShow =
-                        notification is ScrollEndNotification &&
-                                topAlignedPage > 0
-                            ? topAlignedPage
-                            : visiblePage;
-                    if (pageToShow >= 0 && pageToShow != _readerPage) {
-                      setState(() => _readerPage = pageToShow);
-                    }
-
-                    if (notification is ScrollEndNotification &&
-                        topAlignedPage > 0 &&
-                        nearestTopDistance > 18) {
-                      _scrollToPage(topAlignedPage);
+                    if (visiblePage > 0 && visiblePage != _readerPage) {
+                      setState(() => _readerPage = visiblePage);
                     }
                   });
                   return false;
