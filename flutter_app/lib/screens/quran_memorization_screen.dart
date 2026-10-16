@@ -40,11 +40,11 @@ class _QuranMemorizationScreenState extends State<QuranMemorizationScreen> {
     final memorized = await _storage.loadMemorizedAyahs();
     final review = await _storage.loadMemorizationReviewAyahs();
     final session = await _storage.loadMemorizationSession();
-    final surah = (session['surah'] ?? 1).clamp(1, 114);
+    final surah = (session['surah'] ?? 1).clamp(1, 114).toInt();
     final count = quran.getVerseCount(surah);
-    final start = (session['start'] ?? 1).clamp(1, count);
-    final end = (session['end'] ?? (start + 6).clamp(1, count)).clamp(start, count);
-    final current = (session['current'] ?? start).clamp(start, end);
+    final start = (session['start'] ?? 1).clamp(1, count).toInt();
+    final end = (session['end'] ?? (start + 6).clamp(1, count)).clamp(start, count).toInt();
+    final current = (session['current'] ?? start).clamp(start, end).toInt();
     if (!mounted) return;
     setState(() {
       _memorized = memorized;
