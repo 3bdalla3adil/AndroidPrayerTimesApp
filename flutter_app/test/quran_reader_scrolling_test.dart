@@ -8,8 +8,8 @@ import 'package:salawat_quran/screens/quran_reader_screen.dart';
 import 'package:salawat_quran/services/locale_controller.dart';
 
 Future<void> pumpReaderFrames(WidgetTester tester) async {
-  // The reader loads bundled page data asynchronously and has ongoing app
-  // timers. pumpAndSettle can wait forever for unrelated transient callbacks.
+  // The reader loads bundled page data asynchronously. Use bounded pumping
+  // instead of pumpAndSettle while page-data prefetches are active.
   for (var frame = 0; frame < 8; frame++) {
     await tester.pump(const Duration(milliseconds: 50));
   }
@@ -19,44 +19,56 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() {
-    SharedPreferencesAsyncPlatform.instance = InMemorySharedPreferencesAsync.empty();
+    SharedPreferencesAsyncPlatform.instance =
+        InMemorySharedPreferencesAsync.empty();
     LocaleController.locale.value = const Locale('ar');
   });
 
-  testWidgets('Quran reader does not coast across many pages after a fling',
+  testWidgets('Quran reader advances one page at a time horizontally',
       (tester) async {
     await tester.pumpWidget(
       const MaterialApp(home: QuranReaderScreen(surahNumber: 1)),
     );
     await pumpReaderFrames(tester);
 
-    final listFinder = find.byType(ListView);
-    final controller = tester.widget<ListView>(listFinder).controller!;
-    await tester.fling(listFinder, const Offset(0, -120), 12000);
-    await tester.pumpAndSettle(const Duration(milliseconds: 100));
-
-    // The drag itself is short, so the reader must not continue coasting
-    // hundreds of thousands of pixels after the gesture is released.
-    expect(controller.offset, lessThan(1500));
-  });
-
-  testWidgets('Quran reader scrolls continuously without nested vertical scrollers',
-      (tester) async {
-    await tester.pumpWidget(
-      const MaterialApp(home: QuranReaderScreen(surahNumber: 1)),
+    final pageViewFinder = find.byKey(
+      const ValueKey('quran-horizontal-page-reader'),
     );
-    await pumpReaderFrames(tester);
-
-    final listFinder = find.byType(ListView);
-    expect(listFinder, findsOneWidget);
+    expect(pageViewFinder, findsOneWidget);
+    expect(find.byType(ListView), findsNothing);
     expect(find.byType(SingleChildScrollView), findsNothing);
 
-    final controller = tester.widget<ListView>(listFinder).controller!;
-    await tester.drag(listFinder, const Offset(0, -900));
-    // The reader may start asynchronous page loading after a drag. Pump a
-    // bounded frame instead of waiting for every transient animation to settle.
+    final pageView = tester.widget<PageView>(pageViewFinder);
+    final controller = pageView.controller!;
+    expect(controller.page, 0);
+
+    // Arabic Mushaf reading uses RTL direction: a leftward finger swipe
+    // advances to the next page.
+    await tester.drag(pageViewFinder, const Offset(-320, 0));
     await tester.pump(const Duration(milliseconds: 250));
 
-    expect(controller.offset, greaterThan(0));
+    expect(controller.page, greaterThan(0));
+    expect(controller.page, lessThanOrEqualTo(1.1));
+  });
+
+  testWidgets('Quran reader fling snaps to a page instead of coasting',
+      (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: QuranReaderScreen(surahNumber: 1)),
+    );
+    await pumpReaderFrames(tester);
+
+    final pageViewFinder = find.byKey(
+      const ValueKey('quran-horizontal-page-reader'),
+    );
+    final controller = tester.widget<PageView>(pageViewFinder).controller!;
+
+    await tester.fling(pageViewFinder, const Offset(-120, 0), 12000);
+    await tester.pumpAndSettle(const Duration(milliseconds: 100));
+
+    // PageView physics snap to discrete pages, so a fast gesture cannot
+    // coast through a long run of Mushaf pages.
+    expect(controller.page, lessThanOrEqualTo(2));
+    expect(controller.page, greaterThanOrEqualTo(0));
   });
 }
