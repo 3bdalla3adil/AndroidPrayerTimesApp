@@ -733,7 +733,6 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
                     var nearestDistance = double.infinity;
                     var topAlignedPage = -1;
                     var nearestTopDistance = double.infinity;
-                    var topAlignedPageTop = 0.0;
 
                     for (final entry in _pageKeys.entries) {
                       final renderObject =
@@ -760,7 +759,6 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
                       if (topDistance < nearestTopDistance) {
                         nearestTopDistance = topDistance;
                         topAlignedPage = entry.key;
-                        topAlignedPageTop = rect.top;
                       }
                     }
 
