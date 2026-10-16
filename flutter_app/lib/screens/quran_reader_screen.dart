@@ -12,6 +12,7 @@ import '../services/storage_service.dart';
 import '../repositories/quran_repository.dart';
 import '../models/quran_page.dart';
 import '../models/verse.dart';
+import '../services/search_service.dart';
 import '../services/locale_controller.dart';
 
 const kQuranFont = 'KFGQPC HAFS Uthmanic Script';
@@ -47,6 +48,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
   final _pageKeys = <int, GlobalKey>{};
   final _storage = StorageService();
   final _repository = QuranRepository(const AssetQuranPageDataSource(), maximumCachedPages: 20);
+  final _searchService = QuranSearchService();
 
   int _readerPage = 1;
   double _fontSize = 25;
@@ -455,34 +457,12 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     input.dispose();
     if (query == null || query.trim().isEmpty || !mounted) return;
 
-    String normalize(String value) => value
-        .toLowerCase()
-        .replaceAll(RegExp(r'[\u064B-\u065F\u0670\u06D6-\u06ED]'), '')
-        .replaceAll(RegExp(r'[أإآٱ]'), 'ا')
-        .replaceAll('ى', 'ي')
-        .replaceAll('ـ', '')
-        .trim();
-    final needle = normalize(query);
-    final matches = <({int surah, int ayah, int page, String text})>[];
-    var totalMatches = 0;
-    for (var surah = 1; surah <= quran.totalSurahCount; surah++) {
-      for (var ayah = 1; ayah <= quran.getVerseCount(surah); ayah++) {
-        final arabic = quran.getVerse(surah, ayah);
-        final translation = quran.getVerseTranslation(surah, ayah);
-        if (normalize(arabic).contains(needle) ||
-            translation.toLowerCase().contains(needle)) {
-          totalMatches++;
-          if (matches.length < 40) {
-            matches.add((
-              surah: surah,
-              ayah: ayah,
-              page: quran.getPageNumber(surah, ayah),
-              text: arabic,
-            ));
-          }
-        }
-      }
+    if (!_searchService.isBuilt) {
+      await _searchService.build();
     }
+    final searchResponse = _searchService.search(query, limit: 40);
+    final matches = searchResponse.results;
+    final totalMatches = searchResponse.totalMatches;
 
     if (!mounted) return;
     await showCupertinoModalPopup<void>(
@@ -513,7 +493,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    match.text,
+                    match.arabicText,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     textDirection: TextDirection.rtl,
