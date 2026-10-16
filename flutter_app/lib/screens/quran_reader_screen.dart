@@ -686,9 +686,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
             Expanded(
               child: NotificationListener<ScrollNotification>(
                 onNotification: (notification) {
-                  if (notification.depth != 0 || _isProgrammaticNavigation) {
-                    return false;
-                  }
+                  if (_isProgrammaticNavigation) return false;
 
                   // Capture the page at the start of a real finger drag.
                   // When it ends, settle at only one adjacent page, even
