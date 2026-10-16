@@ -11,7 +11,6 @@ import '../screens/prayer_screen.dart';
 import '../screens/qibla_screen.dart';
 import '../screens/quran_reader_screen.dart';
 import '../screens/quran_screen.dart';
-import '../screens/reading_history_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/tasbih_screen.dart';
 
@@ -24,7 +23,6 @@ abstract final class AppRoutes {
   static const more = '/more';
   static const quranReader = '/quran/reader';
   static const bookmarks = '/quran/bookmarks';
-  static const readingHistory = '/quran/history';
   static const adhkar = '/adhkar';
   static const tasbih = '/tasbih';
   static const fasting = '/fasting';
@@ -37,7 +35,6 @@ abstract final class AppRoutes {
     ...tabRoutes,
     quranReader,
     bookmarks,
-    readingHistory,
     adhkar,
     tasbih,
     fasting,
@@ -74,8 +71,6 @@ abstract final class AppRoutes {
         );
       case bookmarks:
         return const BookmarksScreen();
-      case readingHistory:
-        return const ReadingHistoryScreen();
       case adhkar:
         return const AdhkarScreen();
       case tasbih:
