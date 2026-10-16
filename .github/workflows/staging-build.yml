@@ -1,0 +1,112 @@
+name: Staging Build
+
+on:
+  push:
+    branches:
+      - staging
+    paths:
+      - "flutter_app/**"
+      - ".github/workflows/staging-build.yml"
+  pull_request:
+    branches:
+      - staging
+    paths:
+      - "flutter_app/**"
+      - ".github/workflows/staging-build.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: staging-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Analyze and test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: flutter_app
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: "3.47.0"
+          cache: true
+          cache-dependency-path: flutter_app/pubspec.lock
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze --no-fatal-warnings --no-fatal-infos
+
+      - name: Run tests
+        run: flutter test --reporter expanded
+
+  android-staging:
+    name: Build installable Android staging packages
+    runs-on: ubuntu-latest
+    needs: validate
+    defaults:
+      run:
+        working-directory: flutter_app
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: "3.47.0"
+          cache: true
+          cache-dependency-path: flutter_app/pubspec.lock
+
+      - name: Prepare Android project
+        run: bash tool/bootstrap_android.sh
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build staging APK
+        run: flutter build apk --release --dart-define=APP_ENV=staging
+
+      - name: Build staging App Bundle
+        run: flutter build appbundle --release --dart-define=APP_ENV=staging
+
+      - name: Collect staging build
+        run: |
+          mkdir -p ../staging-output
+          cp build/app/outputs/flutter-apk/app-release.apk ../staging-output/salawat-quran-staging.apk
+          cp build/app/outputs/bundle/release/app-release.aab ../staging-output/salawat-quran-staging.aab
+          cat > ../staging-output/README.txt <<'EOF'
+          Salawat & Quran - Staging build
+
+          APK: Install directly on a compatible Android device for testing.
+          AAB: Android App Bundle for Play Console/internal testing workflows.
+
+          This staging build is not production-signed. Do not distribute it as a production release.
+          Features available in the current app include offline Quran reading, surah search,
+          saved reading position, prayer times, prayer reminders, Qibla, calendars and themes.
+          EOF
+
+      - name: Upload staging packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: salawat-quran-staging-${{ github.run_number }}
+          path: staging-output/
+          if-no-files-found: error
+          retention-days: 14
