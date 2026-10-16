@@ -2,7 +2,8 @@ name: Flutter CI
 
 concurrency:
   group: flutter-ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Let active platform builds finish; rapid commits should not cancel an iOS build mid-command.
+  cancel-in-progress: false
 
 on:
   push:
