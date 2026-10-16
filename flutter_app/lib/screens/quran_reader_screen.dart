@@ -722,7 +722,11 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
                   itemScrollController: _itemScrollController,
                   itemPositionsListener: _itemPositionsListener,
                   scrollDirection: Axis.vertical,
-                  physics: const _ControlledReaderScrollPhysics(),
+                  // Raw pointer tracking below converts each completed vertical
+                  // gesture into exactly one page navigation. Disabling native
+                  // drag/fling physics prevents a ballistic scroll from racing
+                  // the explicit one-page animation.
+                  physics: const NeverScrollableScrollPhysics(),
                   padding: const EdgeInsets.only(bottom: 8),
                   itemCount: totalReaderPages,
                   itemBuilder: (context, index) {
@@ -1231,25 +1235,4 @@ class _ErrorPage extends StatelessWidget {
       ),
     );
   }
-}
-
-
-/// Keeps the reader's scrolling natural while limiting excessive fling
-/// momentum. Direct finger dragging and explicit page navigation remain enabled.
-class _ControlledReaderScrollPhysics extends ClampingScrollPhysics {
-  const _ControlledReaderScrollPhysics({super.parent});
-
-  static const double _maximumFlingVelocity = 1600;
-
-  @override
-  Simulation? createBallisticSimulation(ScrollMetrics position, double velocity) {
-    final boundedVelocity = velocity
-        .clamp(-_maximumFlingVelocity, _maximumFlingVelocity)
-        .toDouble();
-    return super.createBallisticSimulation(position, boundedVelocity);
-  }
-
-  @override
-  _ControlledReaderScrollPhysics applyTo(ScrollPhysics? ancestor) =>
-      _ControlledReaderScrollPhysics(parent: buildParent(ancestor));
 }
