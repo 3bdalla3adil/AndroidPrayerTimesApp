@@ -12,6 +12,7 @@ class StorageService {
   static const _quranShowTranslation = 'quran_show_translation';
   static const _quranDarkPage = 'quran_dark_page';
   static const _bookmarks = 'quran_bookmarks';
+  static const _bookmarkRecords = 'quran_bookmark_records_v2';
   static const _athanReminders = 'athan_reminders_enabled';
   static const _athanPrayers = 'athan_enabled_prayers';
   static const _athanSound = 'athan_sound';
@@ -139,6 +140,12 @@ class StorageService {
     }
     await prefs.setStringList(_bookmarks, unique.toList());
   }
+
+  Future<List<String>> loadBookmarkRecords() async =>
+      await prefs.getStringList(_bookmarkRecords) ?? const <String>[];
+
+  Future<void> saveBookmarkRecords(List<String> records) =>
+      prefs.setStringList(_bookmarkRecords, records);
 
   Future<bool> loadAthanRemindersEnabled() async => await prefs.getBool(_athanReminders) ?? false;
   Future<void> saveAthanRemindersEnabled(bool enabled) => prefs.setBool(_athanReminders, enabled);
