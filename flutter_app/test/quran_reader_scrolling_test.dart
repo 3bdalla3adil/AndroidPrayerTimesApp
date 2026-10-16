@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 
@@ -25,7 +26,9 @@ void main() {
   Future<ScrollController> mountReader(WidgetTester tester) async {
     await tester.binding.setSurfaceSize(const Size(900, 1400));
     await tester.pumpWidget(
-      const MaterialApp(home: QuranReaderScreen(surahNumber: 1)),
+      const ProviderScope(
+        child: MaterialApp(home: QuranReaderScreen(surahNumber: 1)),
+      ),
     );
     await pumpReaderFrames(tester);
     final listFinder = find.byType(ListView);
