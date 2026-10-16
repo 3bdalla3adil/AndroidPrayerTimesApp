@@ -13,6 +13,8 @@ import '../repositories/quran_repository.dart';
 import '../models/quran_page.dart';
 import '../models/verse.dart';
 import '../services/search_service.dart';
+import '../services/bookmark_service.dart';
+import '../services/settings_service.dart';
 import '../services/locale_controller.dart';
 
 const kQuranFont = 'KFGQPC HAFS Uthmanic Script';
@@ -47,6 +49,8 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
   final _listViewportKey = GlobalKey();
   final _pageKeys = <int, GlobalKey>{};
   final _storage = StorageService();
+  late final _bookmarkService = BookmarkService(_storage);
+  late final _settingsService = SettingsService(_storage);
   final _repository = QuranRepository(const AssetQuranPageDataSource(), maximumCachedPages: 20);
   final _searchService = QuranSearchService();
 
@@ -83,10 +87,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
       final index = jsonDecode(raw) as Map<String, dynamic>;
       final starts =
           (index['surahStartPages'] as Map?)?.cast<String, dynamic>() ?? {};
-      final saved = await _storage.loadQuranFontSize();
-      final savedLineHeight = await _storage.loadQuranLineHeight();
-      final savedTranslation = await _storage.loadQuranShowTranslation();
-      final savedDarkPage = await _storage.loadQuranDarkPage();
+      final settings = await _settingsService.load();
       var requestedQuranPage = widget.startingPage ??
           (starts[widget.surahNumber.toString()] as num?)?.toInt() ??
           1;
@@ -114,10 +115,10 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
       if (!mounted) return;
       setState(() {
         _readerPage = requestedReaderPage;
-        _fontSize = saved.clamp(20, 38).toDouble();
-        _lineHeight = savedLineHeight.clamp(1.35, 2.15).toDouble();
-        _showTranslation = savedTranslation;
-        _darkPage = savedDarkPage;
+        _fontSize = settings.fontSize;
+        _lineHeight = settings.lineHeight;
+        _showTranslation = settings.showTranslation;
+        _darkPage = settings.darkPage;
       });
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -228,46 +229,37 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     if (_readerPage < 1) return;
     final data = await _loadPage(_readerPage);
     if (data.verses.isEmpty) return;
-    final surah = data.verses.first.surahNumber;
-    final ayah = data.verses.first.ayahNumber;
-    final bookmarks = await _storage.loadBookmarks();
-    final exists = bookmarks.any((b) => b.$1 == surah && b.$2 == ayah);
-    if (exists) {
-      bookmarks.removeWhere((b) => b.$1 == surah && b.$2 == ayah);
-    } else {
-      bookmarks.add((surah, ayah));
-    }
-    await _storage.saveBookmarks(bookmarks);
-    if (!mounted) return;
-    await showCupertinoDialog<void>(
-      context: context,
-      builder: (dialogContext) => CupertinoAlertDialog(
-        title: Text(exists ? 'Bookmark removed' : 'Ayah bookmarked'),
-        content: Text('${quran.getSurahName(surah)} • Ayah $ayah'),
-        actions: [
-          CupertinoDialogAction(
-            child: const Text('OK'),
-            onPressed: () => Navigator.pop(dialogContext),
-          ),
-        ],
-      ),
+    final verse = data.verses.first;
+    await _toggleBookmark(
+      surah: verse.surahNumber,
+      ayah: verse.ayahNumber,
+      page: _readerPage,
     );
   }
 
   Future<void> _bookmarkAyah(int surah, int ayah) async {
-    final bookmarks = await _storage.loadBookmarks();
-    final exists = bookmarks.any((b) => b.$1 == surah && b.$2 == ayah);
-    if (exists) {
-      bookmarks.removeWhere((b) => b.$1 == surah && b.$2 == ayah);
-    } else {
-      bookmarks.add((surah, ayah));
-    }
-    await _storage.saveBookmarks(bookmarks);
+    await _toggleBookmark(
+      surah: surah,
+      ayah: ayah,
+      page: quran.getPageNumber(surah, ayah),
+    );
+  }
+
+  Future<void> _toggleBookmark({
+    required int surah,
+    required int ayah,
+    required int page,
+  }) async {
+    final added = await _bookmarkService.toggle(
+      surah: surah,
+      ayah: ayah,
+      page: page,
+    );
     if (!mounted) return;
     await showCupertinoDialog<void>(
       context: context,
       builder: (dialogContext) => CupertinoAlertDialog(
-        title: Text(exists ? 'Bookmark removed' : 'Ayah bookmarked'),
+        title: Text(added ? 'Ayah bookmarked' : 'Bookmark removed'),
         content: Text('${quran.getSurahName(surah)} • Ayah $ayah'),
         actions: [
           CupertinoDialogAction(
@@ -554,25 +546,25 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
           void updateFontSize(double value) {
             sheetSetState(() {});
             setState(() => _fontSize = value);
-            _storage.saveQuranFontSize(value);
+            _settingsService.saveFontSize(value);
           }
 
           void updateLineHeight(double value) {
             sheetSetState(() {});
             setState(() => _lineHeight = value);
-            _storage.saveQuranLineHeight(value);
+            _settingsService.saveLineHeight(value);
           }
 
           void updateTranslation(bool value) {
             sheetSetState(() {});
             setState(() => _showTranslation = value);
-            _storage.saveQuranShowTranslation(value);
+            _settingsService.saveTranslation(value);
           }
 
           void updateDarkPage(bool value) {
             sheetSetState(() {});
             setState(() => _darkPage = value);
-            _storage.saveQuranDarkPage(value);
+            _settingsService.saveDarkPage(value);
           }
 
           return CupertinoActionSheet(
