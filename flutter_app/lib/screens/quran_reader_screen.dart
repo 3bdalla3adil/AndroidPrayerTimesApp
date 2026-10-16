@@ -762,8 +762,13 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
                       }
                     }
 
-                    if (visiblePage >= 0 && visiblePage != _readerPage) {
-                      setState(() => _readerPage = visiblePage);
+                    final pageToShow =
+                        notification is ScrollEndNotification &&
+                                topAlignedPage > 0
+                            ? topAlignedPage
+                            : visiblePage;
+                    if (pageToShow >= 0 && pageToShow != _readerPage) {
+                      setState(() => _readerPage = pageToShow);
                     }
 
                     if (notification is ScrollEndNotification &&
