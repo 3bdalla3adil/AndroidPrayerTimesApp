@@ -715,10 +715,13 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
             ),
             Expanded(
               child: Listener(
+                key: const ValueKey('quran-reader-swipe-area'),
+                behavior: HitTestBehavior.opaque,
                 onPointerDown: _handlePointerDown,
                 onPointerUp: _handlePointerUp,
                 onPointerCancel: _handlePointerCancel,
-                child: ScrollablePositionedList.builder(
+                child: IgnorePointer(
+                  child: ScrollablePositionedList.builder(
                   itemScrollController: _itemScrollController,
                   itemPositionsListener: _itemPositionsListener,
                   scrollDirection: Axis.vertical,
@@ -760,6 +763,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
                         },
                     );
                   },
+                  ),
                 ),
               ),
             ),
