@@ -169,7 +169,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
               ? const Duration(milliseconds: 220)
               : Duration.zero,
           curve: Curves.easeOutCubic,
-          alignment: 0.02,
+          alignment: 0.0,
         );
         if (mounted && _readerPage != page) {
           setState(() => _readerPage = page);
@@ -714,7 +714,8 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
                       (notification is! ScrollUpdateNotification &&
                           notification is! ScrollEndNotification &&
                           notification is! UserScrollNotification) ||
-                      _pageTrackingScheduled) {
+                      (_pageTrackingScheduled &&
+                          notification is! ScrollEndNotification)) {
                     return false;
                   }
 
