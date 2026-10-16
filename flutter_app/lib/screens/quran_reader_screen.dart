@@ -54,6 +54,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
   bool _pageTrackingScheduled = false;
   int? _userScrollStartPage;
   double? _userScrollStartOffset;
+  int _userScrollDirection = 0;
 
   @override
   void initState() {
@@ -722,36 +723,43 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
                       notification.dragDetails != null) {
                     _userScrollStartPage = _readerPage;
                     _userScrollStartOffset = notification.metrics.pixels;
+                    _userScrollDirection = 0;
                     return false;
                   }
 
-                  // Some scroll activities report their first user
-                  // direction through UserScrollNotification rather than a
-                  // ScrollStartNotification with dragDetails. Capture that
-                  // first directional update as a fallback so the snap still
-                  // runs on devices/test environments with different gesture
-                  // notification timing.
+                  // Remember the user's intent, not the total distance covered
+                  // by the fling. A high-velocity gesture must still advance
+                  // exactly one Mushaf page.
                   if (notification is UserScrollNotification &&
-                      notification.direction != ScrollDirection.idle &&
-                      _userScrollStartPage == null) {
-                    _userScrollStartPage = _readerPage;
-                    _userScrollStartOffset = notification.metrics.pixels;
-                    return false;
+                      notification.direction != ScrollDirection.idle) {
+                    _userScrollDirection =
+                        notification.direction == ScrollDirection.reverse
+                            ? 1
+                            : -1;
+                    if (_userScrollStartPage == null) {
+                      _userScrollStartPage = _readerPage;
+                      _userScrollStartOffset = notification.metrics.pixels;
+                    }
                   }
 
                   if (notification is ScrollEndNotification) {
                     final startPage = _userScrollStartPage;
                     final startOffset = _userScrollStartOffset;
+                    final direction = _userScrollDirection;
                     _userScrollStartPage = null;
                     _userScrollStartOffset = null;
+                    _userScrollDirection = 0;
 
                     if (startPage != null && startOffset != null) {
                       final delta = notification.metrics.pixels - startOffset;
-                      final targetPage = delta.abs() < 20
-                          ? startPage
-                          : (startPage + (delta > 0 ? 1 : -1))
-                              .clamp(1, totalReaderPages)
-                              .toInt();
+                      final resolvedDirection = direction != 0
+                          ? direction
+                          : delta.abs() < 20
+                              ? 0
+                              : (delta > 0 ? 1 : -1);
+                      final targetPage = (startPage + resolvedDirection)
+                          .clamp(1, totalReaderPages)
+                          .toInt();
                       WidgetsBinding.instance.addPostFrameCallback((_) {
                         if (!mounted) return;
                         if (_readerPage != targetPage) {
