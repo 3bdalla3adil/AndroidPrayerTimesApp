@@ -720,7 +720,11 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
                   // When it ends, settle at only one adjacent page, even
                   // when the release velocity is high.
                   if (notification is ScrollStartNotification &&
-                      notification.dragDetails != null) {
+                      _userScrollStartPage == null) {
+                    // Capture a baseline for every new scroll sequence. Some
+                    // platforms/tests don't attach dragDetails to the start
+                    // notification, so requiring it can leave the page counter
+                    // without a valid baseline.
                     _userScrollStartPage = _readerPage;
                     _userScrollStartOffset = notification.metrics.pixels;
                     _userScrollDirection = 0;
@@ -762,10 +766,14 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
                           .toInt();
                       WidgetsBinding.instance.addPostFrameCallback((_) {
                         if (!mounted) return;
+                        // Update the counter immediately, then settle without
+                        // starting a second animation. This prevents the
+                        // counter tracking intermediate frames of a fling and
+                        // makes one gesture resolve to exactly one page.
                         if (_readerPage != targetPage) {
                           setState(() => _readerPage = targetPage);
                         }
-                        _scrollToPage(targetPage);
+                        _scrollToPage(targetPage, animated: false);
                       });
                       return false;
                     }
