@@ -78,7 +78,6 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
 
   bool get _darkPage => ref.read(readerProvider).darkMode;
   set _darkPage(bool value) => ref.read(readerProvider.notifier).setDarkMode(value);
-  bool _pageTrackingScheduled = false;
   int? _userScrollStartPage;
   double? _userScrollStartOffset;
   int _userScrollDirection = 0;
@@ -201,6 +200,9 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
           index: page - 1,
           alignment: 0,
         );
+        // Keep notification suppression active through the frame in which
+        // the indexed list applies the jump.
+        await WidgetsBinding.instance.endOfFrame;
       }
 
       if (mounted && generation == _navigationGeneration) {
