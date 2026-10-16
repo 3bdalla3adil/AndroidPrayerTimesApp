@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import '../core/adaptive_page_scaffold.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 
 import '../models/prayer_entry.dart';
@@ -85,7 +86,7 @@ class _FastingScreenState extends State<FastingScreen> {
     }
     final fajr = findPrayer('Fajr');
     final maghrib = findPrayer('Maghrib');
-    return CupertinoPageScaffold(
+    return AdaptivePageScaffold(
       navigationBar: CupertinoNavigationBar(
         middle: const Text('Fasting'),
         trailing: CupertinoButton(
