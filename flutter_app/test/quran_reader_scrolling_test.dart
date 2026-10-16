@@ -41,7 +41,10 @@ void main() {
       (tester) async {
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await mountReader(tester);
-    final listFinder = find.byType(ScrollablePositionedList);
+    final listFinder = find.descendant(
+      of: find.byType(ScrollablePositionedList),
+      matching: find.byType(Scrollable),
+    ).first;
 
     await tester.drag(listFinder, const Offset(0, -650));
     await pumpReaderFrames(tester, frames: 12);
