@@ -24,10 +24,12 @@ void main() {
     expect(find.text('حفظ القرآن'), findsOneWidget);
     expect(find.text('إظهار الآية'), findsOneWidget);
 
+    await tester.ensureVisible(find.text('إظهار الآية'));
     await tester.tap(find.text('إظهار الآية'));
     await tester.pump();
     expect(find.text('إخفاء الآية'), findsOneWidget);
 
+    await tester.ensureVisible(find.text('حفظت الآية'));
     await tester.tap(find.text('حفظت الآية'));
     for (var i = 0; i < 4; i++) {
       await tester.pump(const Duration(milliseconds: 50));
