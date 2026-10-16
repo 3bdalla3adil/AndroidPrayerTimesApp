@@ -337,6 +337,7 @@ class SalawatQuranApp extends StatelessWidget {
               GlobalMaterialLocalizations.delegate,
             ],
             supportedLocales: const [Locale('ar'), Locale('en')],
+            onGenerateRoute: AppRoutes.onGenerateRoute,
             home: const RootShell(),
           );
         }
