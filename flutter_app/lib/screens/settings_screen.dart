@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import '../core/adaptive_page_scaffold.dart';
 
 import '../services/athan_reminder_service.dart';
 import '../services/notification_service.dart';
@@ -371,7 +372,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   @override Widget build(BuildContext context) {
-    return CupertinoPageScaffold(
+    return AdaptivePageScaffold(
       navigationBar: CupertinoNavigationBar(middle: Text(LocaleController.isArabic ? 'الإعدادات' : 'Settings')),
       child: SafeArea(
         child: _loading && !_reminders
