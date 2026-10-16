@@ -2,6 +2,7 @@ import 'dart:collection';
 import 'dart:convert';
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/adaptive_page_scaffold.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/physics.dart';
@@ -16,6 +17,7 @@ import '../models/verse.dart';
 import '../services/search_service.dart';
 import '../services/bookmark_service.dart';
 import '../services/settings_service.dart';
+import '../providers/reader_provider.dart';
 import '../services/locale_controller.dart';
 
 const kQuranFont = 'KFGQPC HAFS Uthmanic Script';
@@ -26,7 +28,7 @@ const kQuranFont = 'KFGQPC HAFS Uthmanic Script';
 /// The visual treatment intentionally follows the traditional printed Mushaf:
 /// warm paper, green ornamental framing, Arabic-first typography, surah header,
 /// basmala, ayah markers and a fixed page footer.
-class QuranReaderScreen extends StatefulWidget {
+class QuranReaderScreen extends ConsumerStatefulWidget {
   const QuranReaderScreen({
     super.key,
     required this.surahNumber,
@@ -39,10 +41,10 @@ class QuranReaderScreen extends StatefulWidget {
   final int? startingPage;
 
   @override
-  State<QuranReaderScreen> createState() => _QuranReaderScreenState();
+  ConsumerState<QuranReaderScreen> createState() => _QuranReaderScreenState();
 }
 
-class _QuranReaderScreenState extends State<QuranReaderScreen> {
+class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
   static const totalQuranPages = 604;
   static const totalReaderPages = totalQuranPages;
 
@@ -52,16 +54,27 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
   final _storage = StorageService();
   late final _bookmarkService = BookmarkService(_storage);
   late final _settingsService = SettingsService(_storage);
-  final _repository = QuranRepository(const AssetQuranPageDataSource(), maximumCachedPages: 20);
+  late final QuranRepository _repository;
   final LinkedHashMap<int, Future<QuranPage>> _pageFutures = LinkedHashMap();
-  final _searchService = QuranSearchService();
+  late final QuranSearchService _searchService;
 
-  int _readerPage = 1;
-  double _fontSize = 25;
-  double _lineHeight = 1.75;
-  bool _showTranslation = false;
+  int get _readerPage => ref.read(readerProvider).currentPage;
+  set _readerPage(int value) => ref.read(readerProvider.notifier).setCurrentPage(value);
+
+  double get _fontSize => ref.read(readerProvider).fontSize;
+  set _fontSize(double value) => ref.read(readerProvider.notifier).setFontSize(value);
+
+  double get _lineHeight => ref.read(readerProvider).lineHeight;
+  set _lineHeight(double value) => ref.read(readerProvider.notifier).setLineHeight(value);
+
+  bool get _showTranslation => ref.read(readerProvider).translationEnabled;
+  set _showTranslation(bool value) =>
+      ref.read(readerProvider.notifier).setTranslationEnabled(value);
+
   bool _showToolbar = true;
-  bool _darkPage = false;
+
+  bool get _darkPage => ref.read(readerProvider).darkMode;
+  set _darkPage(bool value) => ref.read(readerProvider.notifier).setDarkMode(value);
   bool _pageTrackingScheduled = false;
   int? _userScrollStartPage;
   double? _userScrollStartOffset;
@@ -70,6 +83,8 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
   @override
   void initState() {
     super.initState();
+    _repository = ref.read(quranRepositoryProvider);
+    _searchService = ref.read(quranSearchServiceProvider);
     _loadInitialPage();
   }
 
@@ -90,6 +105,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
       final starts =
           (index['surahStartPages'] as Map?)?.cast<String, dynamic>() ?? {};
       final settings = await _settingsService.load();
+      final bookmarks = await _bookmarkService.loadAll();
       var requestedQuranPage = widget.startingPage ??
           (starts[widget.surahNumber.toString()] as num?)?.toInt() ??
           1;
@@ -115,13 +131,14 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
           requestedQuranPage.clamp(1, totalQuranPages).toInt();
 
       if (!mounted) return;
-      setState(() {
-        _readerPage = requestedReaderPage;
-        _fontSize = settings.fontSize;
-        _lineHeight = settings.lineHeight;
-        _showTranslation = settings.showTranslation;
-        _darkPage = settings.darkPage;
-      });
+      ref.read(readerProvider.notifier).restore(
+        page: requestedReaderPage,
+        fontSize: settings.fontSize,
+        lineHeight: settings.lineHeight,
+        translationEnabled: settings.showTranslation,
+        darkMode: settings.darkPage,
+        bookmarks: bookmarks,
+      );
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _scrollToPage(requestedReaderPage, animated: false);
@@ -271,6 +288,9 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
       surah: surah,
       ayah: ayah,
       page: page,
+    );
+    ref.read(readerProvider.notifier).setBookmarks(
+      await _bookmarkService.loadAll(),
     );
     if (!mounted) return;
     await showCupertinoDialog<void>(
@@ -631,6 +651,14 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Select individual fields so the screen rebuilds only for reader-state
+    // changes that affect its visible content.
+    ref.watch(readerProvider.select((state) => state.currentPage));
+    ref.watch(readerProvider.select((state) => state.fontSize));
+    ref.watch(readerProvider.select((state) => state.lineHeight));
+    ref.watch(readerProvider.select((state) => state.darkMode));
+    ref.watch(readerProvider.select((state) => state.translationEnabled));
+
     final background = CupertinoColors.systemGroupedBackground
         .resolveFrom(context);
 
