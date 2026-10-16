@@ -726,12 +726,14 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
                     final viewport =
                         _listViewportKey.currentContext?.findRenderObject();
                     if (viewport is! RenderBox || !viewport.hasSize) return;
-                    final centerY =
-                        (viewport.localToGlobal(Offset.zero) & viewport.size)
-                            .center
-                            .dy;
+                    final viewportRect =
+                        viewport.localToGlobal(Offset.zero) & viewport.size;
+                    final centerY = viewportRect.center.dy;
                     var visiblePage = -1;
                     var nearestDistance = double.infinity;
+                    var topAlignedPage = -1;
+                    var nearestTopDistance = double.infinity;
+                    var topAlignedPageTop = 0.0;
 
                     for (final entry in _pageKeys.entries) {
                       final renderObject =
@@ -741,19 +743,35 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
                       }
                       final rect =
                           renderObject.localToGlobal(Offset.zero) & renderObject.size;
-                      final distance = centerY < rect.top
+                      final centerDistance = centerY < rect.top
                           ? rect.top - centerY
                           : centerY > rect.bottom
                               ? centerY - rect.bottom
                               : 0.0;
-                      if (distance < nearestDistance) {
-                        nearestDistance = distance;
+                      if (centerDistance < nearestDistance) {
+                        nearestDistance = centerDistance;
                         visiblePage = entry.key;
+                      }
+
+                      // Page snapping uses the page whose top edge is closest
+                      // to the viewport's top edge, rather than allowing a fling
+                      // to leave the reader resting between two Mushaf pages.
+                      final topDistance = (rect.top - viewportRect.top).abs();
+                      if (topDistance < nearestTopDistance) {
+                        nearestTopDistance = topDistance;
+                        topAlignedPage = entry.key;
+                        topAlignedPageTop = rect.top;
                       }
                     }
 
                     if (visiblePage >= 0 && visiblePage != _readerPage) {
                       setState(() => _readerPage = visiblePage);
+                    }
+
+                    if (notification is ScrollEndNotification &&
+                        topAlignedPage > 0 &&
+                        nearestTopDistance > 18) {
+                      _scrollToPage(topAlignedPage);
                     }
                   });
                   return false;
