@@ -15,14 +15,13 @@ import '../screens/reading_history_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/tasbih_screen.dart';
 
-/// The single source of truth for app screen routes.
+/// Canonical route names and the single route-to-screen mapping.
 abstract final class AppRoutes {
   static const home = '/home';
   static const quran = '/quran';
   static const prayer = '/prayer';
   static const qibla = '/qibla';
   static const more = '/more';
-
   static const quranReader = '/quran/reader';
   static const bookmarks = '/quran/bookmarks';
   static const readingHistory = '/quran/history';
@@ -33,20 +32,9 @@ abstract final class AppRoutes {
   static const settings = '/settings';
   static const dedication = '/dedication';
 
-  static const tabRoutes = <String>[
-    home,
-    quran,
-    prayer,
-    qibla,
-    more,
-  ];
-
+  static const tabRoutes = <String>[home, quran, prayer, qibla, more];
   static const allRoutes = <String>[
-    home,
-    quran,
-    prayer,
-    qibla,
-    more,
+    ...tabRoutes,
     quranReader,
     bookmarks,
     readingHistory,
@@ -58,96 +46,65 @@ abstract final class AppRoutes {
     dedication,
   ];
 
-  static Widget tabScreenForIndex(int index) {
-    switch (index) {
-      case 1:
+  static String tabRouteForIndex(int index) =>
+      tabRoutes[index.clamp(0, tabRoutes.length - 1)];
+
+  static Widget tabScreenForIndex(int index) =>
+      screenForRoute(tabRouteForIndex(index));
+
+  static Widget screenForRoute(String route, {Object? arguments}) {
+    switch (route) {
+      case quran:
         return const QuranScreen();
-      case 2:
+      case prayer:
         return const PrayerScreen();
-      case 3:
+      case qibla:
         return const QiblaScreen();
-      case 4:
+      case more:
         return const MoreScreen();
-      case 0:
+      case quranReader:
+        final args = arguments;
+        final reader = args is QuranReaderRouteArgs
+            ? args
+            : const QuranReaderRouteArgs(surahNumber: 1);
+        return QuranReaderScreen(
+          surahNumber: reader.surahNumber,
+          startingAyah: reader.startingAyah,
+          startingPage: reader.startingPage,
+        );
+      case bookmarks:
+        return const BookmarksScreen();
+      case readingHistory:
+        return const ReadingHistoryScreen();
+      case adhkar:
+        return const AdhkarScreen();
+      case tasbih:
+        return const TasbihScreen();
+      case fasting:
+        return const FastingScreen();
+      case calendar:
+        return const CalendarScreen();
+      case settings:
+        return const SettingsScreen();
+      case dedication:
+        return const DedicationScreen();
+      case home:
       default:
         return const HomeScreen();
     }
   }
 
-  static String tabRouteForIndex(int index) {
-    final safeIndex = index < 0
-        ? 0
-        : (index >= tabRoutes.length ? tabRoutes.length - 1 : index);
-    return tabRoutes[safeIndex];
-  }
-
-  static Route<dynamic> onGenerateRoute(RouteSettings routeSettings) {
-    final name = routeSettings.name ?? home;
-    final WidgetBuilder builder;
-
-    switch (name) {
-      case home:
-        builder = (_) => const HomeScreen();
-        break;
-      case quran:
-        builder = (_) => const QuranScreen();
-        break;
-      case prayer:
-        builder = (_) => const PrayerScreen();
-        break;
-      case qibla:
-        builder = (_) => const QiblaScreen();
-        break;
-      case more:
-        builder = (_) => const MoreScreen();
-        break;
-      case quranReader:
-        final args = routeSettings.arguments;
-        final readerArgs = args is QuranReaderRouteArgs
-            ? args
-            : const QuranReaderRouteArgs(surahNumber: 1);
-        builder = (_) => QuranReaderScreen(
-              surahNumber: readerArgs.surahNumber,
-              startingAyah: readerArgs.startingAyah,
-              startingPage: readerArgs.startingPage,
-            );
-        break;
-      case bookmarks:
-        builder = (_) => const BookmarksScreen();
-        break;
-      case readingHistory:
-        builder = (_) => const ReadingHistoryScreen();
-        break;
-      case adhkar:
-        builder = (_) => const AdhkarScreen();
-        break;
-      case tasbih:
-        builder = (_) => const TasbihScreen();
-        break;
-      case fasting:
-        builder = (_) => const FastingScreen();
-        break;
-      case calendar:
-        builder = (_) => const CalendarScreen();
-        break;
-      case settings:
-        builder = (_) => const SettingsScreen();
-        break;
-      case dedication:
-        builder = (_) => const DedicationScreen();
-        break;
-      default:
-        builder = (_) => const HomeScreen();
-    }
-
-    return CupertinoPageRoute<dynamic>(
-      settings: routeSettings,
-      builder: builder,
-    );
-  }
+  static Route<dynamic> onGenerateRoute(RouteSettings settings) =>
+      CupertinoPageRoute<dynamic>(
+        settings: settings,
+        builder: (_) => screenForRoute(
+          settings.name ?? home,
+          arguments: settings.arguments,
+        ),
+      );
 }
 
-/// Typed arguments for opening a Quran passage through the named route.
+/// Typed arguments for opening a Quran passage through its canonical route.
 class QuranReaderRouteArgs {
   const QuranReaderRouteArgs({
     required this.surahNumber,
