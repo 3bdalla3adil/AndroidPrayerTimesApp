@@ -3,6 +3,13 @@ import 'package:quran/quran.dart' as quran;
 import '../models/search_result.dart';
 import '../models/verse.dart';
 
+class QuranSearchResponse {
+  const QuranSearchResponse({required this.results, required this.totalMatches});
+
+  final List<SearchResult> results;
+  final int totalMatches;
+}
+
 /// Builds a normalized Quran search corpus once and reuses it for later queries.
 final class QuranSearchService {
   final List<_IndexedVerse> _verses = [];
@@ -53,36 +60,51 @@ final class QuranSearchService {
           if (token.isEmpty) continue;
           _postings.putIfAbsent(token, () => <int>{}).add(index);
         }
+        if (_verses.length % 256 == 0) {
+          await Future<void>.delayed(Duration.zero);
+        }
       }
     }
 
     _built = true;
   }
 
-  List<SearchResult> search(String rawQuery, {int limit = 40}) {
+  QuranSearchResponse search(String rawQuery, {int limit = 40}) {
     if (!_built) {
       throw StateError('Call build() before searching the Quran');
     }
-    if (limit <= 0) return const [];
+    if (limit <= 0) {
+      return const QuranSearchResponse(results: [], totalMatches: 0);
+    }
 
     final needle = normalize(rawQuery);
-    if (needle.isEmpty) return const [];
+    if (needle.isEmpty) {
+      return const QuranSearchResponse(results: [], totalMatches: 0);
+    }
 
-    // Preserve the existing substring-search semantics. Token postings narrow
-    // common word searches; short/substring queries use the normalized corpus.
     final tokens = needle.split(_tokenizer).where((token) => token.isNotEmpty);
     Set<int>? candidates;
+    var canUseIndex = true;
     for (final token in tokens) {
-      final matches = _postings[token] ?? const <int>{};
+      final matches = _postings[token];
+      // Substring queries must preserve the previous contains() behavior.
+      if (matches == null) {
+        canUseIndex = false;
+        break;
+      }
       candidates = candidates == null
           ? Set<int>.from(matches)
           : candidates.intersection(matches);
-      if (candidates.isEmpty) return const [];
+      if (candidates.isEmpty) {
+        return const QuranSearchResponse(results: [], totalMatches: 0);
+      }
     }
 
-    final indexes = candidates?.toList() ??
-        List<int>.generate(_verses.length, (index) => index);
+    final indexes = canUseIndex && candidates != null
+        ? candidates.toList()
+        : List<int>.generate(_verses.length, (index) => index);
     final results = <SearchResult>[];
+    var totalMatches = 0;
 
     for (final index in indexes) {
       final item = _verses[index];
@@ -90,20 +112,25 @@ final class QuranSearchService {
           !item.translationNormalized.contains(needle)) {
         continue;
       }
-      results.add(SearchResult.fromVerse(
-        verse: item.verse,
-        page: item.page,
-        translation: item.translation,
-      ));
-      if (results.length >= limit) break;
+
+      totalMatches++;
+      if (results.length < limit) {
+        results.add(SearchResult.fromVerse(
+          verse: item.verse,
+          page: item.page,
+          translation: item.translation,
+        ));
+      }
     }
 
-    // Posting sets are not ordered, so sort by canonical Quran order.
     results.sort((a, b) {
       final surahOrder = a.surah.compareTo(b.surah);
       return surahOrder != 0 ? surahOrder : a.ayah.compareTo(b.ayah);
     });
-    return List.unmodifiable(results);
+    return QuranSearchResponse(
+      results: List.unmodifiable(results),
+      totalMatches: totalMatches,
+    );
   }
 }
 
