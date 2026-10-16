@@ -5,18 +5,18 @@ import 'package:flutter/foundation.dart';
 class RootTabNavigation extends InheritedWidget {
   const RootTabNavigation({
     required this.controller,
-    required this.materialIndex,
+    this.materialIndex,
     required super.child,
     super.key,
   });
 
   final CupertinoTabController controller;
-  final ValueNotifier<int> materialIndex;
+  final ValueNotifier<int>? materialIndex;
 
   void selectTab(int index) {
     if (index < 0 || index >= 5) return;
     controller.index = index;
-    materialIndex.value = index;
+    materialIndex?.value = index;
   }
 
   static RootTabNavigation? maybeOf(BuildContext context) =>
