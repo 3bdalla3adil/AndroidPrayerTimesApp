@@ -1,0 +1,64 @@
+name: salawat_quran
+description: Offline-first Muslim companion rebuilt in Flutter with a Cupertino-first iOS UI.
+publish_to: "none"
+version: 2.0.0+1
+
+environment:
+  sdk: ">=3.10.0 <4.0.0"
+  flutter: ">=3.47.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  adhan_dart: ^2.0.1
+  geolocator: ^14.1.1
+  quran: ^1.2.3
+  shared_preferences: ^2.5.5
+  flutter_local_notifications: ^22.3.1
+  timezone: ^0.11.1
+  flutter_timezone: ^5.1.0
+  flutter_compass: ^0.8.1
+  intl: ^0.20.2
+  hijri_core: ^1.0.0
+  audioplayers: ^6.5.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  shared_preferences_platform_interface: ^2.4.0
+  flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.6
+
+flutter:
+  uses-material-design: false
+  generate: true
+  fonts:
+    - family: KFGQPC HAFS Uthmanic Script
+      fonts:
+        - asset: assets/fonts/KFGQPC-Hafs-Uthmanic-Script.ttf
+  assets:
+    - assets/quran/pages/
+    - assets/quran/page-index.json
+    - assets/audio/azan.mp3
+    - assets/audio/azan_madinah.mp3
+    - assets/audio/azan_dubai.mp3
+    - assets/audio/azan_fajr_madinah.mp3
+    - assets/splash_screen.png
+
+# Launcher icon generation uses platform-specific config files in CI.
+
+# Keep the launch screen aligned with the app's emerald-and-gold visual theme.
+flutter_native_splash:
+  color: "#071F1A"
+  image: assets/splash_screen.png
+  android: true
+  ios: true
+  web: false
+  android_12:
+    color: "#071F1A"
+    image: assets/splash_screen.png
+    icon_background_color: "#104B3D"

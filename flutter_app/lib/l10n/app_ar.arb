@@ -1,0 +1,13 @@
+{
+  "@@locale": "ar",
+  "appTitle": "صلوات والقرآن",
+  "quran": "القرآن",
+  "prayerTimes": "مواقيت الصلاة",
+  "settings": "الإعدادات",
+  "search": "بحث",
+  "bookmarks": "العلامات المرجعية",
+  "lastRead": "آخر قراءة",
+  "translation": "الترجمة",
+  "tafsir": "التفسير",
+  "audio": "الصوت"
+}
