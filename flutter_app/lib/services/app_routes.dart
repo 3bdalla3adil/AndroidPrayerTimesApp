@@ -1,4 +1,6 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart' as material;
 
 import '../screens/adhkar_screen.dart';
 import '../screens/bookmarks_screen.dart';
@@ -89,14 +91,22 @@ abstract final class AppRoutes {
     }
   }
 
-  static Route<dynamic> onGenerateRoute(RouteSettings settings) =>
-      CupertinoPageRoute<dynamic>(
-        settings: settings,
-        builder: (_) => screenForRoute(
+  static Route<dynamic> onGenerateRoute(RouteSettings settings) {
+    final builder = (_) => screenForRoute(
           settings.name ?? home,
           arguments: settings.arguments,
-        ),
+        );
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      return CupertinoPageRoute<dynamic>(
+        settings: settings,
+        builder: builder,
       );
+    }
+    return material.MaterialPageRoute<dynamic>(
+      settings: settings,
+      builder: builder,
+    );
+  }
 }
 
 /// Typed arguments for opening a Quran passage through its canonical route.
