@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:adhan_dart/adhan_dart.dart';
 import 'package:flutter/cupertino.dart';
+import '../core/adaptive_page_scaffold.dart';
 import 'package:flutter_compass/flutter_compass.dart';
 import 'package:geolocator/geolocator.dart';
 
@@ -69,7 +70,7 @@ class _QiblaScreenState extends State<QiblaScreen> {
   @override
   Widget build(BuildContext context) {
     final accent = AppTheme.emerald;
-    return CupertinoPageScaffold(
+    return AdaptivePageScaffold(
       navigationBar: CupertinoNavigationBar(
         middle: Text(LocaleController.isArabic ? 'اتجاه القبلة' : 'Qibla direction'),
       ),
