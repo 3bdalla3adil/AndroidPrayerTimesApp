@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import '../core/adaptive_page_scaffold.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
 import 'package:quran/quran.dart' as quran;
 
@@ -37,7 +38,9 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
   static const totalQuranPages = 604;
   static const totalReaderPages = totalQuranPages;
 
-  final _pageController = PageController();
+  final _controller = ScrollController();
+  final _listViewportKey = GlobalKey();
+  final _pageKeys = <int, GlobalKey>{};
   final _storage = StorageService();
   final _cache = <int, Map<String, dynamic>>{};
 
@@ -47,6 +50,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
   bool _showTranslation = false;
   bool _showToolbar = true;
   bool _darkPage = false;
+  bool _pageTrackingScheduled = false;
 
   @override
   void initState() {
@@ -54,9 +58,12 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     _loadInitialPage();
   }
 
+  GlobalKey _keyForPage(int page) =>
+      _pageKeys.putIfAbsent(page, GlobalKey.new);
+
   @override
   void dispose() {
-    _pageController.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
@@ -147,20 +154,90 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
   Future<void> _scrollToPage(int page, {bool animated = true}) async {
     if (page < 1 || page > totalReaderPages) return;
 
-    if (animated && _pageController.hasClients) {
-      await _pageController.animateToPage(
-        page - 1,
-        duration: const Duration(milliseconds: 220),
-        curve: Curves.easeOutCubic,
-      );
-    } else {
-      // jumpToPage also records the target when the PageView has not attached
-      // yet, which keeps deep links and the initial saved page reliable.
-      _pageController.jumpToPage(page - 1);
+    final targetKey = _keyForPage(page);
+    for (var attempt = 0; attempt < 20; attempt++) {
+      if (!_controller.hasClients) {
+        await WidgetsBinding.instance.endOfFrame;
+        continue;
+      }
+
+      final target = targetKey.currentContext;
+      if (target != null) {
+        await Scrollable.ensureVisible(
+          target,
+          duration: animated && attempt == 0
+              ? const Duration(milliseconds: 220)
+              : Duration.zero,
+          curve: Curves.easeOutCubic,
+          alignment: 0.0,
+        );
+        if (mounted && _readerPage != page) {
+          setState(() => _readerPage = page);
+        }
+        return;
+      }
+
+      // Estimate the destination from the pages already laid out. ListView
+      // builds the next range on each jump, so distant targets need no
+      // separate measurement or page-estimation helper.
+      final viewport = _listViewportKey.currentContext?.findRenderObject();
+      final centerY = viewport is RenderBox && viewport.hasSize
+          ? (viewport.localToGlobal(Offset.zero) & viewport.size).center.dy
+          : 0.0;
+      var nearestPage = _readerPage;
+      var nearestDistance = double.infinity;
+      final heights = <double>[];
+
+      for (final entry in _pageKeys.entries) {
+        final renderObject = entry.value.currentContext?.findRenderObject();
+        if (renderObject is! RenderBox || !renderObject.hasSize) continue;
+        heights.add(renderObject.size.height);
+        final rect = renderObject.localToGlobal(Offset.zero) & renderObject.size;
+        final distance = centerY < rect.top
+            ? rect.top - centerY
+            : centerY > rect.bottom
+                ? centerY - rect.bottom
+                : 0.0;
+        if (distance < nearestDistance) {
+          nearestDistance = distance;
+          nearestPage = entry.key;
+        }
+      }
+
+      heights.sort();
+      final extent = heights.isEmpty
+          ? _controller.position.viewportDimension
+          : heights[heights.length ~/ 2];
+      final delta = page - nearestPage;
+      final offset = (_controller.offset +
+              (delta == 0
+                  ? (page >= nearestPage ? 1 : -1) *
+                      _controller.position.viewportDimension
+                  : delta * extent))
+          .clamp(0.0, _controller.position.maxScrollExtent)
+          .toDouble();
+
+      if ((offset - _controller.offset).abs() < 1) break;
+      if (animated && attempt == 0) {
+        await _controller.animateTo(
+          offset,
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+        );
+      } else {
+        _controller.jumpTo(offset);
+      }
+      await WidgetsBinding.instance.endOfFrame;
     }
 
-    if (mounted && _readerPage != page) {
-      setState(() => _readerPage = page);
+    final target = targetKey.currentContext;
+    if (target != null) {
+      await Scrollable.ensureVisible(
+        target,
+        duration: Duration.zero,
+        alignment: 0.02,
+      );
+      if (mounted) setState(() => _readerPage = page);
     }
   }
 
@@ -631,51 +708,113 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
               totalPages: totalReaderPages,
             ),
             Expanded(
-              child: Directionality(
-                // The Mushaf is read right-to-left regardless of the app
-                // chrome locale, matching the page-turn direction on Tanzil.
-                textDirection: TextDirection.rtl,
-                child: PageView.builder(
-                  key: const ValueKey('quran-horizontal-page-reader'),
-                  controller: _pageController,
-                  // RTL places the current page on the right. Reverse the
-                  // PageView's physical axis so a leftward swipe reveals the
-                  // next page, matching the expected Tanzil-style gesture.
-                  reverse: true,
-                  physics: const PageScrollPhysics(),
-                  itemCount: totalReaderPages,
-                  onPageChanged: (index) {
-                    final page = index + 1;
-                    if (mounted && page != _readerPage) {
-                      setState(() => _readerPage = page);
+              child: NotificationListener<ScrollNotification>(
+                onNotification: (notification) {
+                  if (notification.depth != 0 ||
+                      (notification is! ScrollUpdateNotification &&
+                          notification is! ScrollEndNotification &&
+                          notification is! UserScrollNotification) ||
+                      (_pageTrackingScheduled &&
+                          notification is! ScrollEndNotification)) {
+                    return false;
+                  }
+
+                  _pageTrackingScheduled = true;
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    _pageTrackingScheduled = false;
+                    if (!mounted) return;
+
+                    final viewport =
+                        _listViewportKey.currentContext?.findRenderObject();
+                    if (viewport is! RenderBox || !viewport.hasSize) return;
+                    final viewportRect =
+                        viewport.localToGlobal(Offset.zero) & viewport.size;
+                    final centerY = viewportRect.center.dy;
+                    var visiblePage = -1;
+                    var nearestDistance = double.infinity;
+                    var topAlignedPage = -1;
+                    var nearestTopDistance = double.infinity;
+
+                    for (final entry in _pageKeys.entries) {
+                      final renderObject =
+                          entry.value.currentContext?.findRenderObject();
+                      if (renderObject is! RenderBox || !renderObject.hasSize) {
+                        continue;
+                      }
+                      final rect =
+                          renderObject.localToGlobal(Offset.zero) & renderObject.size;
+                      final centerDistance = centerY < rect.top
+                          ? rect.top - centerY
+                          : centerY > rect.bottom
+                              ? centerY - rect.bottom
+                              : 0.0;
+                      if (centerDistance < nearestDistance) {
+                        nearestDistance = centerDistance;
+                        visiblePage = entry.key;
+                      }
+
+                      // Page snapping uses the page whose top edge is closest
+                      // to the viewport's top edge, rather than allowing a fling
+                      // to leave the reader resting between two Mushaf pages.
+                      final topDistance = (rect.top - viewportRect.top).abs();
+                      if (topDistance < nearestTopDistance) {
+                        nearestTopDistance = topDistance;
+                        topAlignedPage = entry.key;
+                      }
                     }
-                  },
+
+                    final pageToShow =
+                        notification is ScrollEndNotification &&
+                                topAlignedPage > 0
+                            ? topAlignedPage
+                            : visiblePage;
+                    if (pageToShow >= 0 && pageToShow != _readerPage) {
+                      setState(() => _readerPage = pageToShow);
+                    }
+
+                    if (notification is ScrollEndNotification &&
+                        topAlignedPage > 0 &&
+                        nearestTopDistance > 18) {
+                      _scrollToPage(topAlignedPage);
+                    }
+                  });
+                  return false;
+                },
+                child: ListView.builder(
+                  key: _listViewportKey,
+                  controller: _controller,
+                  physics: const _ControlledReaderScrollPhysics(),
+                  padding: const EdgeInsets.only(bottom: 8),
+                  itemCount: totalReaderPages,
                   itemBuilder: (context, index) {
                     final page = index + 1;
-                    return FutureBuilder<Map<String, dynamic>>(
-                      future: _loadPage(page),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState != ConnectionState.done) {
-                          return const Center(
-                            child: CupertinoActivityIndicator(radius: 14),
-                          );
-                        }
-                        if (snapshot.hasError || snapshot.data == null) {
-                          return _ErrorPage(
+                    return KeyedSubtree(
+                      key: _keyForPage(page),
+                      child: FutureBuilder<Map<String, dynamic>>(
+                        future: _loadPage(page),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState != ConnectionState.done) {
+                            return const Center(
+                              child: CupertinoActivityIndicator(radius: 14),
+                            );
+                          }
+                          if (snapshot.hasError || snapshot.data == null) {
+                            return _ErrorPage(
+                              page: page,
+                              onRetry: () => setState(() {}),
+                            );
+                          }
+                          return _MushafPage(
                             page: page,
-                            onRetry: () => setState(() {}),
+                            data: snapshot.data!,
+                            fontSize: _fontSize,
+                            lineHeight: _lineHeight,
+                            showTranslation: _showTranslation,
+                            darkPage: _darkPage,
+                            onBookmarkAyah: _bookmarkAyah,
                           );
-                        }
-                        return _MushafPage(
-                          page: page,
-                          data: snapshot.data!,
-                          fontSize: _fontSize,
-                          lineHeight: _lineHeight,
-                          showTranslation: _showTranslation,
-                          darkPage: _darkPage,
-                          onBookmarkAyah: _bookmarkAyah,
-                        );
-                      },
+                        },
+                      ),
                     );
                   },
                 ),
@@ -1178,3 +1317,22 @@ class _ErrorPage extends StatelessWidget {
 }
 
 
+/// Keeps the reader's scrolling natural while limiting excessive fling
+/// momentum. Direct finger dragging and explicit page navigation remain enabled.
+class _ControlledReaderScrollPhysics extends ClampingScrollPhysics {
+  const _ControlledReaderScrollPhysics({super.parent});
+
+  static const double _maximumFlingVelocity = 1600;
+
+  @override
+  Simulation? createBallisticSimulation(ScrollMetrics position, double velocity) {
+    final boundedVelocity = velocity
+        .clamp(-_maximumFlingVelocity, _maximumFlingVelocity)
+        .toDouble();
+    return super.createBallisticSimulation(position, boundedVelocity);
+  }
+
+  @override
+  _ControlledReaderScrollPhysics applyTo(ScrollPhysics? ancestor) =>
+      _ControlledReaderScrollPhysics(parent: buildParent(ancestor));
+}
