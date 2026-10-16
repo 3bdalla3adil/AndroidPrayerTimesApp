@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart' as material;
 import 'package:quran/quran.dart' as quran;
 
 import '../core/adaptive_page_scaffold.dart';
@@ -283,11 +284,11 @@ class _QuranMemorizationScreenState extends State<QuranMemorizationScreen> {
                         const SizedBox(height: 12),
                         ClipRRect(
                           borderRadius: BorderRadius.circular(8),
-                          child: LinearProgressIndicator(
+                          child: material.LinearProgressIndicator(
                             value: (_memorized.length / 6236).clamp(0.0, 1.0),
                             minHeight: 7,
                             backgroundColor: const Color(0xFF47675C),
-                            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFFFE7A3)),
+                            valueColor: const material.AlwaysStoppedAnimation<Color>(Color(0xFFFFE7A3)),
                           ),
                         ),
                         const SizedBox(height: 5),
@@ -328,7 +329,7 @@ class _QuranMemorizationScreenState extends State<QuranMemorizationScreen> {
                   const SizedBox(height: 7),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(6),
-                    child: LinearProgressIndicator(value: completedInRange / rangeCount, minHeight: 6),
+                    child: material.LinearProgressIndicator(value: completedInRange / rangeCount, minHeight: 6),
                   ),
                   const SizedBox(height: 18),
                   Container(
