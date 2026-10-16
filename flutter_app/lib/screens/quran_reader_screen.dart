@@ -2,6 +2,7 @@ import 'dart:collection';
 import 'dart:convert';
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/adaptive_page_scaffold.dart';
 import 'package:flutter/services.dart';
@@ -174,8 +175,8 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
 
     final generation = ++_navigationGeneration;
     _isProgrammaticNavigation = true;
-    _pointerStartPage = null;
-    _pointerStartY = null;
+    _dragStartPage = null;
+    _verticalDragDistance = 0;
 
     try {
       if (!_itemScrollController.isAttached) {
