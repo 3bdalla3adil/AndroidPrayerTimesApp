@@ -157,6 +157,8 @@ class SalawatQuranApp extends StatelessWidget {
           title: locale.languageCode == 'ar' ? 'صلوات' : 'Salawat',
           debugShowCheckedModeBanner: false,
           theme: AppTheme.materialData,
+          darkTheme: AppTheme.materialDarkData,
+          themeMode: material.ThemeMode.system,
           locale: locale,
           localizationsDelegates: const [
             GlobalMaterialLocalizations.delegate,
