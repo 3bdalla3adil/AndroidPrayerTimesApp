@@ -9,6 +9,9 @@ import 'package:flutter/services.dart';
 import 'package:quran/quran.dart' as quran;
 
 import '../services/storage_service.dart';
+import '../repositories/quran_repository.dart';
+import '../models/quran_page.dart';
+import '../models/verse.dart';
 import '../services/locale_controller.dart';
 
 const kQuranFont = 'KFGQPC HAFS Uthmanic Script';
@@ -43,7 +46,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
   final _listViewportKey = GlobalKey();
   final _pageKeys = <int, GlobalKey>{};
   final _storage = StorageService();
-  final _cache = <int, Map<String, dynamic>>{};
+  final _repository = QuranRepository(const AssetQuranPageDataSource(), maximumCachedPages: 20);
 
   int _readerPage = 1;
   double _fontSize = 25;
@@ -89,20 +92,17 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
       if (widget.startingPage == null && widget.startingAyah > 1) {
         final startPage = requestedQuranPage;
         for (var page = startPage; page <= totalQuranPages; page++) {
-          final pageData = await _loadPage(page);
-          final verses = ((pageData['verses'] as List?) ?? const [])
-              .whereType<Map>()
-              .map((item) => item.cast<String, dynamic>())
-              .toList();
-          final found = verses.any((verse) =>
-              (verse['surah_number'] as num?)?.toInt() == widget.surahNumber &&
-              (verse['ayah_number'] as num?)?.toInt() == widget.startingAyah);
+          final pageData = await _loadPage(page, prefetch: false);
+          final found = pageData.verses.any((verse) =>
+              verse.surahNumber == widget.surahNumber &&
+              verse.ayahNumber == widget.startingAyah);
           if (found) {
             requestedQuranPage = page;
             break;
           }
-          final passedSurah = verses.any((verse) =>
-              ((verse['surah_number'] as num?)?.toInt() ?? -1) > widget.surahNumber);
+          final passedSurah = pageData.verses.any(
+            (verse) => verse.surahNumber > widget.surahNumber,
+          );
           if (passedSurah) break;
         }
       }
@@ -126,32 +126,9 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     }
   }
 
-  Future<Map<String, dynamic>> _loadPage(int page, {bool prefetch = true}) async {
-    final cached = _cache[page];
-    if (cached != null) return cached;
-
-    final path =
-        'assets/quran/pages/page-${page.toString().padLeft(3, '0')}.json';
-    final decoded = jsonDecode(await rootBundle.loadString(path));
-    if (decoded is! Map) {
-      throw StateError('Invalid Quran page data.');
-    }
-
-    final data = decoded.cast<String, dynamic>();
-    _cache[page] = data;
-
-    // Warm only the two adjacent pages. Those requests must not recursively
-    // warm their own neighbors, otherwise opening one page loads the whole Quran.
-    if (prefetch) {
-      for (final adjacent in [page - 1, page + 1]) {
-        if (adjacent >= 1 &&
-            adjacent <= totalQuranPages &&
-            !_cache.containsKey(adjacent)) {
-          _loadPage(adjacent, prefetch: false).ignore();
-        }
-      }
-    }
-
+  Future<QuranPage> _loadPage(int page, {bool prefetch = true}) async {
+    final data = await _repository.loadPage(page);
+    if (prefetch) _repository.prefetchAround(page);
     return data;
   }
 
@@ -248,14 +225,9 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
   Future<void> _bookmarkCurrentPage() async {
     if (_readerPage < 1) return;
     final data = await _loadPage(_readerPage);
-    final verses = ((data['verses'] as List?) ?? const [])
-        .whereType<Map>()
-        .map((item) => item.cast<String, dynamic>())
-        .toList();
-    if (verses.isEmpty) return;
-    final surah = (verses.first['surah_number'] as num?)?.toInt();
-    final ayah = (verses.first['ayah_number'] as num?)?.toInt();
-    if (surah == null || ayah == null) return;
+    if (data.verses.isEmpty) return;
+    final surah = data.verses.first.surahNumber;
+    final ayah = data.verses.first.ayahNumber;
     final bookmarks = await _storage.loadBookmarks();
     final exists = bookmarks.any((b) => b.$1 == surah && b.$2 == ayah);
     if (exists) {
@@ -834,7 +806,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
                     final page = index + 1;
                     return KeyedSubtree(
                       key: _keyForPage(page),
-                      child: FutureBuilder<Map<String, dynamic>>(
+                      child: FutureBuilder<QuranPage>(
                         future: _loadPage(page),
                         builder: (context, snapshot) {
                           if (snapshot.connectionState != ConnectionState.done) {
@@ -850,7 +822,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
                           }
                           return _MushafPage(
                             page: page,
-                            data: snapshot.data!,
+                            pageData: snapshot.data!,
                             fontSize: _fontSize,
                             lineHeight: _lineHeight,
                             showTranslation: _showTranslation,
@@ -975,7 +947,7 @@ class _ReaderButton extends StatelessWidget {
 class _MushafPage extends StatefulWidget {
   const _MushafPage({
     required this.page,
-    required this.data,
+    required this.pageData,
     required this.fontSize,
     required this.lineHeight,
     required this.showTranslation,
@@ -984,7 +956,7 @@ class _MushafPage extends StatefulWidget {
   });
 
   final int page;
-  final Map<String, dynamic> data;
+  final QuranPage pageData;
   final double fontSize;
   final double lineHeight;
   final bool showTranslation;
@@ -1014,16 +986,11 @@ class _MushafPageState extends State<_MushafPage> {
     return recognizer;
   }
 
-  String _ayahKey(Map<String, dynamic> verse) {
-    final surah = (verse['surah_number'] as num?)?.toInt() ?? 0;
-    final ayah = (verse['ayah_number'] as num?)?.toInt() ?? 0;
-    return '$surah:$ayah';
-  }
+  String _ayahKey(Verse verse) => verse.id;
 
-  bool _isHighlighted(Map<String, dynamic> verse) =>
-      _highlightedAyah == _ayahKey(verse);
+  bool _isHighlighted(Verse verse) => _highlightedAyah == _ayahKey(verse);
 
-  void _toggleHighlight(Map<String, dynamic> verse) {
+  void _toggleHighlight(Verse verse) {
     final key = _ayahKey(verse);
     setState(() {
       _highlightedAyah = _highlightedAyah == key ? null : key;
@@ -1031,29 +998,13 @@ class _MushafPageState extends State<_MushafPage> {
     // Highlighting is temporary; never persist the last page or ayah.
   }
 
-  List<Map<String, dynamic>> get verses =>
-      ((widget.data['verses'] as List?) ?? const [])
-          .whereType<Map>()
-          .map((item) => item.cast<String, dynamic>())
-          .toList();
+  List<Verse> get verses => widget.pageData.verses;
 
-  String _verseText(Map<String, dynamic> verse) {
-    final words = ((verse['words'] as List?) ?? const [])
-        .whereType<Map>()
-        .map((word) => (word['text'] ?? '').toString())
-        .where((text) => text.isNotEmpty)
-        .join(' ');
-    return words.isEmpty
-        ? (verse['text'] ?? '').toString()
-        : words;
-  }
+  String _verseText(Verse verse) => verse.displayText;
 
-  int get _firstSurah =>
-      (verses.isEmpty ? 1 : (verses.first['surah_number'] as num?)?.toInt() ?? 1);
+  int get _firstSurah => verses.isEmpty ? 1 : verses.first.surahNumber;
 
-  bool get _startsSurah =>
-      verses.isNotEmpty &&
-      ((verses.first['ayah_number'] as num?)?.toInt() ?? 0) == 1;
+  bool get _startsSurah => verses.isNotEmpty && verses.first.ayahNumber == 1;
 
   bool get _hasBasmala => _startsSurah && _firstSurah != 9;
 
@@ -1138,15 +1089,14 @@ class _MushafPageState extends State<_MushafPage> {
                     WidgetSpan(
                       alignment: PlaceholderAlignment.middle,
                       child: _AyahMarker(
-                        number: (verse['ayah_number'] as num?)?.toInt() ?? 0,
+                        number: verse.ayahNumber,
                         color: green,
                         darkPage: widget.darkPage,
                         onTap: () {
-                          final surah = (verse['surah_number'] as num?)?.toInt();
-                          final ayah = (verse['ayah_number'] as num?)?.toInt();
-                          if (surah != null && ayah != null) {
-                            widget.onBookmarkAyah(surah, ayah);
-                          }
+                          widget.onBookmarkAyah(
+                            verse.surahNumber,
+                            verse.ayahNumber,
+                          );
                         },
                       ),
                     ),
@@ -1184,12 +1134,12 @@ class _MushafPageState extends State<_MushafPage> {
     );
   }
 
-  String _translation(Map<String, dynamic> verse) {
-    final surah = (verse['surah_number'] as num?)?.toInt();
-    final ayah = (verse['ayah_number'] as num?)?.toInt();
-    if (surah == null || ayah == null) return '';
+  String _translation(Verse verse) {
     try {
-      return quran.getVerseTranslation(surah, ayah);
+      return quran.getVerseTranslation(
+        verse.surahNumber,
+        verse.ayahNumber,
+      );
     } catch (_) {
       return '';
     }
