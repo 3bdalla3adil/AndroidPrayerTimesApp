@@ -9,6 +9,7 @@ import 'package:flutter/physics.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:quran/quran.dart' as quran;
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 import '../services/storage_service.dart';
 import '../repositories/quran_repository.dart';
@@ -48,9 +49,11 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
   static const totalQuranPages = 604;
   static const totalReaderPages = totalQuranPages;
 
-  final _controller = ScrollController();
-  final _listViewportKey = GlobalKey();
-  final _pageKeys = <int, GlobalKey>{};
+  final ItemScrollController _itemScrollController = ItemScrollController();
+  final ItemPositionsListener _itemPositionsListener =
+      ItemPositionsListener.create();
+  bool _isProgrammaticNavigation = false;
+  int _navigationGeneration = 0;
   final _storage = StorageService();
   late final _bookmarkService = BookmarkService(_storage);
   late final _settingsService = SettingsService(_storage);
@@ -85,15 +88,17 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
     super.initState();
     _repository = ref.read(quranRepositoryProvider);
     _searchService = ref.read(quranSearchServiceProvider);
+    _itemPositionsListener.itemPositions.addListener(
+      _handleItemPositionsChanged,
+    );
     _loadInitialPage();
   }
 
-  GlobalKey _keyForPage(int page) =>
-      _pageKeys.putIfAbsent(page, GlobalKey.new);
-
   @override
   void dispose() {
-    _controller.dispose();
+    _itemPositionsListener.itemPositions.removeListener(
+      _handleItemPositionsChanged,
+    );
     super.dispose();
   }
 
@@ -172,90 +177,66 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
   Future<void> _scrollToPage(int page, {bool animated = true}) async {
     if (page < 1 || page > totalReaderPages) return;
 
-    final targetKey = _keyForPage(page);
-    for (var attempt = 0; attempt < 20; attempt++) {
-      if (!_controller.hasClients) {
+    final generation = ++_navigationGeneration;
+    _isProgrammaticNavigation = true;
+    _userScrollStartPage = null;
+    _userScrollStartOffset = null;
+    _userScrollDirection = 0;
+
+    try {
+      if (!_itemScrollController.isAttached) {
         await WidgetsBinding.instance.endOfFrame;
-        continue;
       }
+      if (!_itemScrollController.isAttached || !mounted) return;
 
-      final target = targetKey.currentContext;
-      if (target != null) {
-        await Scrollable.ensureVisible(
-          target,
-          duration: animated && attempt == 0
-              ? const Duration(milliseconds: 220)
-              : Duration.zero,
-          curve: Curves.easeOutCubic,
-          alignment: 0.0,
-        );
-        if (mounted && _readerPage != page) {
-          setState(() => _readerPage = page);
-        }
-        return;
-      }
-
-      // Estimate the destination from the pages already laid out. ListView
-      // builds the next range on each jump, so distant targets need no
-      // separate measurement or page-estimation helper.
-      final viewport = _listViewportKey.currentContext?.findRenderObject();
-      final centerY = viewport is RenderBox && viewport.hasSize
-          ? (viewport.localToGlobal(Offset.zero) & viewport.size).center.dy
-          : 0.0;
-      var nearestPage = _readerPage;
-      var nearestDistance = double.infinity;
-      final heights = <double>[];
-
-      for (final entry in _pageKeys.entries) {
-        final renderObject = entry.value.currentContext?.findRenderObject();
-        if (renderObject is! RenderBox || !renderObject.hasSize) continue;
-        heights.add(renderObject.size.height);
-        final rect = renderObject.localToGlobal(Offset.zero) & renderObject.size;
-        final distance = centerY < rect.top
-            ? rect.top - centerY
-            : centerY > rect.bottom
-                ? centerY - rect.bottom
-                : 0.0;
-        if (distance < nearestDistance) {
-          nearestDistance = distance;
-          nearestPage = entry.key;
-        }
-      }
-
-      heights.sort();
-      final extent = heights.isEmpty
-          ? _controller.position.viewportDimension
-          : heights[heights.length ~/ 2];
-      final delta = page - nearestPage;
-      final offset = (_controller.offset +
-              (delta == 0
-                  ? (page >= nearestPage ? 1 : -1) *
-                      _controller.position.viewportDimension
-                  : delta * extent))
-          .clamp(0.0, _controller.position.maxScrollExtent)
-          .toDouble();
-
-      if ((offset - _controller.offset).abs() < 1) break;
-      if (animated && attempt == 0) {
-        await _controller.animateTo(
-          offset,
+      if (animated) {
+        await _itemScrollController.scrollTo(
+          index: page - 1,
+          alignment: 0,
           duration: const Duration(milliseconds: 220),
           curve: Curves.easeOutCubic,
         );
       } else {
-        _controller.jumpTo(offset);
+        _itemScrollController.jumpTo(
+          index: page - 1,
+          alignment: 0,
+        );
       }
-      await WidgetsBinding.instance.endOfFrame;
+
+      if (mounted && generation == _navigationGeneration) {
+        setState(() => _readerPage = page);
+        _repository.prefetchAround(page);
+      }
+    } finally {
+      if (generation == _navigationGeneration) {
+        _isProgrammaticNavigation = false;
+      }
+    }
+  }
+
+  void _handleItemPositionsChanged() {
+    if (!mounted ||
+        _isProgrammaticNavigation ||
+        _userScrollStartPage != null) {
+      return;
     }
 
-    final target = targetKey.currentContext;
-    if (target != null) {
-      await Scrollable.ensureVisible(
-        target,
-        duration: Duration.zero,
-        alignment: 0.02,
-      );
-      if (mounted) setState(() => _readerPage = page);
+    final positions = _itemPositionsListener.itemPositions.value
+        .where((position) =>
+            position.index >= 0 && position.index < totalReaderPages)
+        .toList(growable: false);
+    if (positions.isEmpty) return;
+
+    final nearest = positions.reduce((left, right) {
+      final leftCenter = (left.itemLeadingEdge + left.itemTrailingEdge) / 2;
+      final rightCenter = (right.itemLeadingEdge + right.itemTrailingEdge) / 2;
+      return (leftCenter - 0.5).abs() <= (rightCenter - 0.5).abs()
+          ? left
+          : right;
+    });
+    final page = nearest.index + 1;
+    if (page != _readerPage) {
+      setState(() => _readerPage = page);
     }
   }
 
@@ -703,36 +684,27 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
             Expanded(
               child: NotificationListener<ScrollNotification>(
                 onNotification: (notification) {
-                  if (notification.depth != 0) return false;
+                  if (notification.depth != 0 || _isProgrammaticNavigation) {
+                    return false;
+                  }
 
                   // Capture the page at the start of a real finger drag.
                   // When it ends, settle at only one adjacent page, even
                   // when the release velocity is high.
-                  if (notification is ScrollStartNotification &&
-                      _userScrollStartPage == null) {
-                    // Capture a baseline for every new scroll sequence. Some
-                    // platforms/tests don't attach dragDetails to the start
-                    // notification, so requiring it can leave the page counter
-                    // without a valid baseline.
-                    _userScrollStartPage = _readerPage;
-                    _userScrollStartOffset = notification.metrics.pixels;
+                  if (notification is ScrollStartNotification) {
+                    _userScrollStartPage ??= _readerPage;
+                    _userScrollStartOffset ??= notification.metrics.pixels;
                     _userScrollDirection = 0;
-                    return false;
                   }
 
-                  // Remember the user's intent, not the total distance covered
-                  // by the fling. A high-velocity gesture must still advance
-                  // exactly one Mushaf page.
                   if (notification is UserScrollNotification &&
                       notification.direction != ScrollDirection.idle) {
                     _userScrollDirection =
                         notification.direction == ScrollDirection.reverse
                             ? 1
                             : -1;
-                    if (_userScrollStartPage == null) {
-                      _userScrollStartPage = _readerPage;
-                      _userScrollStartOffset = notification.metrics.pixels;
-                    }
+                    _userScrollStartPage ??= _readerPage;
+                    _userScrollStartOffset ??= notification.metrics.pixels;
                   }
 
                   if (notification is ScrollEndNotification) {
@@ -753,77 +725,30 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
                       final targetPage = (startPage + resolvedDirection)
                           .clamp(1, totalReaderPages)
                           .toInt();
+
+                      // Suppress item-position updates between gesture end and
+                      // the deterministic snap to the adjacent page.
+                      _isProgrammaticNavigation = true;
                       WidgetsBinding.instance.addPostFrameCallback((_) {
                         if (!mounted) return;
-                        // Update the counter immediately, then settle without
-                        // starting a second animation. This prevents the
-                        // counter tracking intermediate frames of a fling and
-                        // makes one gesture resolve to exactly one page.
-                        if (_readerPage != targetPage) {
-                          setState(() => _readerPage = targetPage);
-                        }
                         _scrollToPage(targetPage, animated: false);
                       });
                       return false;
                     }
                   }
 
-                  if (notification is! ScrollUpdateNotification &&
-                      notification is! UserScrollNotification) {
-                    return false;
-                  }
-                  if (_pageTrackingScheduled) return false;
-
-                  _pageTrackingScheduled = true;
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    _pageTrackingScheduled = false;
-                    if (!mounted) return;
-
-                    final viewport =
-                        _listViewportKey.currentContext?.findRenderObject();
-                    if (viewport is! RenderBox || !viewport.hasSize) return;
-                    final viewportRect =
-                        viewport.localToGlobal(Offset.zero) & viewport.size;
-                    final centerY = viewportRect.center.dy;
-                    var visiblePage = -1;
-                    var nearestDistance = double.infinity;
-
-                    for (final entry in _pageKeys.entries) {
-                      final renderObject =
-                          entry.value.currentContext?.findRenderObject();
-                      if (renderObject is! RenderBox || !renderObject.hasSize) {
-                        continue;
-                      }
-                      final rect =
-                          renderObject.localToGlobal(Offset.zero) & renderObject.size;
-                      final distance = centerY < rect.top
-                          ? rect.top - centerY
-                          : centerY > rect.bottom
-                              ? centerY - rect.bottom
-                              : 0.0;
-                      if (distance < nearestDistance) {
-                        nearestDistance = distance;
-                        visiblePage = entry.key;
-                      }
-                    }
-
-                    if (visiblePage > 0 && visiblePage != _readerPage) {
-                      setState(() => _readerPage = visiblePage);
-                    }
-                  });
                   return false;
                 },
-                child: ListView.builder(
-                  key: _listViewportKey,
-                  controller: _controller,
+                child: ScrollablePositionedList.builder(
+                  itemScrollController: _itemScrollController,
+                  itemPositionsListener: _itemPositionsListener,
+                  scrollDirection: Axis.vertical,
                   physics: const _ControlledReaderScrollPhysics(),
                   padding: const EdgeInsets.only(bottom: 8),
                   itemCount: totalReaderPages,
                   itemBuilder: (context, index) {
                     final page = index + 1;
-                    return KeyedSubtree(
-                      key: _keyForPage(page),
-                      child: FutureBuilder<QuranPage>(
+                    return FutureBuilder<QuranPage>(
                         future: _pageFuture(page),
                         builder: (context, snapshot) {
                           if (snapshot.connectionState != ConnectionState.done) {
@@ -850,7 +775,6 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
                             onBookmarkAyah: _bookmarkAyah,
                           );
                         },
-                      ),
                     );
                   },
                 ),
