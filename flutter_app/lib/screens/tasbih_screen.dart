@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import '../core/adaptive_page_scaffold.dart';
 
 import '../services/storage_service.dart';
+import '../services/locale_controller.dart';
 import '../theme/app_theme.dart';
 
 class TasbihScreen extends StatefulWidget {
@@ -116,14 +117,17 @@ class _TasbihScreenState extends State<TasbihScreen> {
     }
 
     final progress = _target == 0 ? 0.0 : (_count / _target).clamp(0.0, 1.0);
+    final isDark = CupertinoTheme.brightnessOf(context) == Brightness.dark;
+    final accent = isDark ? const Color(0xFF82D6B2) : AppTheme.emerald;
+    final accentForeground = isDark ? AppTheme.midnightGreen : CupertinoColors.white;
 
     return AdaptivePageScaffold(
       navigationBar: CupertinoNavigationBar(
-        middle: const Text('Tasbih'),
+        middle: Text(LocaleController.isArabic ? 'التسبيح' : 'Tasbih'),
         trailing: CupertinoButton(
           padding: EdgeInsets.zero,
           onPressed: _reset,
-          child: const Text('Reset'),
+          child: Text(LocaleController.isArabic ? 'إعادة ضبط' : 'Reset'),
         ),
       ),
       child: SafeArea(
@@ -137,10 +141,10 @@ class _TasbihScreenState extends State<TasbihScreen> {
               style: TextStyle(fontSize: 34, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Offline counter • progress is saved on this device',
+            Text(
+              LocaleController.isArabic ? 'عداد يعمل دون إنترنت • يُحفظ التقدم على هذا الجهاز' : 'Offline counter • progress is saved on this device',
               textAlign: TextAlign.center,
-              style: TextStyle(color: CupertinoColors.secondaryLabel),
+              style: TextStyle(color: CupertinoColors.secondaryLabel.resolveFrom(context)),
             ),
             const SizedBox(height: 28),
             GestureDetector(
@@ -149,30 +153,30 @@ class _TasbihScreenState extends State<TasbihScreen> {
                 height: 260,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: AppTheme.emerald,
+                  color: accent,
                 ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
                       '$_count',
-                      style: const TextStyle(
-                        color: CupertinoColors.white,
+                      style: TextStyle(
+                        color: accentForeground,
                         fontSize: 64,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                     Text(
-                      'of $_target',
-                      style: const TextStyle(
-                        color: CupertinoColors.white,
+                      LocaleController.isArabic ? 'من $_target' : 'of $_target',
+                      style: TextStyle(
+                        color: accentForeground,
                         fontSize: 17,
                       ),
                     ),
                     const SizedBox(height: 10),
-                    const Text(
-                      'Tap to count',
-                      style: TextStyle(color: CupertinoColors.white),
+                    Text(
+                      LocaleController.isArabic ? 'اضغط للتسبيح' : 'Tap to count',
+                      style: TextStyle(color: accentForeground),
                     ),
                   ],
                 ),
@@ -192,7 +196,7 @@ class _TasbihScreenState extends State<TasbihScreen> {
                   widthFactor: progress,
                   child: Container(
                     decoration: BoxDecoration(
-                      color: AppTheme.emerald,
+                      color: accent,
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
@@ -200,19 +204,19 @@ class _TasbihScreenState extends State<TasbihScreen> {
               ),
             ),
             CupertinoListSection.insetGrouped(
-              header: const Text('TARGET'),
+              header: Text(LocaleController.isArabic ? 'الهدف' : 'TARGET'),
               children: [
                 for (final target in const [33, 99, 100])
                   CupertinoListTile(
-                    title: Text('$target repetitions'),
+                    title: Text(LocaleController.isArabic ? '$target تسبيحة' : '$target repetitions'),
                     trailing: _target == target
                         ? const Icon(CupertinoIcons.check_mark)
                         : null,
                     onTap: () => _setTarget(target),
                   ),
                 CupertinoListTile(
-                  title: const Text('Custom target'),
-                  subtitle: Text('$_target repetitions selected'),
+                  title: Text(LocaleController.isArabic ? 'هدف مخصص' : 'Custom target'),
+                  subtitle: Text(LocaleController.isArabic ? 'تم اختيار $_target تسبيحة' : '$_target repetitions selected'),
                   trailing: const CupertinoListTileChevron(),
                   onTap: _chooseCustomTarget,
                 ),
@@ -222,7 +226,7 @@ class _TasbihScreenState extends State<TasbihScreen> {
               children: [
                 CupertinoListTile(
                   leading: const Icon(CupertinoIcons.arrow_counterclockwise),
-                  title: const Text('Reset counter'),
+                  title: Text(LocaleController.isArabic ? 'إعادة ضبط العداد' : 'Reset counter'),
                   onTap: _reset,
                 ),
               ],

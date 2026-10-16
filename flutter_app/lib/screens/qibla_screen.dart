@@ -69,7 +69,10 @@ class _QiblaScreenState extends State<QiblaScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final accent = AppTheme.emerald;
+    final isDark = CupertinoTheme.brightnessOf(context) == Brightness.dark;
+    final accent = isDark ? const Color(0xFF82D6B2) : AppTheme.emerald;
+    final primaryText = CupertinoColors.label.resolveFrom(context);
+    final secondaryText = CupertinoColors.secondaryLabel.resolveFrom(context);
     return AdaptivePageScaffold(
       navigationBar: CupertinoNavigationBar(
         middle: Text(LocaleController.isArabic ? 'اتجاه القبلة' : 'Qibla direction'),
@@ -90,10 +93,11 @@ class _QiblaScreenState extends State<QiblaScreen> {
               padding: const EdgeInsets.fromLTRB(24, 28, 24, 110),
               child: Column(
                 children: [
-                  const Text(
-                    'القبلة',
+                  Text(
+                    LocaleController.isArabic ? 'القبلة' : 'Qibla',
                     textDirection: TextDirection.rtl,
                     style: TextStyle(
+                      color: primaryText,
                       fontSize: 34,
                       fontWeight: FontWeight.w800,
                     ),
@@ -148,7 +152,8 @@ class _QiblaScreenState extends State<QiblaScreen> {
                             qiblaBearing == null
                                 ? '—'
                                 : '${qiblaBearing!.toStringAsFixed(1)}°',
-                            style: const TextStyle(
+                            style: TextStyle(
+                              color: primaryText,
                               fontSize: 17,
                               fontWeight: FontWeight.w700,
                             ),
@@ -158,7 +163,7 @@ class _QiblaScreenState extends State<QiblaScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  Text(status, textAlign: TextAlign.center),
+                  Text(status, textAlign: TextAlign.center, style: TextStyle(color: secondaryText)),
                   const SizedBox(height: 18),
                   CupertinoButton.filled(
                     onPressed: calculate,
