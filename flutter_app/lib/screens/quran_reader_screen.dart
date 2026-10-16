@@ -638,6 +638,10 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
                 child: PageView.builder(
                   key: const ValueKey('quran-horizontal-page-reader'),
                   controller: _pageController,
+                  // RTL places the current page on the right. Reverse the
+                  // PageView's physical axis so a leftward swipe reveals the
+                  // next page, matching the expected Tanzil-style gesture.
+                  reverse: true,
                   physics: const PageScrollPhysics(),
                   itemCount: totalReaderPages,
                   onPageChanged: (index) {
