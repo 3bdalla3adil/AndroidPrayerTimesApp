@@ -1,0 +1,49 @@
+import 'storage_service.dart';
+
+class ReaderSettings {
+  const ReaderSettings({
+    required this.fontSize,
+    required this.lineHeight,
+    required this.showTranslation,
+    required this.darkPage,
+  });
+
+  final double fontSize;
+  final double lineHeight;
+  final bool showTranslation;
+  final bool darkPage;
+}
+
+/// Single persistence boundary for reader appearance settings.
+final class SettingsService {
+  SettingsService(this._storage);
+
+  final StorageService _storage;
+
+  Future<ReaderSettings> load() async {
+    final values = await Future.wait<Object>([
+      _storage.loadQuranFontSize(),
+      _storage.loadQuranLineHeight(),
+      _storage.loadQuranShowTranslation(),
+      _storage.loadQuranDarkPage(),
+    ]);
+    return ReaderSettings(
+      fontSize: (values[0] as double).clamp(20, 38).toDouble(),
+      lineHeight: (values[1] as double).clamp(1.35, 2.15).toDouble(),
+      showTranslation: values[2] as bool,
+      darkPage: values[3] as bool,
+    );
+  }
+
+  Future<void> saveFontSize(double value) =>
+      _storage.saveQuranFontSize(value.clamp(20, 38).toDouble());
+
+  Future<void> saveLineHeight(double value) =>
+      _storage.saveQuranLineHeight(value.clamp(1.35, 2.15).toDouble());
+
+  Future<void> saveTranslation(bool value) =>
+      _storage.saveQuranShowTranslation(value);
+
+  Future<void> saveDarkPage(bool value) =>
+      _storage.saveQuranDarkPage(value);
+}
