@@ -714,7 +714,8 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
                       (notification is! ScrollUpdateNotification &&
                           notification is! ScrollEndNotification &&
                           notification is! UserScrollNotification) ||
-                      _pageTrackingScheduled) {
+                      (_pageTrackingScheduled &&
+                          notification is! ScrollEndNotification)) {
                     return false;
                   }
 
