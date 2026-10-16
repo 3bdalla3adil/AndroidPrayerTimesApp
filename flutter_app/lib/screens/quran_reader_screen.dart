@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/cupertino.dart';
+import '../core/adaptive_page_scaffold.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
@@ -668,7 +669,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     final background = CupertinoColors.systemGroupedBackground
         .resolveFrom(context);
 
-    return CupertinoPageScaffold(
+    return AdaptivePageScaffold(
       backgroundColor: background,
       navigationBar: CupertinoNavigationBar(
         middle: Column(
