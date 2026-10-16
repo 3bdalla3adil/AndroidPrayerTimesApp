@@ -93,10 +93,11 @@ class _QiblaScreenState extends State<QiblaScreen> {
               padding: const EdgeInsets.fromLTRB(24, 28, 24, 110),
               child: Column(
                 children: [
-                  const Text(
-                    'القبلة',
+                  Text(
+                    LocaleController.isArabic ? 'القبلة' : 'Qibla',
                     textDirection: TextDirection.rtl,
                     style: TextStyle(
+                      color: primaryText,
                       fontSize: 34,
                       fontWeight: FontWeight.w800,
                     ),
@@ -151,7 +152,8 @@ class _QiblaScreenState extends State<QiblaScreen> {
                             qiblaBearing == null
                                 ? '—'
                                 : '${qiblaBearing!.toStringAsFixed(1)}°',
-                            style: const TextStyle(
+                            style: TextStyle(
+                              color: primaryText,
                               fontSize: 17,
                               fontWeight: FontWeight.w700,
                             ),
