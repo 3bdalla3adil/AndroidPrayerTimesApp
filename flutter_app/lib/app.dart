@@ -154,7 +154,7 @@ class _RootShellState extends State<RootShell> {
                                     ),
                                   ),
                                   const SizedBox(height: 24),
-                                  const Divider(color: mutedGold),
+                                  const material.Divider(color: mutedGold),
                                   const SizedBox(height: 14),
                                   Text(
                                     isArabic
