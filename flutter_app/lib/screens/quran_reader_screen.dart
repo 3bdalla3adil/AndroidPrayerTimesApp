@@ -147,18 +147,16 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
   Future<void> _scrollToPage(int page, {bool animated = true}) async {
     if (page < 1 || page > totalReaderPages) return;
 
-    if (_pageController.hasClients) {
-      if (animated) {
-        await _pageController.animateToPage(
-          page - 1,
-          duration: const Duration(milliseconds: 220),
-          curve: Curves.easeOutCubic,
-        );
-      } else {
-        _pageController.jumpToPage(page - 1);
-      }
+    if (animated && _pageController.hasClients) {
+      await _pageController.animateToPage(
+        page - 1,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+      );
     } else {
-      _pageController.initialPage;
+      // jumpToPage also records the target when the PageView has not attached
+      // yet, which keeps deep links and the initial saved page reliable.
+      _pageController.jumpToPage(page - 1);
     }
 
     if (mounted && _readerPage != page) {
