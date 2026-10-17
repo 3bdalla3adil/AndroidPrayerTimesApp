@@ -58,7 +58,7 @@ jobs:
       - name: Download iOS IPA artifact
         uses: actions/download-artifact@v4
         with:
-          name: salawat-quran-release-ipa-unsigned
+          name: salawat-quran-release-ipa
           path: downloaded/ipa
           repository: ${{ github.repository }}
           run-id: ${{ steps.source.outputs.run_id }}
@@ -84,14 +84,14 @@ jobs:
           test -n "$ipa" && test -s "$ipa"
           test -n "$aab" && test -s "$aab"
           cp "$apk" dist/salawat-quran.apk
-          cp "$ipa" dist/salawat-quran-unsigned.ipa
+          cp "$ipa" dist/salawat-quran.ipa
           cp "$aab" dist/salawat-quran.aab
           cat > dist/README.txt <<'EOF'
           Salawat / AndroidPrayerTimesApp release downloads
 
           APK: Android installation package.
           AAB: Android App Bundle for Play Console/internal testing.
-          IPA: Unsigned iOS app package. It cannot be installed on an iPhone until it is signed with an Apple Developer certificate and matching provisioning profile.
+          IPA: Signed iOS app package. Installation is limited to devices or distribution channels allowed by the embedded Apple provisioning profile.
 
           These files are copied from a successful Flutter CI run on the main branch.
           EOF
@@ -106,13 +106,13 @@ jobs:
 
             - Android APK: install on a compatible Android device.
             - Android AAB: use for Play Console/internal testing.
-            - iOS IPA: unsigned; Apple signing and provisioning are required before installation.
+            - iOS IPA: signed with the configured Apple certificate and provisioning profile; installability depends on the selected distribution method and profile.
           prerelease: true
           make_latest: false
           overwrite_files: true
           files: |
             dist/salawat-quran.apk
-            dist/salawat-quran-unsigned.ipa
+            dist/salawat-quran.ipa
             dist/salawat-quran.aab
             dist/README.txt
         env:
