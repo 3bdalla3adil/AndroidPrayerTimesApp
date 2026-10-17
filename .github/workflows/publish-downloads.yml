@@ -6,126 +6,114 @@ on:
     paths:
       - "flutter_app/**"
       - ".github/workflows/publish-downloads.yml"
+  workflow_run:
+    workflows: ["Flutter CI"]
+    types: [completed]
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
+  actions: read
 
 concurrency:
   group: publish-salawat-downloads
   cancel-in-progress: false
 
 jobs:
-  build-android:
-    name: Build Android APK
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: flutter_app
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          flutter-version: "3.47.5"
-          cache: true
-          cache-dependency-path: flutter_app/pubspec.lock
-      - name: Prepare Android project
-        run: bash tool/bootstrap_android.sh
-      - name: Install dependencies
-        run: flutter pub get
-      - name: Build release APK
-        run: flutter build apk --release --dart-define=APP_ENV=production
-      - name: Stage APK
-        run: |
-          mkdir -p ../download-output
-          cp build/app/outputs/flutter-apk/app-release.apk ../download-output/salawat-quran.apk
-      - uses: actions/upload-artifact@v4
-        with:
-          name: salawat-android-download
-          path: download-output/salawat-quran.apk
-          if-no-files-found: error
-          retention-days: 3
-
-  build-ios:
-    name: Build unsigned iOS IPA
-    runs-on: macos-latest
-    defaults:
-      run:
-        working-directory: flutter_app
-    steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          flutter-version: "3.47.5"
-          cache: true
-          cache-dependency-path: flutter_app/pubspec.lock
-      - name: Generate iOS platform files
-        run: flutter create --platforms=ios .
-      - name: Install dependencies
-        run: flutter pub get
-      - name: Build iOS app without Apple signing
-        run: flutter build ios --release --no-codesign --dart-define=APP_ENV=production
-      - name: Package unsigned IPA
-        run: |
-          rm -rf build/ios/ipa
-          mkdir -p build/ios/ipa/Payload ../download-output
-          cp -R build/ios/iphoneos/Runner.app build/ios/ipa/Payload/Runner.app
-          cd build/ios/ipa
-          /usr/bin/zip -qry ../../../../download-output/salawat-quran-unsigned.ipa Payload
-          test -s ../../../../download-output/salawat-quran-unsigned.ipa
-      - uses: actions/upload-artifact@v4
-        with:
-          name: salawat-ios-download
-          path: download-output/salawat-quran-unsigned.ipa
-          if-no-files-found: error
-          retention-days: 3
-
   publish-release:
-    name: Publish stable download links
+    name: Publish verified Flutter CI artifacts
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main')
     runs-on: ubuntu-latest
-    needs: [build-android, build-ios]
-    permissions:
-      contents: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          name: salawat-android-download
-          path: dist
-      - uses: actions/download-artifact@v4
-        with:
-          name: salawat-ios-download
-          path: dist
-      - name: Add download notes
+      - name: Select successful Flutter CI run
+        id: source
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            run_id="${{ github.event.workflow_run.id }}"
+          else
+            run_id="$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yaml/runs?branch=main&per_page=20" --jq '.workflow_runs | map(select(.conclusion == "success" and .head_branch == "main")) | first | .id')"
+          fi
+          if [ -z "$run_id" ] || [ "$run_id" = "null" ]; then
+            echo "::error::No successful main-branch Flutter CI run was found."
+            exit 1
+          fi
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+          echo "Using successful Flutter CI run $run_id"
+
+      - name: Download APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: salawat-quran-release-apk
+          path: downloaded/apk
+          repository: ${{ github.repository }}
+          run-id: ${{ steps.source.outputs.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download iOS IPA artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: salawat-quran-release-ipa-unsigned
+          path: downloaded/ipa
+          repository: ${{ github.repository }}
+          run-id: ${{ steps.source.outputs.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download Android App Bundle artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: salawat-quran-release-aab
+          path: downloaded/aab
+          repository: ${{ github.repository }}
+          run-id: ${{ steps.source.outputs.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Prepare stable release assets
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          apk="$(find downloaded/apk -type f -name '*.apk' -print -quit)"
+          ipa="$(find downloaded/ipa -type f -name '*.ipa' -print -quit)"
+          aab="$(find downloaded/aab -type f -name '*.aab' -print -quit)"
+          test -n "$apk" && test -s "$apk"
+          test -n "$ipa" && test -s "$ipa"
+          test -n "$aab" && test -s "$aab"
+          cp "$apk" dist/salawat-quran.apk
+          cp "$ipa" dist/salawat-quran-unsigned.ipa
+          cp "$aab" dist/salawat-quran.aab
           cat > dist/README.txt <<'EOF'
-          Salawat / AndroidPrayerTimesApp downloads
-          APK: Android package for direct installation on a compatible Android device.
-          IPA: Unsigned iOS package. It cannot be installed on an iPhone until signed with an Apple developer certificate and matching provisioning profile.
-          These builds are generated from the main branch.
+          Salawat / AndroidPrayerTimesApp release downloads
+
+          APK: Android installation package.
+          AAB: Android App Bundle for Play Console/internal testing.
+          IPA: Unsigned iOS app package. It cannot be installed on an iPhone until it is signed with an Apple Developer certificate and matching provisioning profile.
+
+          These files are copied from a successful Flutter CI run on the main branch.
           EOF
-      - name: Publish release assets
+
+      - name: Publish stable release assets
         uses: softprops/action-gh-release@v2
         with:
           tag_name: portfolio-downloads
           name: Salawat app downloads
           body: |
-            Download builds for the Salawat / AndroidPrayerTimesApp project.
+            Downloads copied from a successful Flutter CI run on main.
 
             - Android APK: install on a compatible Android device.
-            - iOS IPA: unsigned build; Apple signing and provisioning are required before installation.
+            - Android AAB: use for Play Console/internal testing.
+            - iOS IPA: unsigned; Apple signing and provisioning are required before installation.
           prerelease: true
           make_latest: false
           overwrite_files: true
           files: |
             dist/salawat-quran.apk
             dist/salawat-quran-unsigned.ipa
+            dist/salawat-quran.aab
             dist/README.txt
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
