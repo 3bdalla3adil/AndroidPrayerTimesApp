@@ -234,7 +234,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
     // The first indexed-list layout can report provisional positions while
     // variable-height Quran pages are being measured. Ignore gestures until
     // the requested initial page has actually been applied.
-    if (_isInitializingReader || _isProgrammaticNavigation) {
+    if (_isProgrammaticNavigation) {
       _dragStartPage = null;
       _verticalDragDistance = 0;
       return;
@@ -745,56 +745,59 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
               totalPages: totalReaderPages,
             ),
             Expanded(
-              child: GestureDetector(
-                key: const ValueKey('quran-reader-swipe-area'),
-                behavior: HitTestBehavior.opaque,
-                onVerticalDragStart: _handleVerticalDragStart,
-                onVerticalDragUpdate: _handleVerticalDragUpdate,
-                onVerticalDragEnd: _handleVerticalDragEnd,
-                onVerticalDragCancel: _handleVerticalDragCancel,
-                child: IgnorePointer(
-                  child: ScrollablePositionedList.builder(
-                  itemScrollController: _itemScrollController,
-                  itemPositionsListener: _itemPositionsListener,
-                  scrollDirection: Axis.vertical,
-                  // Raw pointer tracking below converts each completed vertical
-                  // gesture into exactly one page navigation. Disabling native
-                  // drag/fling physics prevents a ballistic scroll from racing
-                  // the explicit one-page animation.
-                  physics: const NeverScrollableScrollPhysics(),
-                  padding: const EdgeInsets.only(bottom: 8),
-                  itemCount: totalReaderPages,
-                  itemBuilder: (context, index) {
-                    final page = index + 1;
-                    return FutureBuilder<QuranPage>(
-                        future: _pageFuture(page),
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState != ConnectionState.done) {
-                            return const Center(
-                              child: CupertinoActivityIndicator(radius: 14),
-                            );
-                          }
-                          if (snapshot.hasError || snapshot.data == null) {
-                            return _ErrorPage(
-                              page: page,
-                              onRetry: () {
-                                _pageFutures.remove(page);
-                                setState(() {});
-                              },
-                            );
-                          }
-                          return _MushafPage(
-                            page: page,
-                            pageData: snapshot.data!,
-                            fontSize: _fontSize,
-                            lineHeight: _lineHeight,
-                            showTranslation: _showTranslation,
-                            darkPage: _darkPage,
-                            onBookmarkAyah: _bookmarkAyah,
-                          );
-                        },
-                    );
-                  },
+              child: LayoutBuilder(
+                builder: (context, viewport) => GestureDetector(
+                  key: const ValueKey('quran-reader-swipe-area'),
+                  behavior: HitTestBehavior.opaque,
+                  onVerticalDragStart: _handleVerticalDragStart,
+                  onVerticalDragUpdate: _handleVerticalDragUpdate,
+                  onVerticalDragEnd: _handleVerticalDragEnd,
+                  onVerticalDragCancel: _handleVerticalDragCancel,
+                  child: IgnorePointer(
+                    child: ScrollablePositionedList.builder(
+                      itemScrollController: _itemScrollController,
+                      itemPositionsListener: _itemPositionsListener,
+                      scrollDirection: Axis.vertical,
+                      // Each Mushaf page occupies exactly one viewport. This
+                      // gives indexed navigation a stable geometry even when
+                      // individual pages contain different numbers of ayat.
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: totalReaderPages,
+                      itemBuilder: (context, index) {
+                        final page = index + 1;
+                        return SizedBox(
+                          height: viewport.maxHeight,
+                          child: FutureBuilder<QuranPage>(
+                            future: _pageFuture(page),
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState != ConnectionState.done) {
+                                return const Center(
+                                  child: CupertinoActivityIndicator(radius: 14),
+                                );
+                              }
+                              if (snapshot.hasError || snapshot.data == null) {
+                                return _ErrorPage(
+                                  page: page,
+                                  onRetry: () {
+                                    _pageFutures.remove(page);
+                                    setState(() {});
+                                  },
+                                );
+                              }
+                              return _MushafPage(
+                                page: page,
+                                pageData: snapshot.data!,
+                                fontSize: _fontSize,
+                                lineHeight: _lineHeight,
+                                showTranslation: _showTranslation,
+                                darkPage: _darkPage,
+                                onBookmarkAyah: _bookmarkAyah,
+                              );
+                            },
+                          ),
+                        );
+                      },
+                    ),
                   ),
                 ),
               ),
