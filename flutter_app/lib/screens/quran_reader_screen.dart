@@ -909,38 +909,39 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
                   onVerticalDragUpdate: _handleVerticalDragUpdate,
                   onVerticalDragEnd: _handleVerticalDragEnd,
                   onVerticalDragCancel: _handleVerticalDragCancel,
-                  child: IgnorePointer(
-                    child: ScrollablePositionedList.builder(
-                      itemScrollController: _itemScrollController,
-                      itemPositionsListener: _itemPositionsListener,
-                      scrollDirection: Axis.vertical,
-                      // Each Mushaf page occupies exactly one viewport. This
-                      // gives indexed navigation a stable geometry even when
-                      // individual pages contain different numbers of ayat.
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: totalReaderPages,
-                      itemBuilder: (context, index) {
-                        final page = index + 1;
-                        return SizedBox(
-                          height: viewport.maxHeight,
-                          child: FutureBuilder<QuranPage>(
-                            future: _pageFuture(page),
-                            builder: (context, snapshot) {
-                              if (snapshot.connectionState != ConnectionState.done) {
-                                return const Center(
-                                  child: CupertinoActivityIndicator(radius: 14),
-                                );
-                              }
-                              if (snapshot.hasError || snapshot.data == null) {
-                                return _ErrorPage(
-                                  page: page,
-                                  onRetry: () {
-                                    _pageFutures.remove(page);
-                                    setState(() {});
-                                  },
-                                );
-                              }
-                              return _MushafPage(
+                  child: ScrollablePositionedList.builder(
+                    itemScrollController: _itemScrollController,
+                    itemPositionsListener: _itemPositionsListener,
+                    scrollDirection: Axis.vertical,
+                    // Page-to-page navigation remains gesture-driven. Each
+                    // page independently enables scrolling only if its own
+                    // rendered content exceeds the available viewport.
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: totalReaderPages,
+                    itemBuilder: (context, index) {
+                      final page = index + 1;
+                      return SizedBox(
+                        height: viewport.maxHeight,
+                        child: FutureBuilder<QuranPage>(
+                          future: _pageFuture(page),
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState != ConnectionState.done) {
+                              return const Center(
+                                child: CupertinoActivityIndicator(radius: 14),
+                              );
+                            }
+                            if (snapshot.hasError || snapshot.data == null) {
+                              return _ErrorPage(
+                                page: page,
+                                onRetry: () {
+                                  _pageFutures.remove(page);
+                                  setState(() {});
+                                },
+                              );
+                            }
+                            return OverflowAwarePageScrollView(
+                              page: page,
+                              child: _MushafPage(
                                 page: page,
                                 pageData: snapshot.data!,
                                 fontSize: _fontSize,
@@ -948,12 +949,12 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
                                 showTranslation: _showTranslation,
                                 darkPage: _darkPage,
                                 onBookmarkAyah: _bookmarkAyah,
-                              );
-                            },
-                          ),
-                        );
-                      },
-                    ),
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    },
                   ),
                 ),
               ),
@@ -1516,6 +1517,78 @@ class _ErrorPage extends StatelessWidget {
         onPressed: onRetry,
         child: Text(LocaleController.isArabic ? 'إعادة تحميل الصفحة $page' : 'Retry loading page $page'),
       ),
+    );
+  }
+}
+
+
+/// Allows a Mushaf page to scroll internally only when its rendered content
+/// is taller than the available page viewport. This preserves one-page swipe
+/// navigation for ordinary pages while preventing large Arabic text or
+/// translations from being clipped on smaller displays.
+class OverflowAwarePageScrollView extends StatefulWidget {
+  const OverflowAwarePageScrollView({
+    super.key,
+    required this.page,
+    required this.child,
+  });
+
+  final int page;
+  final Widget child;
+
+  @override
+  State<OverflowAwarePageScrollView> createState() =>
+      _OverflowAwarePageScrollViewState();
+}
+
+class _OverflowAwarePageScrollViewState
+    extends State<OverflowAwarePageScrollView> {
+  final GlobalKey _contentKey = GlobalKey();
+  double? _viewportHeight;
+  bool _isOverflowing = false;
+
+  void _measureContent(double viewportHeight) {
+    if (_viewportHeight == viewportHeight) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final renderObject = _contentKey.currentContext?.findRenderObject();
+        if (renderObject is! RenderBox || !renderObject.hasSize) return;
+        final nextOverflowing = renderObject.size.height > viewportHeight + 1;
+        if (nextOverflowing != _isOverflowing) {
+          setState(() => _isOverflowing = nextOverflowing);
+        }
+      });
+      return;
+    }
+    _viewportHeight = viewportHeight;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final renderObject = _contentKey.currentContext?.findRenderObject();
+      if (renderObject is! RenderBox || !renderObject.hasSize) return;
+      final nextOverflowing = renderObject.size.height > viewportHeight + 1;
+      if (nextOverflowing != _isOverflowing) {
+        setState(() => _isOverflowing = nextOverflowing);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final viewportHeight = constraints.maxHeight;
+        _measureContent(viewportHeight);
+        return SingleChildScrollView(
+          key: ValueKey<String>('quran-page-scroll-${widget.page}'),
+          physics: _isOverflowing
+              ? const BouncingScrollPhysics()
+              : const NeverScrollableScrollPhysics(),
+          child: KeyedSubtree(
+            key: _contentKey,
+            child: widget.child,
+          ),
+        );
+      },
     );
   }
 }
