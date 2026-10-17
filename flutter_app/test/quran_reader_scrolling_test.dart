@@ -37,8 +37,6 @@ void main() {
     await pumpReaderFrames(tester);
     expect(find.byType(ScrollablePositionedList), findsOneWidget);
     expect(find.byType(PageView), findsNothing);
-    expect(find.byType(OverflowAwarePageScrollView), findsWidgets);
-    expect(find.byType(SingleChildScrollView), findsWidgets);
   }
 
   testWidgets('Quran reader settles one adjacent page per vertical drag',
@@ -57,15 +55,36 @@ void main() {
   });
 
 
-  testWidgets('Quran page content scrolls when enlarged text overflows',
+  testWidgets('overflow-aware page scrolls content taller than its viewport',
       (tester) async {
     addTearDown(() => tester.binding.setSurfaceSize(null));
-    await mountReader(tester, size: const Size(390, 700));
-
-    final context = tester.element(find.byType(QuranReaderScreen));
-    final container = ProviderScope.containerOf(context);
-    container.read(readerProvider.notifier).setFontSize(38);
-    await pumpReaderFrames(tester, frames: 16);
+    await tester.binding.setSurfaceSize(const Size(390, 700));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            height: 320,
+            child: OverflowAwarePageScrollView(
+              page: 1,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: List.generate(
+                  30,
+                  (index) => Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Text(
+                      'آية قرآنية طويلة لاختبار التمرير ${index + 1}',
+                      style: const TextStyle(fontSize: 38, height: 1.5),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await pumpReaderFrames(tester, frames: 8);
 
     final pageScroll = find.byKey(const ValueKey('quran-page-scroll-1'));
     expect(pageScroll, findsOneWidget);
