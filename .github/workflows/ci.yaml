@@ -88,7 +88,7 @@ jobs:
           name: salawat-quran-release-apk
           path: flutter_app/build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
-          retention-days: 30
+          retention-days: 1
 
   build-ios:
     name: Build unsigned iOS IPA
@@ -145,4 +145,4 @@ jobs:
           name: salawat-quran-release-ipa-unsigned
           path: flutter_app/salawat-quran-unsigned.ipa
           if-no-files-found: error
-          retention-days: 30
+          retention-days: 1
