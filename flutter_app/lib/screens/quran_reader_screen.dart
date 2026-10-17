@@ -51,6 +51,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
   final ItemPositionsListener _itemPositionsListener =
       ItemPositionsListener.create();
   bool _isProgrammaticNavigation = false;
+  bool _isInitializingReader = true;
   int _navigationGeneration = 0;
   final _storage = StorageService();
   late final _bookmarkService = BookmarkService(_storage);
@@ -141,8 +142,11 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
         bookmarks: bookmarks,
       );
 
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _scrollToPage(requestedReaderPage, animated: false);
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        await _scrollToPage(requestedReaderPage, animated: false);
+        if (mounted) {
+          setState(() => _isInitializingReader = false);
+        }
       });
     } catch (_) {
       // The reader still starts at page 1 if the index cannot be read.
@@ -219,8 +223,14 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
   }
 
   void _handleVerticalDragStart(DragStartDetails details) {
-    // Always capture the current page. Startup restoration or another
-    // programmatic jump must not silently discard the user's first swipe.
+    // The first indexed-list layout can report provisional positions while
+    // variable-height Quran pages are being measured. Ignore gestures until
+    // the requested initial page has actually been applied.
+    if (_isInitializingReader || _isProgrammaticNavigation) {
+      _dragStartPage = null;
+      _verticalDragDistance = 0;
+      return;
+    }
     _dragStartPage = _readerPage;
     _verticalDragDistance = 0;
   }
@@ -260,6 +270,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
 
   void _handleItemPositionsChanged() {
     if (!mounted ||
+        _isInitializingReader ||
         _isProgrammaticNavigation ||
         _dragStartPage != null) {
       return;
