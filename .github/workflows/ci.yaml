@@ -12,7 +12,7 @@ permissions:
 
 concurrency:
   group: flutter-ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   analyze-and-test:
