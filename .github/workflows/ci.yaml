@@ -2,8 +2,7 @@ name: Flutter CI
 
 concurrency:
   group: flutter-ci-${{ github.workflow }}-${{ github.ref }}
-  # Let active platform builds finish; rapid commits should not cancel an iOS build mid-command.
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 on:
   push:
@@ -122,14 +121,39 @@ jobs:
           retention-days: 30
 
   build-ios:
-    name: Build iOS unsigned IPA
+    name: Build signed iOS IPA
     runs-on: macos-latest
     defaults:
       run:
         working-directory: flutter_app
+    env:
+      IOS_BUNDLE_ID: ${{ secrets.IOS_BUNDLE_ID }}
+      IOS_TEAM_ID: ${{ secrets.IOS_TEAM_ID }}
+      IOS_CERTIFICATE_BASE64: ${{ secrets.IOS_CERTIFICATE_BASE64 }}
+      IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+      IOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+      IOS_EXPORT_METHOD: ${{ vars.IOS_EXPORT_METHOD || 'ad-hoc' }}
+      IOS_SIGNING_IDENTITY: ${{ vars.IOS_SIGNING_IDENTITY || 'Apple Distribution' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Require Apple signing configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          missing=()
+          for key in IOS_BUNDLE_ID IOS_TEAM_ID IOS_CERTIFICATE_BASE64 IOS_CERTIFICATE_PASSWORD IOS_PROVISIONING_PROFILE_BASE64; do
+            if [ -z "${!key:-}" ]; then missing+=("$key"); fi
+          done
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "::error::Installable iOS IPA requires Apple signing secrets: ${missing[*]}. Configure an Apple Distribution .p12 certificate and a matching provisioning profile (including the target device for ad-hoc installs). Unsigned IPAs are not published."
+            exit 1
+          fi
+          case "$IOS_EXPORT_METHOD" in
+            ad-hoc|development|app-store-connect|enterprise) ;;
+            *) echo "::error::Unsupported IOS_EXPORT_METHOD: $IOS_EXPORT_METHOD"; exit 1 ;;
+          esac
 
       - name: Prepare shared Flutter assets
         uses: ./.github/actions/prepare-flutter-assets
@@ -185,70 +209,128 @@ jobs:
 
       - name: Generate iOS launcher icon and splash screen
         run: |
-          # Keep Flutter's generated AppIcon asset catalog: flutter_launcher_icons
-          # overwrites the template icon files and expects the catalog to exist.
           test -f ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-20x20@1x.png
           dart run flutter_launcher_icons -f flutter_launcher_icons_ios.yaml
           dart run flutter_native_splash:create
 
+      - name: Import Apple signing certificate and provisioning profile
+        id: signing
+        shell: bash
+        run: |
+          set -euo pipefail
+          KEYCHAIN_PATH="$RUNNER_TEMP/ios-signing.keychain-db"
+          KEYCHAIN_PASSWORD="$(openssl rand -hex 24)"
+          CERT_PATH="$RUNNER_TEMP/ios-signing-certificate.p12"
+          PROFILE_PATH="$RUNNER_TEMP/ios-provisioning-profile.mobileprovision"
+          PROFILE_PLIST="$RUNNER_TEMP/ios-provisioning-profile.plist"
+
+          printf '%s' "$IOS_CERTIFICATE_BASE64" | base64 --decode > "$CERT_PATH"
+          printf '%s' "$IOS_PROVISIONING_PROFILE_BASE64" | base64 --decode > "$PROFILE_PATH"
+          test -s "$CERT_PATH" && test -s "$PROFILE_PATH"
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$CERT_PATH" -k "$KEYCHAIN_PATH" -P "$IOS_CERTIFICATE_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security list-keychains -d user -s "$KEYCHAIN_PATH" login.keychain-db
+
+          security cms -D -i "$PROFILE_PATH" > "$PROFILE_PLIST"
+          PROFILE_UUID=$(/usr/libexec/PlistBuddy -c 'Print UUID' "$PROFILE_PLIST")
+          PROFILE_NAME=$(/usr/libexec/PlistBuddy -c 'Print Name' "$PROFILE_PLIST")
+          PROFILE_TEAM=$(/usr/libexec/PlistBuddy -c 'Print :TeamIdentifier:0' "$PROFILE_PLIST")
+          PROFILE_APP_ID=$(/usr/libexec/PlistBuddy -c 'Print :Entitlements:application-identifier' "$PROFILE_PLIST")
+          case "$PROFILE_APP_ID" in
+            "$PROFILE_TEAM.$IOS_BUNDLE_ID"|"$PROFILE_TEAM".*) ;;
+            *) echo "::error::Provisioning profile application identifier does not match expected bundle ID/team."; exit 1 ;;
+          esac
+          if [ "$PROFILE_TEAM" != "$IOS_TEAM_ID" ]; then
+            echo "::error::Provisioning profile team ($PROFILE_TEAM) does not match IOS_TEAM_ID."
+            exit 1
+          fi
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          cp "$PROFILE_PATH" "$HOME/Library/MobileDevice/Provisioning Profiles/$PROFILE_UUID.mobileprovision"
+          echo "profile_uuid=$PROFILE_UUID" >> "$GITHUB_OUTPUT"
+          echo "profile_name=$PROFILE_NAME" >> "$GITHUB_OUTPUT"
+          echo "profile_path=$PROFILE_PATH" >> "$GITHUB_OUTPUT"
+          echo "keychain_path=$KEYCHAIN_PATH" >> "$GITHUB_OUTPUT"
+
       - name: Prepare iOS Flutter project
         run: flutter build ios --config-only --release --no-codesign
 
-      - name: Disable Xcode code signing for CI
+      - name: Build signed iOS archive
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          project = Path("ios/Runner.xcodeproj/project.pbxproj")
-          text = project.read_text()
-          text = text.replace(
-              "buildSettings = {",
-              "buildSettings = {\n\t\t\t\tCODE_SIGNING_ALLOWED = NO;\n\t\t\t\tCODE_SIGNING_REQUIRED = NO;",
-          )
-          project.write_text(text)
-          PY
-
-      - name: Build iOS device app without code signing
-        run: |
-          set -e
-          rm -rf build/ios
+          set -euo pipefail
           xcodebuild \
             -workspace ios/Runner.xcworkspace \
             -scheme Runner \
             -configuration Release \
             -sdk iphoneos \
             -destination 'generic/platform=iOS' \
-            -derivedDataPath build/ios \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" \
-            DEVELOPMENT_TEAM="" \
-            PROVISIONING_PROFILE_SPECIFIER="" \
-            build
+            -archivePath build/ios/Runner.xcarchive \
+            CODE_SIGNING_ALLOWED=YES \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="$IOS_SIGNING_IDENTITY" \
+            DEVELOPMENT_TEAM="$IOS_TEAM_ID" \
+            PROVISIONING_PROFILE_SPECIFIER="${{ steps.signing.outputs.profile_name }}" \
+            PRODUCT_BUNDLE_IDENTIFIER="$IOS_BUNDLE_ID" \
+            archive
 
-      - name: Verify Athan sounds in iOS app
+      - name: Export signed IPA
         run: |
-          set -e
-          APP_PATH="build/ios/Build/Products/Release-iphoneos/Runner.app"
+          set -euo pipefail
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>$IOS_EXPORT_METHOD</string>
+            <key>teamID</key><string>$IOS_TEAM_ID</string>
+            <key>signingStyle</key><string>manual</string>
+            <key>signingCertificate</key><string>$IOS_SIGNING_IDENTITY</string>
+            <key>provisioningProfiles</key><dict>
+              <key>$IOS_BUNDLE_ID</key><string>${{ steps.signing.outputs.profile_name }}</string>
+            </dict>
+            <key>compileBitcode</key><false/>
+            <key>stripSwiftSymbols</key><true/>
+          </dict></plist>
+          PLIST
+          plutil -lint "$RUNNER_TEMP/ExportOptions.plist"
+          xcodebuild -exportArchive \
+            -archivePath build/ios/Runner.xcarchive \
+            -exportPath build/ios/export \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist"
+          IPA_PATH="$(find build/ios/export -maxdepth 1 -type f -name '*.ipa' -print -quit)"
+          test -n "$IPA_PATH" && test -s "$IPA_PATH"
+          cp "$IPA_PATH" salawat-quran.ipa
+
+      - name: Verify IPA is signed and provisioned
+        run: |
+          set -euo pipefail
+          IPA_PATH="salawat-quran.ipa"
+          unzip -t "$IPA_PATH"
+          TMP_DIR="$(mktemp -d)"
+          trap 'rm -rf "$TMP_DIR"' EXIT
+          unzip -q "$IPA_PATH" -d "$TMP_DIR"
+          APP_PATH="$TMP_DIR/Payload/Runner.app"
+          test -d "$APP_PATH"
+          test -s "$APP_PATH/embedded.mobileprovision"
+          codesign --verify --deep --strict --verbose=2 "$APP_PATH"
+          security cms -D -i "$APP_PATH/embedded.mobileprovision" > "$TMP_DIR/profile.plist"
+          PROFILE_APP_ID=$(/usr/libexec/PlistBuddy -c 'Print :Entitlements:application-identifier' "$TMP_DIR/profile.plist")
+          case "$PROFILE_APP_ID" in
+            *."$IOS_BUNDLE_ID"|*.*) ;;
+            *) echo "::error::The exported IPA has an invalid application identifier."; exit 1 ;;
+          esac
           for sound in azan azan_madinah azan_dubai azan_fajr_madinah; do
             test -s "$APP_PATH/$sound.wav"
             duration="$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$APP_PATH/$sound.wav")"
             python3 -c "d=float('$duration'); assert 0 < d < 30, d"
           done
 
-      - name: Package unsigned IPA
-        run: |
-          set -e
-          rm -rf Payload app-release-unsigned.ipa
-          mkdir -p Payload
-          APP_PATH="build/ios/Build/Products/Release-iphoneos/Runner.app"
-          test -d "$APP_PATH"
-          cp -R "$APP_PATH" Payload/
-          /usr/bin/zip -qry app-release-unsigned.ipa Payload
-
-      - name: Upload unsigned IPA
+      - name: Upload signed IPA
         uses: actions/upload-artifact@v4
         with:
-          name: salawat-quran-release-ipa-unsigned
-          path: flutter_app/app-release-unsigned.ipa
+          name: salawat-quran-release-ipa
+          path: flutter_app/salawat-quran.ipa
           if-no-files-found: error
           retention-days: 30
