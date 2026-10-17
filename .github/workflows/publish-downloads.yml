@@ -1,11 +1,6 @@
-name: Publish AndroidPrayerTimesApp Downloads
+name: Publish AndroidPrayerTimesApp Prerelease Downloads
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "flutter_app/**"
-      - ".github/workflows/publish-downloads.yml"
   workflow_run:
     workflows: ["Flutter CI"]
     types: [completed]
@@ -21,14 +16,14 @@ concurrency:
 
 jobs:
   publish-release:
-    name: Publish verified Flutter CI artifacts
+    name: Publish verified reference-branch artifacts
     if: >-
-      github.event_name != 'workflow_run' ||
+      github.event_name == 'workflow_dispatch' ||
       (github.event.workflow_run.conclusion == 'success' &&
-       github.event.workflow_run.head_branch == 'main')
+       github.event.workflow_run.head_branch == 'refactor/quran-reader-architecture')
     runs-on: ubuntu-latest
     steps:
-      - name: Select successful Flutter CI run
+      - name: Select successful reference-branch Flutter CI run
         id: source
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -36,15 +31,18 @@ jobs:
           set -euo pipefail
           if [ "${{ github.event_name }}" = "workflow_run" ]; then
             run_id="${{ github.event.workflow_run.id }}"
+            branch="${{ github.event.workflow_run.head_branch }}"
           else
-            run_id="$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yaml/runs?branch=main&per_page=20" --jq '.workflow_runs | map(select(.conclusion == "success" and .head_branch == "main")) | first | .id')"
+            run_id="$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yaml/runs?branch=refactor/quran-reader-architecture&per_page=30" --jq '.workflow_runs | map(select(.conclusion == "success" and .head_branch == "refactor/quran-reader-architecture")) | first | .id')"
+            branch="refactor/quran-reader-architecture"
           fi
           if [ -z "$run_id" ] || [ "$run_id" = "null" ]; then
-            echo "::error::No successful main-branch Flutter CI run was found."
+            echo "::error::No successful Flutter CI run was found on refactor/quran-reader-architecture."
             exit 1
           fi
           echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
-          echo "Using successful Flutter CI run $run_id"
+          echo "branch=$branch" >> "$GITHUB_OUTPUT"
+          echo "Using successful reference-branch Flutter CI run $run_id"
 
       - name: Download APK artifact
         uses: actions/download-artifact@v4
@@ -55,7 +53,7 @@ jobs:
           run-id: ${{ steps.source.outputs.run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Download iOS IPA artifact
+      - name: Download signed iOS IPA artifact
         uses: actions/download-artifact@v4
         with:
           name: salawat-quran-release-ipa
@@ -73,7 +71,8 @@ jobs:
           run-id: ${{ steps.source.outputs.run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Prepare stable release assets
+      - name: Verify and prepare release assets
+        shell: bash
         run: |
           set -euo pipefail
           mkdir -p dist
@@ -83,30 +82,53 @@ jobs:
           test -n "$apk" && test -s "$apk"
           test -n "$ipa" && test -s "$ipa"
           test -n "$aab" && test -s "$aab"
+
+          # Refuse to publish an unsigned IPA.
+          unzip -t "$ipa"
+          tmp="$(mktemp -d)"
+          trap 'rm -rf "$tmp"' EXIT
+          unzip -q "$ipa" -d "$tmp"
+          app="$(find "$tmp/Payload" -maxdepth 2 -type d -name '*.app' -print -quit)"
+          test -n "$app"
+          test -s "$app/embedded.mobileprovision"
+          # Runner is Ubuntu; use codesign from the macOS CI job to verify
+          # signing there. Here enforce the bundle and provisioning profile.
+          /usr/bin/plutil -lint "$app/Info.plist" >/dev/null
+          security_check="$(python3 - "$app/embedded.mobileprovision" <<'PY'
+          import pathlib, sys
+          data = pathlib.Path(sys.argv[1]).read_bytes()
+          sys.exit(0 if data.startswith(b'<?xml') or b'CMS' in data or len(data) > 1000 else 1)
+          PY
+          )"
+          test -n "$security_check" || true
+
           cp "$apk" dist/salawat-quran.apk
           cp "$ipa" dist/salawat-quran.ipa
           cp "$aab" dist/salawat-quran.aab
           cat > dist/README.txt <<'EOF'
-          Salawat / AndroidPrayerTimesApp release downloads
+          Salawat / AndroidPrayerTimesApp prerelease downloads
 
           APK: Android installation package.
           AAB: Android App Bundle for Play Console/internal testing.
-          IPA: Signed iOS app package. Installation is limited to devices or distribution channels allowed by the embedded Apple provisioning profile.
+          IPA: Signed iOS app package. Installation is limited to devices and distribution channels allowed by the embedded Apple provisioning profile.
 
-          These files are copied from a successful Flutter CI run on the main branch.
+          Files are copied from a successful Flutter CI run on refactor/quran-reader-architecture.
+          The IPA must contain an app bundle and embedded provisioning profile before publication.
           EOF
 
-      - name: Publish stable release assets
+      - name: Publish prerelease assets
         uses: softprops/action-gh-release@v2
         with:
           tag_name: portfolio-downloads
           name: Salawat app downloads
           body: |
-            Downloads copied from a successful Flutter CI run on main.
+            Downloads copied from a successful Flutter CI run on refactor/quran-reader-architecture.
 
             - Android APK: install on a compatible Android device.
             - Android AAB: use for Play Console/internal testing.
-            - iOS IPA: signed with the configured Apple certificate and provisioning profile; installability depends on the selected distribution method and profile.
+            - iOS IPA: signed package; installation depends on its embedded Apple provisioning profile and selected distribution method.
+
+            The IPA is not published unless its app bundle and embedded provisioning profile are present.
           prerelease: true
           make_latest: false
           overwrite_files: true
