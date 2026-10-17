@@ -17,13 +17,24 @@ class QiblaScreen extends StatefulWidget {
 }
 
 class _QiblaScreenState extends State<QiblaScreen> {
-  double? qiblaBearing;
-  String status = LocaleController.isArabic ? 'حدّد اتجاه القبلة باستخدام بوصلة الهاتف.' : 'Find your Qibla direction using the phone compass.';
+  double? _qiblaBearing;
+  bool _isCalculating = false;
+  String? _error;
 
-  Future<void> calculate() async {
+  bool get _isArabic => LocaleController.isArabic;
+
+  Future<void> _calculateQibla() async {
+    if (_isCalculating) return;
+    setState(() {
+      _isCalculating = true;
+      _error = null;
+    });
+
     try {
       if (!await Geolocator.isLocationServiceEnabled()) {
-        throw StateError(LocaleController.isArabic ? 'خدمات الموقع معطّلة.' : 'Location services are disabled.');
+        throw StateError(_isArabic
+            ? 'فعّل خدمات الموقع لحساب اتجاه القبلة.'
+            : 'Turn on location services to calculate Qibla.');
       }
 
       var permission = await Geolocator.checkPermission();
@@ -33,31 +44,33 @@ class _QiblaScreenState extends State<QiblaScreen> {
 
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
-        throw StateError(LocaleController.isArabic ? 'لم يتم منح إذن الموقع.' : 'Location permission was not granted.');
+        throw StateError(_isArabic
+            ? 'إذن الموقع مطلوب لحساب اتجاه القبلة. يمكنك تفعيله من إعدادات الجهاز.'
+            : 'Location permission is needed to calculate Qibla. You can enable it in device settings.');
       }
 
       final position = await Geolocator.getCurrentPosition(
         locationSettings:
-            const LocationSettings(accuracy: LocationAccuracy.high),
+            const LocationSettings(accuracy: LocationAccuracy.medium),
       );
-      final qibla = Qibla.qibla(
+      final bearing = Qibla.qibla(
         Coordinates(position.latitude, position.longitude),
       );
 
       if (!mounted) return;
-      setState(() {
-        qiblaBearing = qibla;
-        status = LocaleController.isArabic ? 'اتجاه القبلة ${qibla.toStringAsFixed(1)}° من الشمال.' : 'Qibla is ${qibla.toStringAsFixed(1)}° from North.';
-      });
-    } catch (e) {
+      setState(() => _qiblaBearing = bearing);
+    } catch (error) {
       if (!mounted) return;
-      setState(() => status = e.toString().replaceFirst('Bad state: ', ''));
+      setState(() {
+        _error = error.toString().replaceFirst('Bad state: ', '');
+      });
+    } finally {
+      if (mounted) setState(() => _isCalculating = false);
     }
   }
 
-  double relativeHeading(double deviceHeading) {
-    final target = qiblaBearing ?? 0;
-    var value = target - deviceHeading;
+  double _relativeHeading(double deviceHeading) {
+    var value = (_qiblaBearing ?? 0) - deviceHeading;
     while (value < -180) {
       value += 360;
     }
@@ -70,111 +83,551 @@ class _QiblaScreenState extends State<QiblaScreen> {
   @override
   Widget build(BuildContext context) {
     final accent = AppTheme.emerald;
+    final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
+    final surface = CupertinoColors.secondarySystemGroupedBackground
+        .resolveFrom(context);
+    final muted = CupertinoColors.secondaryLabel.resolveFrom(context);
+
     return AdaptivePageScaffold(
       navigationBar: CupertinoNavigationBar(
-        middle: Text(LocaleController.isArabic ? 'اتجاه القبلة' : 'Qibla direction'),
+        middle: Text(_isArabic ? 'اتجاه القبلة' : 'Qibla'),
+        trailing: CupertinoButton(
+          padding: EdgeInsets.zero,
+          onPressed: _isCalculating ? null : _calculateQibla,
+          child: Icon(CupertinoIcons.refresh, color: accent),
+        ),
       ),
       child: SafeArea(
+        bottom: false,
         child: StreamBuilder<CompassEvent>(
           stream: FlutterCompass.events,
           builder: (context, snapshot) {
-            if (snapshot.hasError) {
-              return Center(child: Text(LocaleController.isArabic ? 'خطأ في البوصلة: ${snapshot.error}' : 'Compass error: ${snapshot.error}'));
-            }
-
             final heading = snapshot.data?.heading;
-            final relative =
-                heading == null ? 0.0 : relativeHeading(heading);
+            final compassUnavailable = snapshot.hasError ||
+                (snapshot.connectionState == ConnectionState.active &&
+                    heading == null);
+            final relative = heading == null ? 0.0 : _relativeHeading(heading);
+            final aligned = heading != null &&
+                _qiblaBearing != null &&
+                relative.abs() <= 4;
 
-            return SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 28, 24, 110),
-              child: Column(
-                children: [
-                  const Text(
-                    'القبلة',
-                    textDirection: TextDirection.rtl,
-                    style: TextStyle(
-                      fontSize: 34,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    heading == null
-                        ? (LocaleController.isArabic ? 'بانتظار مستشعر البوصلة…' : 'Waiting for compass sensor…')
-                        : (LocaleController.isArabic ? 'وجّه السهم نحو القبلة' : 'Turn the arrow toward the Qibla'),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 28),
-                  Container(
-                    width: 260,
-                    height: 260,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: CupertinoColors.systemGroupedBackground
-                          .resolveFrom(context),
-                      border: Border.all(color: accent, width: 3),
-                      boxShadow: [
-                        BoxShadow(
-                          color: CupertinoColors.systemGrey
-                              .resolveFrom(context)
-                              .withValues(alpha: .2),
-                          blurRadius: 14,
-                          offset: const Offset(0, 5),
-                        ),
+            return ListView(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 120),
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(22),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(28),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        accent,
+                        Color.lerp(accent, const Color(0xFF073D35), .58)!,
                       ],
                     ),
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        const Positioned(
-                          top: 16,
-                          child: Text(
-                            'N',
-                            style: TextStyle(fontWeight: FontWeight.w700),
-                          ),
-                        ),
-                        Transform.rotate(
-                          angle: relative * math.pi / 180,
-                          child: Icon(
-                            CupertinoIcons.arrow_up_circle_fill,
-                            size: 150,
-                            color: accent,
-                          ),
-                        ),
-                        Positioned(
-                          bottom: 18,
-                          child: Text(
-                            qiblaBearing == null
-                                ? '—'
-                                : '${qiblaBearing!.toStringAsFixed(1)}°',
-                            style: const TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.w700,
+                    boxShadow: [
+                      BoxShadow(
+                        color: accent.withValues(alpha: .20),
+                        blurRadius: 28,
+                        offset: const Offset(0, 12),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: CupertinoColors.white
+                                  .withValues(alpha: .14),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: const Icon(
+                              CupertinoIcons.compass_fill,
+                              color: CupertinoColors.white,
+                              size: 25,
                             ),
                           ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _isArabic ? 'دليلك إلى القبلة' : 'Your Qibla guide',
+                                  style: const TextStyle(
+                                    color: CupertinoColors.white,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  _isArabic
+                                      ? 'اتجاه مكة المكرمة من موقعك'
+                                      : 'Direction to Makkah from your location',
+                                  style: TextStyle(
+                                    color: CupertinoColors.white
+                                        .withValues(alpha: .82),
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _isArabic ? 'اتجاه القبلة' : 'QIBLA BEARING',
+                                  style: TextStyle(
+                                    color: CupertinoColors.white
+                                        .withValues(alpha: .78),
+                                    fontSize: 11,
+                                    letterSpacing: 1.4,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(height: 5),
+                                Text(
+                                  _qiblaBearing == null
+                                      ? '—'
+                                      : '${_qiblaBearing!.round()}°',
+                                  style: const TextStyle(
+                                    color: CupertinoColors.white,
+                                    fontSize: 42,
+                                    height: 1.05,
+                                    fontWeight: FontWeight.w800,
+                                    fontFeatures: [FontFeature.tabularFigures()],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 9,
+                            ),
+                            decoration: BoxDecoration(
+                              color: CupertinoColors.white
+                                  .withValues(alpha: .14),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  aligned
+                                      ? CupertinoIcons.checkmark_circle_fill
+                                      : CupertinoIcons.location_north_fill,
+                                  size: 16,
+                                  color: CupertinoColors.white,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  _qiblaBearing == null
+                                      ? (_isArabic ? 'بانتظار الموقع' : 'Set location')
+                                      : aligned
+                                          ? (_isArabic ? 'في الاتجاه' : 'Aligned')
+                                          : (_isArabic ? 'حرّك الهاتف' : 'Turn phone'),
+                                  style: const TextStyle(
+                                    color: CupertinoColors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 22),
+                Container(
+                  padding: const EdgeInsets.fromLTRB(16, 22, 16, 18),
+                  decoration: BoxDecoration(
+                    color: surface,
+                    borderRadius: BorderRadius.circular(28),
+                    border: Border.all(
+                      color: CupertinoColors.separator
+                          .resolveFrom(context)
+                          .withValues(alpha: .35),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 7,
+                            height: 7,
+                            decoration: BoxDecoration(
+                              color: heading == null
+                                  ? CupertinoColors.systemOrange
+                                  : accent,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 7),
+                          Text(
+                            heading == null
+                                ? (_isArabic
+                                    ? 'بانتظار مستشعر البوصلة'
+                                    : 'Waiting for compass sensor')
+                                : (_isArabic
+                                    ? 'البوصلة نشطة'
+                                    : 'Compass is active'),
+                            style: TextStyle(
+                              color: muted,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 18),
+                      Center(
+                        child: SizedBox(
+                          width: 286,
+                          height: 286,
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              Container(
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: RadialGradient(
+                                    colors: [
+                                      accent.withValues(alpha: .06),
+                                      accent.withValues(alpha: .015),
+                                      surface,
+                                    ],
+                                  ),
+                                  border: Border.all(
+                                    color: accent.withValues(alpha: .25),
+                                    width: 1.5,
+                                  ),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(10),
+                                child: CustomPaint(
+                                  size: const Size(266, 266),
+                                  painter: _CompassDialPainter(
+                                    accent: accent,
+                                    muted: muted,
+                                    isDark: isDark,
+                                    heading: heading ?? 0,
+                                  ),
+                                ),
+                              ),
+                              if (_qiblaBearing != null && heading != null)
+                                Transform.rotate(
+                                  angle: relative * math.pi / 180,
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        width: 68,
+                                        height: 68,
+                                        decoration: BoxDecoration(
+                                          color: accent,
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: CupertinoColors.white,
+                                            width: 4,
+                                          ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: accent
+                                                  .withValues(alpha: .28),
+                                              blurRadius: 16,
+                                              offset: const Offset(0, 5),
+                                            ),
+                                          ],
+                                        ),
+                                        child: const Icon(
+                                          CupertinoIcons.location_north_fill,
+                                          color: CupertinoColors.white,
+                                          size: 32,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 5,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: accent,
+                                          borderRadius:
+                                              BorderRadius.circular(20),
+                                        ),
+                                        child: Text(
+                                          _isArabic ? 'القبلة' : 'QIBLA',
+                                          style: const TextStyle(
+                                            color: CupertinoColors.white,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w800,
+                                            letterSpacing: 1,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              else
+                                Container(
+                                  width: 76,
+                                  height: 76,
+                                  decoration: BoxDecoration(
+                                    color: surface,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: accent.withValues(alpha: .35),
+                                      width: 2,
+                                    ),
+                                  ),
+                                  child: Icon(
+                                    CupertinoIcons.compass,
+                                    color: accent,
+                                    size: 40,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      Text(
+                        heading == null
+                            ? (_isArabic
+                                ? 'فعّل البوصلة واحتفظ بالهاتف بعيدًا عن المعادن.'
+                                : 'Enable the compass and keep your phone away from metal.')
+                            : _qiblaBearing == null
+                                ? (_isArabic
+                                    ? 'احسب الاتجاه لعرض سهم القبلة.'
+                                    : 'Calculate your bearing to show the Qibla arrow.')
+                                : aligned
+                                    ? (_isArabic
+                                        ? 'أحسنت، أنت تواجه اتجاه القبلة.'
+                                        : 'You are facing the Qibla direction.')
+                                    : (_isArabic
+                                        ? 'أدر الهاتف حتى يتجه السهم إلى الأعلى.'
+                                        : 'Rotate your phone until the arrow points up.'),
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: muted,
+                          fontSize: 13,
+                          height: 1.5,
+                        ),
+                      ),
+                      if (heading != null) ...[
+                        const SizedBox(height: 10),
+                        Text(
+                          _isArabic
+                              ? 'اتجاه الهاتف: ${heading.round()}°'
+                              : 'Phone heading: ${heading.round()}°',
+                          style: TextStyle(
+                            color: muted,
+                            fontSize: 11,
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                if (_error != null || compassUnavailable) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: CupertinoColors.systemRed
+                          .resolveFrom(context)
+                          .withValues(alpha: .09),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(
+                          CupertinoIcons.exclamationmark_circle,
+                          color: CupertinoColors.systemRed,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            _error ??
+                                (_isArabic
+                                    ? 'مستشعر البوصلة غير متاح على هذا الجهاز.'
+                                    : 'The compass sensor is unavailable on this device.'),
+                            style: const TextStyle(fontSize: 13, height: 1.4),
+                          ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  Text(status, textAlign: TextAlign.center),
-                  const SizedBox(height: 18),
-                  CupertinoButton.filled(
-                    onPressed: calculate,
-                    child: Text(LocaleController.isArabic ? 'حساب اتجاه القبلة' : 'Calculate Qibla'),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    LocaleController.isArabic ? 'أبقِ الهاتف مستويًا. إذا كان الاتجاه غير ثابت، فعاير البوصلة.' : 'Keep the phone flat. If the heading is unstable, calibrate the compass.',
-                    textAlign: TextAlign.center,
-                  ),
                 ],
-              ),
+                const SizedBox(height: 18),
+                CupertinoButton.filled(
+                  onPressed: _isCalculating ? null : _calculateQibla,
+                  borderRadius: BorderRadius.circular(16),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: _isCalculating
+                      ? const CupertinoActivityIndicator(
+                          color: CupertinoColors.white,
+                        )
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(CupertinoIcons.location_fill, size: 17),
+                            const SizedBox(width: 9),
+                            Text(
+                              _qiblaBearing == null
+                                  ? (_isArabic
+                                      ? 'تحديد اتجاه القبلة'
+                                      : 'Find Qibla direction')
+                                  : (_isArabic
+                                      ? 'تحديث الموقع والاتجاه'
+                                      : 'Refresh location and bearing'),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      CupertinoIcons.info_circle,
+                      size: 18,
+                      color: muted,
+                    ),
+                    const SizedBox(width: 9),
+                    Expanded(
+                      child: Text(
+                        _isArabic
+                            ? 'لأفضل دقة، أمسك الهاتف أفقيًا، وأبعده عن الأغطية المغناطيسية والمعادن. قد تحتاج إلى معايرة البوصلة.'
+                            : 'For best accuracy, hold your phone flat and away from magnets or metal. Calibrate the compass if the direction seems unstable.',
+                        style: TextStyle(
+                          color: muted,
+                          fontSize: 12,
+                          height: 1.55,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             );
           },
         ),
       ),
     );
   }
+}
+
+class _CompassDialPainter extends CustomPainter {
+  const _CompassDialPainter({
+    required this.accent,
+    required this.muted,
+    required this.isDark,
+    required this.heading,
+  });
+
+  final Color accent;
+  final Color muted;
+  final bool isDark;
+  final double heading;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = math.min(size.width, size.height) / 2;
+    final tickPaint = Paint()
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = 1.4
+      ..color = muted.withValues(alpha: .42);
+
+    canvas.save();
+    canvas.translate(center.dx, center.dy);
+    canvas.rotate(-heading * math.pi / 180);
+
+    for (var degree = 0; degree < 360; degree += 5) {
+      final major = degree % 30 == 0;
+      final medium = degree % 10 == 0;
+      final outer = radius - 8;
+      final inner = outer - (major ? 15 : medium ? 9 : 5);
+      tickPaint
+        ..strokeWidth = major ? 2 : 1
+        ..color = major
+            ? accent.withValues(alpha: .9)
+            : muted.withValues(alpha: .35);
+      final angle = degree * math.pi / 180;
+      canvas.drawLine(
+        Offset(math.sin(angle) * inner, -math.cos(angle) * inner),
+        Offset(math.sin(angle) * outer, -math.cos(angle) * outer),
+        tickPaint,
+      );
+    }
+
+    final labels = <int, String>{0: 'N', 90: 'E', 180: 'S', 270: 'W'};
+    for (final entry in labels.entries) {
+      final angle = entry.key * math.pi / 180;
+      final position = Offset(
+        math.sin(angle) * (radius - 31),
+        -math.cos(angle) * (radius - 31),
+      );
+      final isNorth = entry.key == 0;
+      final textPainter = TextPainter(
+        text: TextSpan(
+          text: entry.value,
+          style: TextStyle(
+            color: isNorth ? accent : muted,
+            fontSize: isNorth ? 14 : 11,
+            fontWeight: isNorth ? FontWeight.w800 : FontWeight.w600,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      textPainter.paint(
+        canvas,
+        position - Offset(textPainter.width / 2, textPainter.height / 2),
+      );
+    }
+    canvas.restore();
+
+    final centerPaint = Paint()
+      ..color = isDark
+          ? CupertinoColors.white.withValues(alpha: .06)
+          : accent.withValues(alpha: .04);
+    canvas.drawCircle(center, radius * .42, centerPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _CompassDialPainter oldDelegate) =>
+      oldDelegate.accent != accent ||
+      oldDelegate.muted != muted ||
+      oldDelegate.isDark != isDark ||
+      oldDelegate.heading != heading;
 }
