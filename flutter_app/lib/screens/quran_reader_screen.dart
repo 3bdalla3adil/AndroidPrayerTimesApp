@@ -175,17 +175,14 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
   }
 
   Future<void> _scrollToPage(int page, {bool animated = true}) async {
-    if (page < 1 || page > totalReaderPages) return;
+    if (page < 1 || page > totalReaderPages || !mounted) return;
 
     final generation = ++_navigationGeneration;
     _isProgrammaticNavigation = true;
     _dragStartPage = null;
     _verticalDragDistance = 0;
 
-    // Update the page indicator immediately. Waiting for scrollTo to finish
-    // leaves the UI stale while the indexed list animates (and can make
-    // gesture tests race the animation future).
-    if (mounted && _readerPage != page) {
+    if (_readerPage != page) {
       setState(() => _readerPage = page);
     }
 
@@ -193,26 +190,37 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
       if (!_itemScrollController.isAttached) {
         await WidgetsBinding.instance.endOfFrame;
       }
-      if (!_itemScrollController.isAttached || !mounted) return;
+      if (!_itemScrollController.isAttached || !mounted ||
+          generation != _navigationGeneration) {
+        return;
+      }
 
-      if (animated) {
-        await _itemScrollController.scrollTo(
-          index: page - 1,
-          alignment: 0,
-          duration: const Duration(milliseconds: 220),
-          curve: Curves.easeOutCubic,
-        );
-      } else {
-        _itemScrollController.jumpTo(
-          index: page - 1,
-          alignment: 0,
-        );
-        // Keep notification suppression active through the frame in which
-        // the indexed list applies the jump.
+      // ScrollablePositionedList.scrollTo animates via estimated pixel offsets.
+      // With variable-height Mushaf pages those estimates can drift badly during
+      // a fast fling, landing dozens of items away. Indexed jumpTo targets the
+      // requested item directly; reliability matters more than a short animation.
+      _itemScrollController.jumpTo(index: page - 1, alignment: 0);
+
+      // Let the indexed list apply the target and publish its final positions
+      // before the position listener is allowed to update the page indicator.
+      await WidgetsBinding.instance.endOfFrame;
+      await WidgetsBinding.instance.endOfFrame;
+
+      if (!mounted || generation != _navigationGeneration) return;
+
+      final targetIsVisible = _itemPositionsListener.itemPositions.value.any(
+        (position) => position.index == page - 1,
+      );
+      if (!targetIsVisible && _itemScrollController.isAttached) {
+        // One corrective indexed jump handles the first layout's stale
+        // extent estimates without introducing another scrolling mechanism.
+        _itemScrollController.jumpTo(index: page - 1, alignment: 0);
+        await WidgetsBinding.instance.endOfFrame;
         await WidgetsBinding.instance.endOfFrame;
       }
 
       if (mounted && generation == _navigationGeneration) {
+        _readerPage = page;
         _repository.prefetchAround(page);
       }
     } finally {
