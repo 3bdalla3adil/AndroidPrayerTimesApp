@@ -91,16 +91,15 @@ jobs:
           app="$(find "$tmp/Payload" -maxdepth 2 -type d -name '*.app' -print -quit)"
           test -n "$app"
           test -s "$app/embedded.mobileprovision"
-          # Runner is Ubuntu; use codesign from the macOS CI job to verify
-          # signing there. Here enforce the bundle and provisioning profile.
-          /usr/bin/plutil -lint "$app/Info.plist" >/dev/null
-          security_check="$(python3 - "$app/embedded.mobileprovision" <<'PY'
-          import pathlib, sys
-          data = pathlib.Path(sys.argv[1]).read_bytes()
-          sys.exit(0 if data.startswith(b'<?xml') or b'CMS' in data or len(data) > 1000 else 1)
+          # Signature verification is performed on the macOS CI runner before
+          # the IPA artifact is uploaded. Here ensure the packaged IPA contains
+          # the app bundle and provisioning profile expected for installation.
+          python3 - "$app/Info.plist" <<'PY'
+          import plistlib, sys
+          with open(sys.argv[1], "rb") as stream:
+              info = plistlib.load(stream)
+          assert info.get("CFBundleIdentifier"), "Missing CFBundleIdentifier"
           PY
-          )"
-          test -n "$security_check" || true
 
           cp "$apk" dist/salawat-quran.apk
           cp "$ipa" dist/salawat-quran.ipa
