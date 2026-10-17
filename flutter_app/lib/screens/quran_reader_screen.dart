@@ -182,7 +182,11 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
     if (!mounted || _recitationQueue.isEmpty) return;
     final generation = _recitationGeneration;
     if (_recitationIndex + 1 >= _recitationQueue.length) {
-      setState(() => _isRecitationPlaying = false);
+      setState(() {
+        _isRecitationPlaying = false;
+        _recitationQueue = const <Verse>[];
+        _recitationIndex = 0;
+      });
       return;
     }
     _recitationIndex++;
