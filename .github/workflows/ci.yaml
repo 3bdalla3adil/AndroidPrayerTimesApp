@@ -120,8 +120,21 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+  ios-signing-not-configured:
+    name: iOS signing credentials not configured
+    if: ${{ vars.ENABLE_IOS_SIGNING != 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Explain skipped signed IPA build
+        run: |
+          echo "::warning::Signed IPA build was skipped because repository variable ENABLE_IOS_SIGNING is not set to true."
+          echo "To publish an installable IPA, configure the Apple signing secrets and set ENABLE_IOS_SIGNING=true."
+
   build-ios:
     name: Build signed iOS IPA
+    # Apple signing assets are private release credentials. Keep CI green on
+    # branches where they are not configured, without producing an unsigned IPA.
+    if: ${{ vars.ENABLE_IOS_SIGNING == 'true' }}
     runs-on: macos-latest
     defaults:
       run:
