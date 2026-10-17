@@ -16,14 +16,14 @@ concurrency:
 
 jobs:
   publish-release:
-    name: Publish verified release artifacts
+    name: Publish verified APK and unsigned IPA
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event.workflow_run.conclusion == 'success' &&
-       github.event.workflow_run.head_branch == 'main')
+       github.event.workflow_run.head_branch == 'refactor/quran-reader-architecture')
     runs-on: ubuntu-latest
     steps:
-      - name: Select a successful run containing all release artifacts
+      - name: Select a successful run containing both release artifacts
         id: source
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -32,7 +32,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          required=(salawat-quran-release-apk salawat-quran-release-ipa salawat-quran-release-aab)
+          required=(salawat-quran-release-apk salawat-quran-release-ipa-unsigned)
 
           check_artifacts() {
             local id="$1" names
@@ -51,7 +51,7 @@ jobs:
             if check_artifacts "$candidate"; then
               run_id="$candidate"
             else
-              echo "::error::The successful main-branch Flutter CI run $candidate does not contain all required artifacts: ${required[*]}. The signed iOS build may have failed or its signing secrets/profile are not configured. No unsigned IPA will be published as installable."
+              echo "::error::Run $candidate does not contain both expected artifacts. Check the Flutter CI build jobs."
               exit 1
             fi
           else
@@ -61,11 +61,11 @@ jobs:
                 run_id="$candidate"
                 break
               fi
-            done < <(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yaml/runs?branch=main&per_page=30" --jq '.workflow_runs | map(select(.conclusion == "success" and .head_branch == "main")) | .[].id')
+            done < <(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yaml/runs?branch=refactor/quran-reader-architecture&per_page=30" --jq '.workflow_runs | map(select(.conclusion == "success" and .head_branch == "refactor/quran-reader-architecture")) | .[].id')
           fi
 
           if [ -z "$run_id" ]; then
-            echo "::error::No successful main-branch Flutter CI run with APK, signed IPA, and AAB artifacts was found. Configure the IOS_BUNDLE_ID, IOS_TEAM_ID, IOS_CERTIFICATE_BASE64, IOS_CERTIFICATE_PASSWORD, and IOS_PROVISIONING_PROFILE_BASE64 repository secrets, then rerun Flutter CI."
+            echo "::error::No successful run with both APK and unsigned IPA artifacts was found on refactor/quran-reader-architecture."
             exit 1
           fi
 
@@ -81,20 +81,11 @@ jobs:
           run-id: ${{ steps.source.outputs.run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Download signed iOS IPA
+      - name: Download unsigned iOS IPA
         uses: actions/download-artifact@v4
         with:
-          name: salawat-quran-release-ipa
+          name: salawat-quran-release-ipa-unsigned
           path: downloaded/ipa
-          repository: ${{ github.repository }}
-          run-id: ${{ steps.source.outputs.run_id }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Download Android App Bundle
-        uses: actions/download-artifact@v4
-        with:
-          name: salawat-quran-release-aab
-          path: downloaded/aab
           repository: ${{ github.repository }}
           run-id: ${{ steps.source.outputs.run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -106,14 +97,10 @@ jobs:
           mkdir -p dist
           apk="$(find downloaded/apk -type f -name '*.apk' -print -quit)"
           ipa="$(find downloaded/ipa -type f -name '*.ipa' -print -quit)"
-          aab="$(find downloaded/aab -type f -name '*.aab' -print -quit)"
           test -n "$apk" && test -s "$apk"
           test -n "$ipa" && test -s "$ipa"
-          test -n "$aab" && test -s "$aab"
-
           unzip -t "$apk"
           unzip -t "$ipa"
-          unzip -t "$aab"
 
           tmp="$(mktemp -d)"
           trap 'rm -rf "$tmp"' EXIT
@@ -121,28 +108,24 @@ jobs:
           app="$tmp/Payload/Runner.app"
           test -d "$app"
           test -s "$app/Info.plist"
-          test -s "$app/embedded.mobileprovision"
-          test -s "$app/_CodeSignature/CodeResources"
           python3 - "$app/Info.plist" <<'PY'
           import plistlib, sys
           with open(sys.argv[1], "rb") as stream:
               info = plistlib.load(stream)
           assert info.get("CFBundleIdentifier"), "IPA app bundle is missing its bundle identifier"
           assert info.get("CFBundleExecutable"), "IPA app bundle is missing its executable name"
-          print("Validated signed IPA app bundle:", info["CFBundleIdentifier"])
+          print("Validated unsigned iOS app bundle:", info["CFBundleIdentifier"])
           PY
 
           cp "$apk" dist/salawat-quran.apk
-          cp "$ipa" dist/salawat-quran.ipa
-          cp "$aab" dist/salawat-quran.aab
+          cp "$ipa" dist/salawat-quran-unsigned.ipa
           cat > dist/README.txt <<'EOF'
           Salawat / AndroidPrayerTimesApp prerelease downloads
 
           salawat-quran.apk: Android release APK.
-          salawat-quran.aab: Android release App Bundle.
-          salawat-quran.ipa: Signed and provisioned iOS app package. Installation is limited to devices/installation methods allowed by the Apple signing identity and provisioning profile.
+          salawat-quran-unsigned.ipa: iOS release app packaged without Apple code signing. It is not directly installable on a normal iPhone until signed and provisioned.
 
-          Artifacts are copied from a successful Flutter CI run on main. The workflow validates all archives and checks the IPA's app bundle, embedded provisioning profile, and code-signature resource manifest before publication.
+          Both files are copied from a successful Flutter CI run. The workflow validates the APK and IPA ZIP archives and checks the iOS app bundle metadata.
           EOF
 
       - name: Publish prerelease assets
@@ -151,20 +134,18 @@ jobs:
           tag_name: portfolio-downloads
           name: Salawat app downloads
           body: |
-            Release downloads copied from a successful Flutter CI run on main.
+            Downloads from a successful Flutter CI run on refactor/quran-reader-architecture.
 
             - Android APK: release installation package for compatible Android devices.
-            - Android AAB: release App Bundle.
-            - Signed iOS IPA: signed and provisioned package. Installation is limited to devices and distribution methods permitted by the configured Apple signing identity and provisioning profile.
+            - Unsigned iOS IPA: packaged iOS release build. It must be signed and provisioned before installation on a normal iPhone.
 
-            All three archives are validated before publication. The iOS package must contain its app bundle, embedded provisioning profile, and code-signature resource manifest.
+            Both archives and the iOS app bundle metadata are validated before publication.
           prerelease: true
           make_latest: false
           overwrite_files: true
           files: |
             dist/salawat-quran.apk
-            dist/salawat-quran.ipa
-            dist/salawat-quran.aab
+            dist/salawat-quran-unsigned.ipa
             dist/README.txt
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
