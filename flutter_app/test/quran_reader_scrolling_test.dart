@@ -24,8 +24,11 @@ void main() {
     LocaleController.locale.value = const Locale('ar');
   });
 
-  Future<void> mountReader(WidgetTester tester) async {
-    await tester.binding.setSurfaceSize(const Size(900, 1400));
+  Future<void> mountReader(
+    WidgetTester tester, {
+    Size size = const Size(900, 1400),
+  }) async {
+    await tester.binding.setSurfaceSize(size);
     await tester.pumpWidget(
       const ProviderScope(
         child: MaterialApp(home: QuranReaderScreen(surahNumber: 1)),
@@ -34,7 +37,8 @@ void main() {
     await pumpReaderFrames(tester);
     expect(find.byType(ScrollablePositionedList), findsOneWidget);
     expect(find.byType(PageView), findsNothing);
-    expect(find.byType(SingleChildScrollView), findsNothing);
+    expect(find.byType(OverflowAwarePageScrollView), findsWidgets);
+    expect(find.byType(SingleChildScrollView), findsWidgets);
   }
 
   testWidgets('Quran reader settles one adjacent page per vertical drag',
@@ -50,6 +54,33 @@ void main() {
     final container = ProviderScope.containerOf(context);
     expect(container.read(readerProvider).currentPage, 2);
     expect(container.read(readerProvider).currentPage, isNot(3));
+  });
+
+
+  testWidgets('Quran page content scrolls when enlarged text overflows',
+      (tester) async {
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await mountReader(tester, size: const Size(390, 700));
+
+    final context = tester.element(find.byType(QuranReaderScreen));
+    final container = ProviderScope.containerOf(context);
+    container.read(readerProvider.notifier).setFontSize(38);
+    await pumpReaderFrames(tester, frames: 16);
+
+    final pageScroll = find.byKey(const ValueKey('quran-page-scroll-1'));
+    expect(pageScroll, findsOneWidget);
+    final scrollable = find.descendant(
+      of: pageScroll,
+      matching: find.byType(Scrollable),
+    );
+    expect(scrollable, findsOneWidget);
+
+    final scrollState = tester.state<ScrollableState>(scrollable);
+    expect(scrollState.position.maxScrollExtent, greaterThan(0));
+
+    await tester.drag(pageScroll, const Offset(0, -240));
+    await pumpReaderFrames(tester, frames: 4);
+    expect(scrollState.position.pixels, greaterThan(0));
   });
 
   testWidgets('Quran reader fling settles at one adjacent page only',
