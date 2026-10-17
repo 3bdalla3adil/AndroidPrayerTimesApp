@@ -82,7 +82,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: salawat-ios-download
-          path: flutter_app/download-output/salawat-quran-unsigned.ipa
+          path: download-output/salawat-quran-unsigned.ipa
           if-no-files-found: error
           retention-days: 3
 
