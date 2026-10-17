@@ -1,7 +1,9 @@
 import 'dart:collection';
 import 'dart:convert';
+import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/adaptive_page_scaffold.dart';
@@ -74,6 +76,21 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
       ref.read(readerProvider.notifier).setTranslationEnabled(value);
 
   bool _showToolbar = true;
+  bool _tajweedMode = false;
+  final AudioPlayer _recitationPlayer = AudioPlayer();
+  StreamSubscription<void>? _recitationCompleteSubscription;
+  StreamSubscription<PlayerState>? _recitationStateSubscription;
+  bool _isRecitationPlaying = false;
+  bool _isRecitationLoading = false;
+  String _selectedReciter = 'Alafasy_128kbps';
+  List<Verse> _recitationQueue = const <Verse>[];
+  int _recitationIndex = 0;
+  int _recitationGeneration = 0;
+  static const _reciters = <String, String>{
+    'Alafasy_128kbps': 'Mishary Alafasy',
+    'Abdul_Basit_Murattal_192kbps': 'Abdul Basit',
+    'Husary_128kbps': 'Mahmoud Khalil Al-Husary',
+  };
 
   bool get _darkPage => ref.read(readerProvider).darkMode;
   set _darkPage(bool value) => ref.read(readerProvider.notifier).setDarkMode(value);
@@ -88,6 +105,13 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
     _itemPositionsListener.itemPositions.addListener(
       _handleItemPositionsChanged,
     );
+    _recitationStateSubscription = _recitationPlayer.onPlayerStateChanged.listen((state) {
+      if (!mounted) return;
+      setState(() => _isRecitationPlaying = state == PlayerState.playing);
+    });
+    _recitationCompleteSubscription = _recitationPlayer.onPlayerComplete.listen((_) {
+      _playNextRecitationVerse();
+    });
     _loadInitialPage();
   }
 
@@ -96,7 +120,110 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
     _itemPositionsListener.itemPositions.removeListener(
       _handleItemPositionsChanged,
     );
+    _recitationGeneration++;
+    _recitationCompleteSubscription?.cancel();
+    _recitationStateSubscription?.cancel();
+    _recitationPlayer.dispose();
     super.dispose();
+  }
+
+  Future<void> _toggleRecitation() async {
+    if (_isRecitationLoading) return;
+    if (_isRecitationPlaying) {
+      await _recitationPlayer.pause();
+      return;
+    }
+    if (_recitationQueue.isNotEmpty && _recitationIndex < _recitationQueue.length) {
+      await _recitationPlayer.resume();
+      return;
+    }
+    final generation = ++_recitationGeneration;
+    setState(() => _isRecitationLoading = true);
+    try {
+      final data = await _loadPage(_readerPage, prefetch: false);
+      if (!mounted || generation != _recitationGeneration) return;
+      _recitationQueue = data.verses;
+      _recitationIndex = 0;
+      if (_recitationQueue.isEmpty) return;
+      await _playRecitationVerse(generation);
+    } catch (_) {
+      if (mounted) {
+        await showCupertinoDialog<void>(
+          context: context,
+          builder: (dialogContext) => CupertinoAlertDialog(
+            title: Text(LocaleController.isArabic ? 'تعذّر تشغيل التلاوة' : 'Unable to play recitation'),
+            content: Text(LocaleController.isArabic
+                ? 'تحقّق من اتصال الإنترنت ثم حاول مرة أخرى.'
+                : 'Check your internet connection and try again.'),
+            actions: [CupertinoDialogAction(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(LocaleController.isArabic ? 'حسنًا' : 'OK'),
+            )],
+          ),
+        );
+      }
+    } finally {
+      if (mounted && generation == _recitationGeneration) setState(() => _isRecitationLoading = false);
+    }
+  }
+
+  String _recitationUrl(Verse verse) {
+    final surah = verse.surahNumber.toString().padLeft(3, '0');
+    final ayah = verse.ayahNumber.toString().padLeft(3, '0');
+    return 'https://everyayah.com/data/$_selectedReciter/$surah$ayah.mp3';
+  }
+
+  Future<void> _playRecitationVerse(int generation) async {
+    if (!mounted || generation != _recitationGeneration || _recitationIndex >= _recitationQueue.length) return;
+    await _recitationPlayer.play(UrlSource(_recitationUrl(_recitationQueue[_recitationIndex])));
+  }
+
+  Future<void> _playNextRecitationVerse() async {
+    if (!mounted || _recitationQueue.isEmpty) return;
+    final generation = _recitationGeneration;
+    if (_recitationIndex + 1 >= _recitationQueue.length) {
+      setState(() => _isRecitationPlaying = false);
+      return;
+    }
+    _recitationIndex++;
+    try {
+      await _playRecitationVerse(generation);
+    } catch (_) {
+      if (mounted) setState(() => _isRecitationPlaying = false);
+    }
+  }
+
+  Future<void> _chooseReciter() async {
+    await showCupertinoModalPopup<void>(
+      context: context,
+      builder: (popupContext) => CupertinoActionSheet(
+        title: Text(LocaleController.isArabic ? 'اختر القارئ' : 'Choose reciter'),
+        actions: [
+          for (final entry in _reciters.entries)
+            CupertinoActionSheetAction(
+              isDefaultAction: entry.key == _selectedReciter,
+              onPressed: () async {
+                Navigator.pop(popupContext);
+                if (_selectedReciter == entry.key) return;
+                _recitationGeneration++;
+                await _recitationPlayer.stop();
+                if (!mounted) return;
+                setState(() {
+                  _selectedReciter = entry.key;
+                  _recitationQueue = const <Verse>[];
+                  _recitationIndex = 0;
+                  _isRecitationPlaying = false;
+                });
+              },
+              child: Text(entry.value),
+            ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          onPressed: () => Navigator.pop(popupContext),
+          child: Text(LocaleController.isArabic ? 'إلغاء' : 'Cancel'),
+        ),
+      ),
+    );
   }
 
   Future<void> _loadInitialPage() async {
@@ -744,6 +871,31 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
               page: _readerPage,
               totalPages: totalReaderPages,
             ),
+            _QuranReaderControls(
+              isPlaying: _isRecitationPlaying,
+              isLoading: _isRecitationLoading,
+              reciterName: _reciters[_selectedReciter]!,
+              translationEnabled: _showTranslation,
+              tajweedMode: _tajweedMode,
+              onPlayPause: _toggleRecitation,
+              onChooseReciter: _chooseReciter,
+              onTranslationChanged: (value) {
+                setState(() => _showTranslation = value);
+                _settingsService.saveTranslation(value);
+              },
+              onMushafModeChanged: (value) => setState(() => _tajweedMode = value),
+            ),
+            if (_tajweedMode)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 2, 16, 7),
+                child: Text(
+                  LocaleController.isArabic
+                      ? 'وضع التجويد محدد، لكن بيانات التجويد الملوّن غير مضمّنة في ملفات المصحف الحالية.'
+                      : 'Tajweed selected. Rule-accurate color highlighting requires tagged Tajweed text, which is not included in the current offline page data.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 11, color: CupertinoColors.secondaryLabel.resolveFrom(context)),
+                ),
+              ),
             Expanded(
               child: LayoutBuilder(
                 builder: (context, viewport) => GestureDetector(
@@ -812,6 +964,94 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+
+class _QuranReaderControls extends StatelessWidget {
+  const _QuranReaderControls({
+    required this.isPlaying, required this.isLoading, required this.reciterName,
+    required this.translationEnabled, required this.tajweedMode,
+    required this.onPlayPause, required this.onChooseReciter,
+    required this.onTranslationChanged, required this.onMushafModeChanged,
+  });
+  final bool isPlaying, isLoading, translationEnabled, tajweedMode;
+  final String reciterName;
+  final VoidCallback onPlayPause, onChooseReciter;
+  final ValueChanged<bool> onTranslationChanged, onMushafModeChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final ar = LocaleController.isArabic;
+    const accent = Color(0xFF176B52);
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 9),
+      decoration: BoxDecoration(
+        color: CupertinoColors.secondarySystemGroupedBackground.resolveFrom(context),
+        border: Border(bottom: BorderSide(color: CupertinoColors.separator.resolveFrom(context))),
+      ),
+      child: Column(children: [
+        Row(children: [
+          CupertinoButton(
+            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
+            color: accent,
+            borderRadius: BorderRadius.circular(22),
+            onPressed: isLoading ? null : onPlayPause,
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              if (isLoading)
+                const CupertinoActivityIndicator(color: CupertinoColors.white, radius: 8)
+              else
+                Icon(isPlaying ? CupertinoIcons.pause_fill : CupertinoIcons.play_fill,
+                    size: 16, color: CupertinoColors.white),
+              const SizedBox(width: 7),
+              Text(isLoading ? (ar ? 'جارٍ التحميل' : 'Loading')
+                  : isPlaying ? (ar ? 'إيقاف مؤقت' : 'Pause')
+                  : (ar ? 'تشغيل التلاوة' : 'Play recitation'),
+                style: const TextStyle(color: CupertinoColors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+            ]),
+          ),
+          const SizedBox(width: 8),
+          Expanded(child: CupertinoButton(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            onPressed: onChooseReciter,
+            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              const Icon(CupertinoIcons.person_crop_circle, size: 17),
+              const SizedBox(width: 5),
+              Flexible(child: Text(reciterName, maxLines: 1, overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 12))),
+              const SizedBox(width: 3),
+              const Icon(CupertinoIcons.chevron_down, size: 11),
+            ]),
+          )),
+        ]),
+        const SizedBox(height: 5),
+        Row(children: [
+          const Icon(CupertinoIcons.text_quote, size: 17),
+          const SizedBox(width: 7),
+          Expanded(child: Text(ar ? 'الترجمة الإنجليزية' : 'Translation',
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500))),
+          CupertinoSwitch(value: translationEnabled, onChanged: onTranslationChanged),
+        ]),
+        const SizedBox(height: 3),
+        Row(children: [
+          const Icon(CupertinoIcons.book, size: 17),
+          const SizedBox(width: 7),
+          Expanded(child: Text(ar ? 'نمط المصحف' : 'Mushaf mode',
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500))),
+          CupertinoSlidingSegmentedControl<bool>(
+            groupValue: tajweedMode,
+            padding: const EdgeInsets.all(3),
+            children: {
+              false: Padding(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  child: Text(ar ? 'المدينة' : 'Madinah', style: const TextStyle(fontSize: 11))),
+              true: Padding(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  child: Text(ar ? 'التجويد' : 'Tajweed', style: const TextStyle(fontSize: 11))),
+            },
+            onValueChanged: (value) { if (value != null) onMushafModeChanged(value); },
+          ),
+        ]),
+      ]),
     );
   }
 }
