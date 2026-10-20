@@ -1245,90 +1245,7 @@ class _MushafPageState extends State<_MushafPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (_startsSurah) ...[
-            _SurahHeader(
-              arabic: quran.getSurahNameArabic(_firstSurah),
-              english: quran.getSurahName(_firstSurah),
-              color: green,
-              border: divider,
-            ),
-            if (_hasBasmala) ...[
-              const SizedBox(height: 12),
-              Text(
-                'بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ',
-                textDirection: TextDirection.rtl,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontFamily: kQuranFont,
-                  fontFamilyFallback: const ['Noto Naskh Arabic', 'Arial', 'serif'],
-                  fontSize: widget.fontSize - 2,
-                  height: 1.6,
-                  color: ink,
-                ),
-              ),
-            ],
-            const SizedBox(height: 12),
-          ],
-          Directionality(
-            textDirection: TextDirection.rtl,
-            child: Text.rich(
-              TextSpan(
-                children: [
-                  for (final verse in verses) ...[
-                    TextSpan(
-                      text: '${_verseText(verse)} ',
-                      style: TextStyle(
-                        fontFamily: kQuranFont,
-                        fontFamilyFallback: const ['Noto Naskh Arabic', 'Arial', 'serif'],
-                        fontSize: widget.fontSize,
-                        height: widget.lineHeight,
-                        color: _isHighlighted(verse)
-                            ? (widget.darkPage
-                                ? const Color(0xFFFFD54F)
-                                : const Color(0xFF176B52))
-                            : ink,
-                        backgroundColor: _isHighlighted(verse)
-                            ? const Color(0x33176B52)
-                            : null,
-                        fontWeight: FontWeight.w400,
-                      ),
-                      recognizer: _recognizerFor(
-                        _ayahKey(verse),
-                        () => _toggleHighlight(verse),
-                      ),
-                    ),
-                    WidgetSpan(
-                      alignment: PlaceholderAlignment.middle,
-                      child: _AyahMarker(
-                        number: verse.ayahNumber,
-                        color: green,
-                        darkPage: widget.darkPage,
-                        onTap: () {
-                          widget.onBookmarkAyah(
-                            verse.surahNumber,
-                            verse.ayahNumber,
-                          );
-                        },
-                      ),
-                    ),
-                    if (widget.showTranslation)
-                      TextSpan(
-                        text: '\n${_translation(verse)}\n',
-                        style: TextStyle(
-                          fontFamily: 'serif',
-                          fontSize: 13,
-                          height: 1.45,
-                          color: widget.darkPage
-                              ? const Color(0xFFB9C5BD)
-                              : const Color(0xFF657269),
-                        ),
-                      ),
-                  ],
-                ],
-              ),
-              textAlign: TextAlign.justify,
-            ),
-          ),
+          ..._buildSurahContent(ink: ink, green: green, divider: divider),
           const SizedBox(height: 14),
           Center(
             child: Text(
@@ -1343,6 +1260,111 @@ class _MushafPageState extends State<_MushafPage> {
         ],
       ),
     );
+  }
+
+  List<Widget> _buildSurahContent({
+    required Color ink,
+    required Color green,
+    required Color divider,
+  }) {
+    final sections = <Widget>[];
+    var start = 0;
+    while (start < verses.length) {
+      var end = start + 1;
+      while (end < verses.length &&
+          verses[end].surahNumber == verses[start].surahNumber) {
+        end++;
+      }
+      final sectionVerses = verses.sublist(start, end);
+      final surah = sectionVerses.first.surahNumber;
+      final startsSurah = sectionVerses.first.ayahNumber == 1;
+
+      if (startsSurah) {
+        sections.add(_SurahHeader(
+          arabic: quran.getSurahNameArabic(surah),
+          english: quran.getSurahName(surah),
+          color: green,
+          border: divider,
+        ));
+        // Al-Fatiha already contains the basmala as its first ayah. Do not
+        // print a second copy there; At-Tawbah is the only surah without one.
+        if (surah != 1 && surah != 9) {
+          sections.add(Padding(
+            padding: const EdgeInsets.only(top: 10, bottom: 12),
+            child: Text(
+              'بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ',
+              textDirection: TextDirection.rtl,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: kQuranFont,
+                fontFamilyFallback: const ['Noto Naskh Arabic', 'Arial', 'serif'],
+                fontSize: widget.fontSize - 2,
+                height: 1.6,
+                color: ink,
+              ),
+            ),
+          ));
+        } else {
+          sections.add(const SizedBox(height: 10));
+        }
+      }
+
+      sections.add(Directionality(
+        textDirection: TextDirection.rtl,
+        child: Text.rich(
+          TextSpan(children: [
+            for (final verse in sectionVerses) ...[
+              TextSpan(
+                text: '${_verseText(verse)} ',
+                style: TextStyle(
+                  fontFamily: kQuranFont,
+                  fontFamilyFallback: const ['Noto Naskh Arabic', 'Arial', 'serif'],
+                  fontSize: widget.fontSize,
+                  height: widget.lineHeight,
+                  color: _isHighlighted(verse)
+                      ? const Color(0xFFFF9800)
+                      : ink,
+                  backgroundColor: _isHighlighted(verse)
+                      ? const Color(0x33FF9800)
+                      : null,
+                  fontWeight: FontWeight.w400,
+                ),
+                recognizer: _recognizerFor(
+                  _ayahKey(verse),
+                  () => _toggleHighlight(verse),
+                ),
+              ),
+              WidgetSpan(
+                alignment: PlaceholderAlignment.middle,
+                child: _AyahMarker(
+                  number: verse.ayahNumber,
+                  color: _isHighlighted(verse) ? const Color(0xFFFF9800) : green,
+                  darkPage: widget.darkPage,
+                  selected: _isHighlighted(verse),
+                  onTap: () => _toggleHighlight(verse),
+                ),
+              ),
+              if (widget.showTranslation)
+                TextSpan(
+                  text: '\\n${_translation(verse)}\\n',
+                  style: TextStyle(
+                    fontFamily: 'serif',
+                    fontSize: 13,
+                    height: 1.45,
+                    color: widget.darkPage
+                        ? const Color(0xFFB9C5BD)
+                        : const Color(0xFF657269),
+                  ),
+                ),
+            ],
+          ]),
+          textAlign: TextAlign.justify,
+        ),
+      ));
+      sections.add(const SizedBox(height: 10));
+      start = end;
+    }
+    return sections;
   }
 
   String _translation(Verse verse) {
@@ -1361,29 +1383,44 @@ class _AyahMarker extends StatelessWidget {
     required this.number,
     required this.color,
     required this.darkPage,
+    required this.selected,
     required this.onTap,
   });
 
   final int number;
   final Color color;
   final bool darkPage;
+  final bool selected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final markerColor = selected
+        ? const Color(0xFFFF9800)
+        : (darkPage ? const Color(0xFFE6E0C8) : color);
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 2),
-        child: Text(
-          '۝${_arabicNumber(number)}',
-          textDirection: TextDirection.rtl,
-          style: TextStyle(
-            fontFamily: kQuranFont,
-            fontSize: 12,
-            color: darkPage ? const Color(0xFFE6E0C8) : color,
-            fontWeight: FontWeight.w500,
+        padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 2),
+        child: Container(
+          width: 25,
+          height: 25,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: markerColor, width: selected ? 1.8 : 1.1),
+            color: selected ? const Color(0x33FF9800) : null,
+          ),
+          child: Text(
+            _arabicNumber(number),
+            textDirection: TextDirection.rtl,
+            style: TextStyle(
+              fontFamily: kQuranFont,
+              fontSize: 11,
+              color: markerColor,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       ),
