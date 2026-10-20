@@ -1329,7 +1329,7 @@ class _MushafPageState extends State<_MushafPage> {
               ),
               if (widget.showTranslation)
                 TextSpan(
-                  text: '\\n${_translation(verse)}\\n',
+                  text: '\n${_translation(verse)}\n',
                   style: TextStyle(
                     fontFamily: 'serif',
                     fontSize: 13,
