@@ -446,14 +446,6 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
     );
   }
 
-  Future<void> _bookmarkAyah(int surah, int ayah) async {
-    await _toggleBookmark(
-      surah: surah,
-      ayah: ayah,
-      page: quran.getPageNumber(surah, ayah),
-    );
-  }
-
   Future<void> _toggleBookmark({
     required int surah,
     required int ayah,
@@ -948,7 +940,6 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
                                 lineHeight: _lineHeight,
                                 showTranslation: _showTranslation,
                                 darkPage: _darkPage,
-                                onBookmarkAyah: _bookmarkAyah,
                               ),
                             );
                           },
@@ -1163,7 +1154,6 @@ class _MushafPage extends StatefulWidget {
     required this.lineHeight,
     required this.showTranslation,
     required this.darkPage,
-    required this.onBookmarkAyah,
   });
 
   final int page;
@@ -1172,7 +1162,6 @@ class _MushafPage extends StatefulWidget {
   final double lineHeight;
   final bool showTranslation;
   final bool darkPage;
-  final Future<void> Function(int surah, int ayah) onBookmarkAyah;
   @override
   State<_MushafPage> createState() => _MushafPageState();
 }
@@ -1212,12 +1201,6 @@ class _MushafPageState extends State<_MushafPage> {
   List<Verse> get verses => widget.pageData.verses;
 
   String _verseText(Verse verse) => verse.displayText;
-
-  int get _firstSurah => verses.isEmpty ? 1 : verses.first.surahNumber;
-
-  bool get _startsSurah => verses.isNotEmpty && verses.first.ayahNumber == 1;
-
-  bool get _hasBasmala => _startsSurah && _firstSurah != 9;
 
   @override
   Widget build(BuildContext context) {
