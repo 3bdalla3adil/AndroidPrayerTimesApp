@@ -1317,7 +1317,6 @@ class _AyahMarker extends StatelessWidget {
             ),
           ),
         ),
-      ),
     );
   }
 }
