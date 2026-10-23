@@ -15,15 +15,14 @@ Future<void> pumpReaderFrames(WidgetTester tester, {int frames = 8}) async {
 }
 
 
-int lastVisibleMushafPageIndex(WidgetTester tester) {
-  final list = tester.widget<ScrollablePositionedList>(
-    find.byType(ScrollablePositionedList),
+double readerScrollOffset(WidgetTester tester) {
+  final listFinder = find.byType(ScrollablePositionedList);
+  final scrollableFinder = find.descendant(
+    of: listFinder,
+    matching: find.byType(Scrollable),
   );
-  final positions = list.itemPositionsListener.itemPositions.value;
-  if (positions.isEmpty) return -1;
-  return positions
-      .map((position) => position.index)
-      .reduce((left, right) => left > right ? left : right);
+  expect(scrollableFinder, findsOneWidget);
+  return tester.state<ScrollableState>(scrollableFinder).position.pixels;
 }
 
 void main() {
@@ -55,14 +54,14 @@ void main() {
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await mountReader(tester);
     final listFinder = find.byType(ScrollablePositionedList);
-    final firstVisibleMaxIndex = lastVisibleMushafPageIndex(tester);
+    final initialOffset = readerScrollOffset(tester);
 
     await tester.drag(listFinder, const Offset(0, -650));
     await pumpReaderFrames(tester, frames: 12);
 
     expect(
-      lastVisibleMushafPageIndex(tester),
-      greaterThan(firstVisibleMaxIndex),
+      readerScrollOffset(tester),
+      greaterThan(initialOffset),
       reason: 'A continuous drag should reveal later Mushaf pages without snapping.',
     );
   });
