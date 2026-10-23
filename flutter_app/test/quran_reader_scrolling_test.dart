@@ -15,6 +15,18 @@ Future<void> pumpReaderFrames(WidgetTester tester, {int frames = 8}) async {
   }
 }
 
+
+int lastVisibleMushafPageIndex(WidgetTester tester) {
+  final list = tester.widget<ScrollablePositionedList>(
+    find.byType(ScrollablePositionedList),
+  );
+  final positions = list.itemPositionsListener.itemPositions.value;
+  if (positions.isEmpty) return -1;
+  return positions
+      .map((position) => position.index)
+      .reduce((left, right) => left > right ? left : right);
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -39,19 +51,21 @@ void main() {
     expect(find.byType(PageView), findsNothing);
   }
 
-  testWidgets('Quran reader settles one adjacent page per vertical drag',
+  testWidgets('Quran reader continuously scrolls across page boundaries',
       (tester) async {
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await mountReader(tester);
-    final listFinder = find.byKey(const ValueKey('quran-reader-swipe-area'));
+    final listFinder = find.byType(ScrollablePositionedList);
+    final firstVisibleMaxIndex = lastVisibleMushafPageIndex(tester);
 
     await tester.drag(listFinder, const Offset(0, -650));
     await pumpReaderFrames(tester, frames: 12);
 
-    final context = tester.element(find.byType(QuranReaderScreen));
-    final container = ProviderScope.containerOf(context);
-    expect(container.read(readerProvider).currentPage, 2);
-    expect(container.read(readerProvider).currentPage, isNot(3));
+    expect(
+      lastVisibleMushafPageIndex(tester),
+      greaterThan(firstVisibleMaxIndex),
+      reason: 'A continuous drag should reveal later Mushaf pages without snapping.',
+    );
   });
 
 
@@ -102,18 +116,20 @@ void main() {
     expect(scrollState.position.pixels, greaterThan(0));
   });
 
-  testWidgets('Quran reader fling settles at one adjacent page only',
+  testWidgets('Quran reader fling can continue across multiple pages',
       (tester) async {
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await mountReader(tester);
-    final listFinder = find.byKey(const ValueKey('quran-reader-swipe-area'));
+    final listFinder = find.byType(ScrollablePositionedList);
+    final firstVisibleMaxIndex = lastVisibleMushafPageIndex(tester);
 
     await tester.fling(listFinder, const Offset(0, -120), 12000);
     await pumpReaderFrames(tester, frames: 20);
 
-    final context = tester.element(find.byType(QuranReaderScreen));
-    final container = ProviderScope.containerOf(context);
-    expect(container.read(readerProvider).currentPage, 2);
-    expect(container.read(readerProvider).currentPage, isNot(3));
+    expect(
+      lastVisibleMushafPageIndex(tester),
+      greaterThan(firstVisibleMaxIndex),
+      reason: 'A fling should continue naturally instead of snapping to one page.',
+    );
   });
 }
