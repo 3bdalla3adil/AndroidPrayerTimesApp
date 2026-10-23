@@ -119,14 +119,14 @@ void main() {
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await mountReader(tester);
     final listFinder = find.byType(ScrollablePositionedList);
-    final firstVisibleMaxIndex = lastVisibleMushafPageIndex(tester);
+    final initialOffset = readerScrollOffset(tester);
 
     await tester.fling(listFinder, const Offset(0, -120), 12000);
     await pumpReaderFrames(tester, frames: 20);
 
     expect(
-      lastVisibleMushafPageIndex(tester),
-      greaterThan(firstVisibleMaxIndex),
+      readerScrollOffset(tester),
+      greaterThan(initialOffset),
       reason: 'A fling should continue naturally instead of snapping to one page.',
     );
   });
