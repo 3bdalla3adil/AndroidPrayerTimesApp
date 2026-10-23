@@ -7,7 +7,6 @@ import 'package:shared_preferences_platform_interface/shared_preferences_async_p
 
 import 'package:salawat_quran/screens/quran_reader_screen.dart';
 import 'package:salawat_quran/services/locale_controller.dart';
-import 'package:salawat_quran/providers/reader_provider.dart';
 
 Future<void> pumpReaderFrames(WidgetTester tester, {int frames = 8}) async {
   for (var frame = 0; frame < frames; frame++) {
