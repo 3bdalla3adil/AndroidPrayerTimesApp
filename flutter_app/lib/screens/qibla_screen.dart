@@ -338,59 +338,43 @@ class _QiblaScreenState extends State<QiblaScreen> {
                                 ),
                               ),
                               if (_qiblaBearing != null && heading != null)
-                                Transform.rotate(
-                                  angle: relative * math.pi / 180,
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Container(
-                                        width: 68,
-                                        height: 68,
-                                        decoration: BoxDecoration(
+                                Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Transform.rotate(
+                                      angle: relative * math.pi / 180,
+                                      child: CustomPaint(
+                                        size: const Size(68, 112),
+                                        painter: _QiblaArrowPainter(
                                           color: accent,
-                                          shape: BoxShape.circle,
-                                          border: Border.all(
-                                            color: CupertinoColors.white,
-                                            width: 4,
-                                          ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: accent
-                                                  .withValues(alpha: .28),
-                                              blurRadius: 16,
-                                              offset: const Offset(0, 5),
-                                            ),
-                                          ],
+                                          outline: isDark
+                                              ? CupertinoColors.white
+                                                  .withValues(alpha: .9)
+                                              : const Color(0xFF164A3A),
                                         ),
-                                        child: const Icon(
-                                          CupertinoIcons.location_north_fill,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 5,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: accent,
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: Text(
+                                        _isArabic ? 'القبلة' : 'QIBLA',
+                                        style: const TextStyle(
                                           color: CupertinoColors.white,
-                                          size: 32,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w800,
+                                          letterSpacing: 1,
                                         ),
                                       ),
-                                      const SizedBox(height: 8),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: 5,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: accent,
-                                          borderRadius:
-                                              BorderRadius.circular(20),
-                                        ),
-                                        child: Text(
-                                          _isArabic ? 'القبلة' : 'QIBLA',
-                                          style: const TextStyle(
-                                            color: CupertinoColors.white,
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.w800,
-                                            letterSpacing: 1,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                                    ),
+                                  ],
                                 )
                               else
                                 Container(
@@ -545,6 +529,73 @@ class _QiblaScreenState extends State<QiblaScreen> {
       ),
     );
   }
+}
+
+/// A high-contrast directional needle with a pointed tip and split tail.
+class _QiblaArrowPainter extends CustomPainter {
+  const _QiblaArrowPainter({required this.color, required this.outline});
+
+  final Color color;
+  final Color outline;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    final path = Path()
+      ..moveTo(w * .5, h * .025)
+      ..lineTo(w * .94, h * .88)
+      ..lineTo(w * .5, h * .69)
+      ..lineTo(w * .06, h * .88)
+      ..close();
+
+    canvas.drawShadow(path, const Color(0x66000000), 5, true);
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = outline
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3.5
+        ..strokeJoin = StrokeJoin.round,
+    );
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = color
+        ..style = PaintingStyle.fill,
+    );
+
+    // A contrasting center seam makes the arrow's forward tip unmistakable.
+    final seam = Path()
+      ..moveTo(w * .5, h * .20)
+      ..lineTo(w * .5, h * .66)
+      ..lineTo(w * .16, h * .82);
+    canvas.drawPath(
+      seam,
+      Paint()
+        ..color = CupertinoColors.white
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round,
+    );
+    final rightSeam = Path()
+      ..moveTo(w * .5, h * .66)
+      ..lineTo(w * .84, h * .82);
+    canvas.drawPath(
+      rightSeam,
+      Paint()
+        ..color = CupertinoColors.white
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _QiblaArrowPainter oldDelegate) =>
+      oldDelegate.color != color || oldDelegate.outline != outline;
 }
 
 class _CompassDialPainter extends CustomPainter {
