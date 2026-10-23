@@ -7,12 +7,22 @@ import 'package:shared_preferences_platform_interface/shared_preferences_async_p
 
 import 'package:salawat_quran/screens/quran_reader_screen.dart';
 import 'package:salawat_quran/services/locale_controller.dart';
-import 'package:salawat_quran/providers/reader_provider.dart';
 
 Future<void> pumpReaderFrames(WidgetTester tester, {int frames = 8}) async {
   for (var frame = 0; frame < frames; frame++) {
     await tester.pump(const Duration(milliseconds: 50));
   }
+}
+
+
+double readerScrollOffset(WidgetTester tester) {
+  final listFinder = find.byType(ScrollablePositionedList);
+  final scrollableFinder = find.descendant(
+    of: listFinder,
+    matching: find.byType(Scrollable),
+  );
+  expect(scrollableFinder, findsOneWidget);
+  return tester.state<ScrollableState>(scrollableFinder).position.pixels;
 }
 
 void main() {
@@ -39,19 +49,21 @@ void main() {
     expect(find.byType(PageView), findsNothing);
   }
 
-  testWidgets('Quran reader settles one adjacent page per vertical drag',
+  testWidgets('Quran reader continuously scrolls across page boundaries',
       (tester) async {
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await mountReader(tester);
-    final listFinder = find.byKey(const ValueKey('quran-reader-swipe-area'));
+    final listFinder = find.byType(ScrollablePositionedList);
+    final initialOffset = readerScrollOffset(tester);
 
     await tester.drag(listFinder, const Offset(0, -650));
     await pumpReaderFrames(tester, frames: 12);
 
-    final context = tester.element(find.byType(QuranReaderScreen));
-    final container = ProviderScope.containerOf(context);
-    expect(container.read(readerProvider).currentPage, 2);
-    expect(container.read(readerProvider).currentPage, isNot(3));
+    expect(
+      readerScrollOffset(tester),
+      greaterThan(initialOffset),
+      reason: 'A continuous drag should reveal later Mushaf pages without snapping.',
+    );
   });
 
 
@@ -102,18 +114,20 @@ void main() {
     expect(scrollState.position.pixels, greaterThan(0));
   });
 
-  testWidgets('Quran reader fling settles at one adjacent page only',
+  testWidgets('Quran reader fling can continue across multiple pages',
       (tester) async {
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await mountReader(tester);
-    final listFinder = find.byKey(const ValueKey('quran-reader-swipe-area'));
+    final listFinder = find.byType(ScrollablePositionedList);
+    final initialOffset = readerScrollOffset(tester);
 
     await tester.fling(listFinder, const Offset(0, -120), 12000);
     await pumpReaderFrames(tester, frames: 20);
 
-    final context = tester.element(find.byType(QuranReaderScreen));
-    final container = ProviderScope.containerOf(context);
-    expect(container.read(readerProvider).currentPage, 2);
-    expect(container.read(readerProvider).currentPage, isNot(3));
+    expect(
+      readerScrollOffset(tester),
+      greaterThan(initialOffset),
+      reason: 'A fling should continue naturally instead of snapping to one page.',
+    );
   });
 }

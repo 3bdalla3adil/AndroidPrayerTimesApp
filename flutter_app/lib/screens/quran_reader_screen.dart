@@ -94,8 +94,6 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
 
   bool get _darkPage => ref.read(readerProvider).darkMode;
   set _darkPage(bool value) => ref.read(readerProvider.notifier).setDarkMode(value);
-  int? _dragStartPage;
-  double _verticalDragDistance = 0;
 
   @override
   void initState() {
@@ -310,8 +308,6 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
 
     final generation = ++_navigationGeneration;
     _isProgrammaticNavigation = true;
-    _dragStartPage = null;
-    _verticalDragDistance = 0;
 
     if (_readerPage != page) {
       setState(() => _readerPage = page);
@@ -361,57 +357,8 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
     }
   }
 
-  void _handleVerticalDragStart(DragStartDetails details) {
-    // The first indexed-list layout can report provisional positions while
-    // variable-height Quran pages are being measured. Ignore gestures until
-    // the requested initial page has actually been applied.
-    if (_isProgrammaticNavigation) {
-      _dragStartPage = null;
-      _verticalDragDistance = 0;
-      return;
-    }
-    _dragStartPage = _readerPage;
-    _verticalDragDistance = 0;
-  }
-
-  void _handleVerticalDragUpdate(DragUpdateDetails details) {
-    if (_dragStartPage == null) return;
-    _verticalDragDistance += details.delta.dy;
-  }
-
-  void _handleVerticalDragEnd(DragEndDetails details) {
-    final startPage = _dragStartPage;
-    final distance = _verticalDragDistance;
-    final velocity = details.primaryVelocity ?? 0;
-    _dragStartPage = null;
-    _verticalDragDistance = 0;
-    if (startPage == null) return;
-
-    final isFling = velocity.abs() >= 700;
-    if (distance.abs() < 40 && !isFling) return;
-
-    // Distance takes precedence when the user clearly dragged. Velocity is
-    // only used for short, fast flicks; either way a gesture advances once.
-    final direction = distance.abs() >= 40
-        ? (distance < 0 ? 1 : -1)
-        : (velocity < 0 ? 1 : -1);
-    final targetPage =
-        (startPage + direction).clamp(1, totalReaderPages).toInt();
-    if (targetPage != startPage) {
-      _scrollToPage(targetPage, animated: true);
-    }
-  }
-
-  void _handleVerticalDragCancel() {
-    _dragStartPage = null;
-    _verticalDragDistance = 0;
-  }
-
   void _handleItemPositionsChanged() {
-    if (!mounted ||
-        _isInitializingReader ||
-        _isProgrammaticNavigation ||
-        _dragStartPage != null) {
+    if (!mounted || _isInitializingReader || _isProgrammaticNavigation) {
       return;
     }
 
@@ -893,28 +840,17 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
                 ),
               ),
             Expanded(
-              child: LayoutBuilder(
-                builder: (context, viewport) => GestureDetector(
-                  key: const ValueKey('quran-reader-swipe-area'),
-                  behavior: HitTestBehavior.opaque,
-                  onVerticalDragStart: _handleVerticalDragStart,
-                  onVerticalDragUpdate: _handleVerticalDragUpdate,
-                  onVerticalDragEnd: _handleVerticalDragEnd,
-                  onVerticalDragCancel: _handleVerticalDragCancel,
-                  child: ScrollablePositionedList.builder(
+              child: ScrollablePositionedList.builder(
                     itemScrollController: _itemScrollController,
                     itemPositionsListener: _itemPositionsListener,
                     scrollDirection: Axis.vertical,
-                    // Page-to-page navigation remains gesture-driven. Each
-                    // page independently enables scrolling only if its own
-                    // rendered content exceeds the available viewport.
-                    physics: const NeverScrollableScrollPhysics(),
+                    // Keep all 604 Mushaf pages in one continuous vertical
+                    // scroll so a drag/fling naturally crosses page edges.
+                    physics: const ClampingScrollPhysics(),
                     itemCount: totalReaderPages,
                     itemBuilder: (context, index) {
                       final page = index + 1;
-                      return SizedBox(
-                        height: viewport.maxHeight,
-                        child: FutureBuilder<QuranPage>(
+                      return FutureBuilder<QuranPage>(
                           future: _pageFuture(page),
                           builder: (context, snapshot) {
                             if (snapshot.connectionState != ConnectionState.done) {
@@ -931,24 +867,18 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
                                 },
                               );
                             }
-                            return OverflowAwarePageScrollView(
-                              page: page,
-                              child: _MushafPage(
+                            return _MushafPage(
                                 page: page,
                                 pageData: snapshot.data!,
                                 fontSize: _fontSize,
                                 lineHeight: _lineHeight,
                                 showTranslation: _showTranslation,
                                 darkPage: _darkPage,
-                              ),
-                            );
+                              );
                           },
-                        ),
-                      );
+                        );
                     },
                   ),
-                ),
-              ),
             ),
             _PageControls(
               page: _readerPage,
@@ -1219,12 +1149,8 @@ class _MushafPageState extends State<_MushafPage> {
 
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.symmetric(horizontal: 14),
-      padding: const EdgeInsets.fromLTRB(8, 18, 8, 14),
-      decoration: BoxDecoration(
-        color: pageBg,
-        border: Border(bottom: BorderSide(color: divider, width: 1)),
-      ),
+      padding: const EdgeInsets.fromLTRB(14, 18, 14, 10),
+      color: pageBg,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -1307,9 +1233,6 @@ class _MushafPageState extends State<_MushafPage> {
                   color: _isHighlighted(verse)
                       ? const Color(0xFFFF9800)
                       : ink,
-                  backgroundColor: _isHighlighted(verse)
-                      ? const Color(0x33FF9800)
-                      : null,
                   fontWeight: FontWeight.w400,
                 ),
                 recognizer: _recognizerFor(
@@ -1321,10 +1244,8 @@ class _MushafPageState extends State<_MushafPage> {
                 alignment: PlaceholderAlignment.middle,
                 child: _AyahMarker(
                   number: verse.ayahNumber,
-                  color: _isHighlighted(verse) ? const Color(0xFFFF9800) : green,
+                  color: widget.darkPage ? const Color(0xFFE6E0C8) : green,
                   darkPage: widget.darkPage,
-                  selected: _isHighlighted(verse),
-                  onTap: () => _toggleHighlight(verse),
                 ),
               ),
               if (widget.showTranslation)
@@ -1366,25 +1287,16 @@ class _AyahMarker extends StatelessWidget {
     required this.number,
     required this.color,
     required this.darkPage,
-    required this.selected,
-    required this.onTap,
   });
 
   final int number;
   final Color color;
   final bool darkPage;
-  final bool selected;
-  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final markerColor = selected
-        ? const Color(0xFFFF9800)
-        : (darkPage ? const Color(0xFFE6E0C8) : color);
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
+    final markerColor = darkPage ? const Color(0xFFE6E0C8) : color;
+    return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 2),
         child: Container(
           width: 25,
@@ -1392,8 +1304,7 @@ class _AyahMarker extends StatelessWidget {
           alignment: Alignment.center,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: markerColor, width: selected ? 1.8 : 1.1),
-            color: selected ? const Color(0x33FF9800) : null,
+            border: Border.all(color: markerColor, width: 1.1),
           ),
           child: Text(
             _arabicNumber(number),
@@ -1406,7 +1317,6 @@ class _AyahMarker extends StatelessWidget {
             ),
           ),
         ),
-      ),
     );
   }
 }
