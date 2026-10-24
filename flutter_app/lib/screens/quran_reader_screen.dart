@@ -5,6 +5,7 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/physics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/adaptive_page_scaffold.dart';
 import 'package:flutter/services.dart';
@@ -22,6 +23,32 @@ import '../providers/reader_provider.dart';
 import '../services/locale_controller.dart';
 
 const kQuranFont = 'KFGQPC HAFS Uthmanic Script';
+
+/// Keeps post-release scrolling predictable regardless of swipe strength.
+/// Finger-driven dragging remains natural; every qualifying fling uses the
+/// same velocity so a quick swipe cannot send the reader far ahead.
+class FixedSpeedScrollPhysics extends ClampingScrollPhysics {
+  const FixedSpeedScrollPhysics({super.parent});
+
+  static const double flingSpeed = 900;
+
+  @override
+  Simulation? createBallisticSimulation(ScrollMetrics position, double velocity) {
+    if (position.outOfRange ||
+        velocity.abs() < toleranceFor(position).velocity) {
+      return super.createBallisticSimulation(position, velocity);
+    }
+    return super.createBallisticSimulation(
+      position,
+      velocity.sign * flingSpeed,
+    );
+  }
+
+  @override
+  FixedSpeedScrollPhysics applyTo(ScrollPhysics? ancestor) {
+    return FixedSpeedScrollPhysics(parent: buildParent(ancestor));
+  }
+}
 
 /// Madinah-style 604-page Mushaf reader.
 ///
@@ -846,7 +873,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
                     scrollDirection: Axis.vertical,
                     // Keep all 604 Mushaf pages in one continuous vertical
                     // scroll so a drag/fling naturally crosses page edges.
-                    physics: const ClampingScrollPhysics(),
+                    physics: const FixedSpeedScrollPhysics(),
                     itemCount: totalReaderPages,
                     itemBuilder: (context, index) {
                       final page = index + 1;
