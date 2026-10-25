@@ -948,7 +948,6 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
                           final pageData = snapshot.data;
                           if (pageData != null) {
                             return _MushafPage(
-                              key: ValueKey<int>(page),
                               page: page,
                               pageData: pageData,
                               fontSize: _fontSize,
