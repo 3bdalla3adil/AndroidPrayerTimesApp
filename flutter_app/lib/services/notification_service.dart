@@ -196,6 +196,7 @@ class NotificationService {
     required DateTime time,
     String soundId = _defaultSoundId,
     bool withSound = true,
+    String title = 'حان وقت الصلاة',
   }) async {
     await initialize();
     if (!_exactAlarmReady) {
@@ -212,7 +213,7 @@ class NotificationService {
 
     await _plugin.zonedSchedule(
       id: id,
-      title: 'حان وقت الصلاة',
+      title: title,
       body: prayerName,
       scheduledDate: scheduled,
       notificationDetails: _details(soundId, withSound: withSound),
@@ -268,6 +269,13 @@ class NotificationService {
 
   static Future<void> scheduleTestFajrAthan() =>
       scheduleTestAthan(soundId: _fajrSoundId);
+
+  static Future<void> cancelTahajjudReminders() async {
+    await initialize();
+    for (var day = 0; day < 4; day++) {
+      await _plugin.cancel(id: 3000 + day);
+    }
+  }
 
   static Future<void> cancelPrayerReminders() async {
     await initialize();
