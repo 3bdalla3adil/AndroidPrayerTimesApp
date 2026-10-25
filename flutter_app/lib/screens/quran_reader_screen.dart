@@ -21,6 +21,9 @@ import '../services/bookmark_service.dart';
 import '../services/settings_service.dart';
 import '../providers/reader_provider.dart';
 import '../services/locale_controller.dart';
+import '../models/prayer_entry.dart';
+import '../services/prayer_service.dart';
+import '../services/app_routes.dart';
 
 const kQuranFont = 'KFGQPC HAFS Uthmanic Script';
 
@@ -104,6 +107,15 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
 
   bool _showToolbar = true;
   bool _tajweedMode = false;
+  String? _selectedAyahKey;
+  Set<String> _memorizedAyahs = <String>{};
+  double _scaleStartFontSize = 25;
+  double _lastScrollPixels = 0;
+  bool _prayerHeaderVisible = false;
+  List<PrayerEntry> _prayerTimes = const <PrayerEntry>[];
+  DateTime _clockNow = DateTime.now();
+  Timer? _clockTimer;
+  late final PrayerService _prayerService = PrayerService(_storage);
   final AudioPlayer _recitationPlayer = AudioPlayer();
   StreamSubscription<void>? _recitationCompleteSubscription;
   StreamSubscription<PlayerState>? _recitationStateSubscription;
@@ -138,6 +150,10 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
       _playNextRecitationVerse();
     });
     _loadInitialPage();
+    _loadPrayerHeader();
+    _clockTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() => _clockNow = DateTime.now());
+    });
   }
 
   @override
@@ -149,6 +165,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
     _recitationCompleteSubscription?.cancel();
     _recitationStateSubscription?.cancel();
     _recitationPlayer.dispose();
+    _clockTimer?.cancel();
     super.dispose();
   }
 
@@ -255,6 +272,24 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
     );
   }
 
+  Future<void> _loadPrayerHeader() async {
+    try {
+      final prayers = await _prayerService.today();
+      if (!mounted) return;
+      setState(() => _prayerTimes = prayers);
+    } catch (_) {
+      // Prayer details are optional in the reader; keep the Mushaf usable
+      // when location or prayer-time settings have not been configured.
+    }
+  }
+
+  PrayerEntry? get _nextPrayer {
+    for (final prayer in _prayerTimes) {
+      if (prayer.time.isAfter(_clockNow)) return prayer;
+    }
+    return null;
+  }
+
   Future<void> _loadInitialPage() async {
     try {
       final raw =
@@ -264,6 +299,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
           (index['surahStartPages'] as Map?)?.cast<String, dynamic>() ?? {};
       final settings = await _settingsService.load();
       final bookmarks = await _bookmarkService.loadAll();
+      final memorizedAyahs = await _storage.loadMemorizedAyahs();
       var requestedQuranPage = widget.startingPage ??
           (starts[widget.surahNumber.toString()] as num?)?.toInt() ??
           1;
@@ -297,6 +333,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
         darkMode: settings.darkPage,
         bookmarks: bookmarks,
       );
+      _memorizedAyahs = memorizedAyahs;
 
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         await _scrollToPage(requestedReaderPage, animated: false);
@@ -716,6 +753,80 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
     );
   }
 
+  Future<void> _handleAyahSelected(Verse verse) async {
+    setState(() => _selectedAyahKey = verse.id);
+    await _showAyahToolbar(verse);
+  }
+
+  Future<void> _playSpecificAyah(Verse verse) async {
+    final generation = ++_recitationGeneration;
+    setState(() {
+      _isRecitationLoading = true;
+      _recitationQueue = <Verse>[verse];
+      _recitationIndex = 0;
+    });
+    try {
+      await _recitationPlayer.stop();
+      await _playRecitationVerse(generation);
+    } catch (_) {
+      if (mounted) {
+        showCupertinoDialog<void>(
+          context: context,
+          builder: (dialogContext) => CupertinoAlertDialog(
+            title: Text(LocaleController.isArabic ? 'تعذّر تشغيل التلاوة' : 'Unable to play recitation'),
+            content: Text(LocaleController.isArabic ? 'تحقّق من اتصال الإنترنت ثم حاول مرة أخرى.' : 'Check your internet connection and try again.'),
+            actions: [CupertinoDialogAction(onPressed: () => Navigator.pop(dialogContext), child: Text(LocaleController.isArabic ? 'حسنًا' : 'OK'))],
+          ),
+        );
+      }
+    } finally {
+      if (mounted && generation == _recitationGeneration) setState(() => _isRecitationLoading = false);
+    }
+  }
+
+  Future<void> _toggleMemorizedAyah(Verse verse) async {
+    final key = verse.id;
+    final values = Set<String>.from(_memorizedAyahs);
+    if (!values.add(key)) values.remove(key);
+    await _storage.saveMemorizedAyahs(values);
+    if (mounted) setState(() => _memorizedAyahs = values);
+  }
+
+  Future<void> _showAyahToolbar(Verse verse) async {
+    await showCupertinoModalPopup<void>(
+      context: context,
+      builder: (popupContext) => CupertinoPopupSurface(
+        child: SafeArea(
+          top: false,
+          child: StatefulBuilder(
+            builder: (context, sheetSetState) => SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 18),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Center(child: Container(width: 36, height: 4, decoration: BoxDecoration(color: CupertinoColors.systemGrey3.resolveFrom(context), borderRadius: BorderRadius.circular(4)))),
+                  const SizedBox(height: 10),
+                  Text(LocaleController.isArabic ? 'الآية ${verse.ayahNumber} • ${quran.getSurahNameArabic(verse.surahNumber)}' : '${quran.getSurahName(verse.surahNumber)} • Ayah ${verse.ayahNumber}', textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                  const SizedBox(height: 8),
+                  CupertinoListTile(title: Text(LocaleController.isArabic ? 'إظهار الترجمة' : 'Translation'), trailing: CupertinoSwitch(value: _showTranslation, onChanged: (value) { setState(() => _showTranslation = value); sheetSetState(() {}); _settingsService.saveTranslation(value); })),
+                  CupertinoListTile(title: Text(LocaleController.isArabic ? 'الوضع الداكن' : 'Dark page'), trailing: CupertinoSwitch(value: _darkPage, onChanged: (value) { setState(() => _darkPage = value); sheetSetState(() {}); _settingsService.saveDarkPage(value); })),
+                  CupertinoListTile(title: Text(LocaleController.isArabic ? 'التجويد / مصحف المدينة' : 'Tajweed / Madinah Mushaf'), subtitle: Text(_tajweedMode ? (LocaleController.isArabic ? 'التجويد' : 'Tajweed') : (LocaleController.isArabic ? 'مصحف المدينة' : 'Madinah Mushaf')), trailing: CupertinoSwitch(value: _tajweedMode, onChanged: (value) { setState(() => _tajweedMode = value); sheetSetState(() {}); })),
+                  const SizedBox(height: 6),
+                  CupertinoButton.filled(onPressed: () { Navigator.pop(popupContext); _playSpecificAyah(verse); }, child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(_isRecitationPlaying ? CupertinoIcons.pause_fill : CupertinoIcons.play_fill), const SizedBox(width: 8), Text(LocaleController.isArabic ? 'استمع إلى الآية' : 'Play this ayah')])),
+                  const SizedBox(height: 6),
+                  CupertinoButton(onPressed: () async { await _toggleMemorizedAyah(verse); sheetSetState(() {}); }, child: Text(_memorizedAyahs.contains(verse.id) ? (LocaleController.isArabic ? 'إزالة علامة الحفظ' : 'Remove memorized mark') : (LocaleController.isArabic ? 'وضع علامة محفوظة' : 'Mark as memorized'))),
+                  CupertinoButton(onPressed: () { Navigator.pop(popupContext); Navigator.of(context).pushNamed(AppRoutes.quranMemorization); }, child: Text(LocaleController.isArabic ? 'فتح تدريب الحفظ' : 'Open memorization practice')),
+                  CupertinoButton(onPressed: () => Navigator.pop(popupContext), child: Text(LocaleController.isArabic ? 'إغلاق' : 'Close')),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   void _openReaderSettings() {
     showCupertinoModalPopup<void>(
       context: context,
@@ -833,6 +944,8 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
         bottom: false,
         child: Column(
           children: [
+            if (_prayerHeaderVisible && _nextPrayer != null)
+              _ReaderPrayerHeader(prayer: _nextPrayer!, now: _clockNow),
             if (_showToolbar) _ReaderToolbar(
               onNavigate: _openNavigator,
               onSearch: _searchQuran,
@@ -867,7 +980,29 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
                 ),
               ),
             Expanded(
-              child: ScrollablePositionedList.builder(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onScaleStart: (_) => _scaleStartFontSize = _fontSize,
+                onScaleUpdate: (details) {
+                  if (details.pointerCount < 2 || (details.scale - 1).abs() < 0.015) return;
+                  final size = (_scaleStartFontSize * details.scale).clamp(20.0, 38.0);
+                  if ((size - _fontSize).abs() < 0.25) return;
+                  setState(() => _fontSize = size);
+                  _settingsService.saveFontSize(size);
+                },
+                child: NotificationListener<ScrollNotification>(
+                  onNotification: (notification) {
+                    if (notification is ScrollUpdateNotification) {
+                      final pixels = notification.metrics.pixels;
+                      final movingDown = pixels > _lastScrollPixels;
+                      if ((pixels - _lastScrollPixels).abs() > 0.5 && movingDown != _prayerHeaderVisible) {
+                        setState(() => _prayerHeaderVisible = movingDown);
+                      }
+                      _lastScrollPixels = pixels;
+                    }
+                    return false;
+                  },
+                  child: ScrollablePositionedList.builder(
                     itemScrollController: _itemScrollController,
                     itemPositionsListener: _itemPositionsListener,
                     scrollDirection: Axis.vertical,
@@ -901,11 +1036,15 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
                                 lineHeight: _lineHeight,
                                 showTranslation: _showTranslation,
                                 darkPage: _darkPage,
+                                selectedAyahKey: _selectedAyahKey,
+                                onAyahTap: _handleAyahSelected,
                               );
                           },
                         );
                     },
                   ),
+                ),
+              ),
             ),
             _PageControls(
               page: _readerPage,
@@ -921,6 +1060,28 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
   }
 }
 
+
+class _ReaderPrayerHeader extends StatelessWidget {
+  const _ReaderPrayerHeader({required this.prayer, required this.now});
+  final PrayerEntry prayer;
+  final DateTime now;
+
+  @override
+  Widget build(BuildContext context) {
+    final remaining = prayer.time.difference(now);
+    final hours = remaining.inHours;
+    final minutes = remaining.inMinutes.remainder(60);
+    final seconds = remaining.inSeconds.remainder(60);
+    final countdown = '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 6, 14, 8),
+      child: Row(children: [
+        Expanded(child: Text(countdown, textAlign: TextAlign.left, style: const TextStyle(fontFeatures: [], fontWeight: FontWeight.w700, fontSize: 15))),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [Text(LocaleController.isArabic ? 'الصلاة القادمة' : 'NEXT PRAYER', style: const TextStyle(fontSize: 9, letterSpacing: 1.0, color: CupertinoColors.secondaryLabel)), Text(LocaleController.isArabic ? prayer.arabicName : prayer.name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15))])),
+      ]),
+    );
+  }
+}
 
 class _QuranReaderControls extends StatelessWidget {
   const _QuranReaderControls({
@@ -1119,13 +1280,14 @@ class _MushafPage extends StatefulWidget {
   final double lineHeight;
   final bool showTranslation;
   final bool darkPage;
+  final String? selectedAyahKey;
+  final ValueChanged<Verse> onAyahTap;
   @override
   State<_MushafPage> createState() => _MushafPageState();
 }
 
 class _MushafPageState extends State<_MushafPage> {
   final Map<String, TapGestureRecognizer> _ayahRecognizers = {};
-  String? _highlightedAyah;
 
   @override
   void dispose() {
@@ -1145,14 +1307,10 @@ class _MushafPageState extends State<_MushafPage> {
 
   String _ayahKey(Verse verse) => verse.id;
 
-  bool _isHighlighted(Verse verse) => _highlightedAyah == _ayahKey(verse);
+  bool _isHighlighted(Verse verse) => widget.selectedAyahKey == _ayahKey(verse);
 
   void _toggleHighlight(Verse verse) {
-    final key = _ayahKey(verse);
-    setState(() {
-      _highlightedAyah = _highlightedAyah == key ? null : key;
-    });
-    // Highlighting is temporary; never persist the last page or ayah.
+    widget.onAyahTap(verse);
   }
 
   List<Verse> get verses => widget.pageData.verses;
@@ -1273,6 +1431,8 @@ class _MushafPageState extends State<_MushafPage> {
                   number: verse.ayahNumber,
                   color: widget.darkPage ? const Color(0xFFE6E0C8) : green,
                   darkPage: widget.darkPage,
+                  selected: _isHighlighted(verse),
+                  onTap: () => _toggleHighlight(verse),
                 ),
               ),
               if (widget.showTranslation)
@@ -1314,16 +1474,23 @@ class _AyahMarker extends StatelessWidget {
     required this.number,
     required this.color,
     required this.darkPage,
+    required this.selected,
+    required this.onTap,
   });
 
   final int number;
   final Color color;
   final bool darkPage;
+  final bool selected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final markerColor = darkPage ? const Color(0xFFE6E0C8) : color;
-    return Padding(
+    final markerColor = selected ? const Color(0xFFFF9800) : (darkPage ? const Color(0xFFE6E0C8) : color);
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 2),
         child: Container(
           width: 25,
@@ -1331,7 +1498,8 @@ class _AyahMarker extends StatelessWidget {
           alignment: Alignment.center,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: markerColor, width: 1.1),
+            border: Border.all(color: markerColor, width: selected ? 2.0 : 1.1),
+            color: selected ? const Color(0x33FF9800) : null,
           ),
           child: Text(
             _arabicNumber(number),
@@ -1344,6 +1512,7 @@ class _AyahMarker extends StatelessWidget {
             ),
           ),
         ),
+      ),
     );
   }
 }
