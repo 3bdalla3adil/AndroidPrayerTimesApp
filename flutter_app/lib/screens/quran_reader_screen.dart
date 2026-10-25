@@ -1026,6 +1026,42 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
 }
 
 
+class _AyahActionButton extends StatelessWidget {
+  const _AyahActionButton({required this.icon, required this.active, required this.label, required this.onPressed});
+  final IconData icon; final bool active; final String label; final VoidCallback onPressed;
+  @override Widget build(BuildContext context) => CupertinoButton(
+    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5), minimumSize: const Size(42, 48),
+    onPressed: onPressed,
+    child: Column(mainAxisAlignment: MainAxisAlignment.center, mainAxisSize: MainAxisSize.min, children: [
+      Icon(icon, size: 19, color: active ? const Color(0xFF176B52) : CupertinoColors.label.resolveFrom(context)),
+      const SizedBox(height: 2),
+      Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 8, color: active ? const Color(0xFF176B52) : CupertinoColors.secondaryLabel.resolveFrom(context))),
+    ]),
+  );
+}
+
+class _ReaderBottomBar extends StatelessWidget {
+  const _ReaderBottomBar({required this.page, required this.totalPages, required this.isPlaying, required this.autoScrollEnabled, required this.onPrevious, required this.onNext, required this.onJump, required this.onPlayPause, required this.onAutoScroll, required this.onChooseReciter, required this.onSearch, required this.onBookmark, required this.onSettings});
+  final int page, totalPages; final bool isPlaying, autoScrollEnabled;
+  final VoidCallback onPrevious, onNext, onJump, onPlayPause, onAutoScroll, onChooseReciter, onSearch, onBookmark, onSettings;
+  @override Widget build(BuildContext context) => Container(
+    height: 58, padding: const EdgeInsets.symmetric(horizontal: 4),
+    decoration: BoxDecoration(color: CupertinoColors.secondarySystemGroupedBackground.resolveFrom(context).withValues(alpha: .97), borderRadius: BorderRadius.circular(24), border: Border.all(color: CupertinoColors.separator.resolveFrom(context).withValues(alpha: .45)), boxShadow: [BoxShadow(color: CupertinoColors.black.withValues(alpha: .12), blurRadius: 20, offset: const Offset(0, 6))]),
+    child: Row(children: [
+      _item(context, CupertinoIcons.chevron_up, 'Previous', onPrevious),
+      _item(context, CupertinoIcons.chevron_down, 'Next', onNext),
+      CupertinoButton(padding: const EdgeInsets.symmetric(horizontal: 5), minimumSize: const Size(35, 45), onPressed: onJump, child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [const Icon(CupertinoIcons.list_number, size: 18), Text('$page/$totalPages', style: const TextStyle(fontSize: 8))])),
+      _item(context, autoScrollEnabled ? CupertinoIcons.pause_circle_fill : CupertinoIcons.speedometer, 'Auto', onAutoScroll, active: autoScrollEnabled),
+      _item(context, isPlaying ? CupertinoIcons.pause_fill : CupertinoIcons.play_fill, 'Listen', onPlayPause, active: isPlaying),
+      _item(context, CupertinoIcons.person_crop_circle, 'Reciter', onChooseReciter),
+      _item(context, CupertinoIcons.search, 'Search', onSearch),
+      _item(context, CupertinoIcons.bookmark, 'Save', onBookmark),
+      _item(context, CupertinoIcons.slider_horizontal_3, 'Style', onSettings),
+    ]),
+  );
+  Widget _item(BuildContext context, IconData icon, String label, VoidCallback action, {bool active = false}) => Expanded(child: CupertinoButton(padding: EdgeInsets.zero, minimumSize: const Size(0, 44), onPressed: action, child: Column(mainAxisAlignment: MainAxisAlignment.center, mainAxisSize: MainAxisSize.min, children: [Icon(icon, size: 17, color: active ? const Color(0xFF176B52) : CupertinoColors.label.resolveFrom(context)), Text(label, maxLines: 1, style: TextStyle(fontSize: 8, color: active ? const Color(0xFF176B52) : CupertinoColors.secondaryLabel.resolveFrom(context)))])));
+}
+
 class _ReaderPrayerHeader extends StatelessWidget {
   const _ReaderPrayerHeader({required this.prayer, required this.now});
   final PrayerEntry prayer;
@@ -1248,7 +1284,7 @@ class _MushafPage extends StatefulWidget {
   final bool showTranslation;
   final bool darkPage;
   final String? selectedAyahKey;
-  final ValueChanged<Verse> onAyahTap;
+  final void Function(Verse verse, Offset globalPosition) onAyahTap;
   @override
   State<_MushafPage> createState() => _MushafPageState();
 }
@@ -1264,10 +1300,11 @@ class _MushafPageState extends State<_MushafPage> {
     super.dispose();
   }
 
-  TapGestureRecognizer _recognizerFor(String key, VoidCallback onTap) {
+  TapGestureRecognizer _recognizerFor(String key, Verse verse) {
     final existing = _ayahRecognizers[key];
     if (existing != null) return existing;
-    final recognizer = TapGestureRecognizer()..onTap = onTap;
+    final recognizer = TapGestureRecognizer()
+      ..onTapDown = (details) => widget.onAyahTap(verse, details.globalPosition);
     _ayahRecognizers[key] = recognizer;
     return recognizer;
   }
@@ -1276,8 +1313,8 @@ class _MushafPageState extends State<_MushafPage> {
 
   bool _isHighlighted(Verse verse) => widget.selectedAyahKey == _ayahKey(verse);
 
-  void _toggleHighlight(Verse verse) {
-    widget.onAyahTap(verse);
+  void _toggleHighlight(Verse verse, Offset globalPosition) {
+    widget.onAyahTap(verse, globalPosition);
   }
 
   List<Verse> get verses => widget.pageData.verses;
@@ -1389,7 +1426,7 @@ class _MushafPageState extends State<_MushafPage> {
                 ),
                 recognizer: _recognizerFor(
                   _ayahKey(verse),
-                  () => _toggleHighlight(verse),
+                  verse,
                 ),
               ),
               WidgetSpan(
@@ -1399,7 +1436,8 @@ class _MushafPageState extends State<_MushafPage> {
                   color: widget.darkPage ? const Color(0xFFE6E0C8) : green,
                   darkPage: widget.darkPage,
                   selected: _isHighlighted(verse),
-                  onTap: () => _toggleHighlight(verse),
+                  onTapDown: (details) => _toggleHighlight(verse, details.globalPosition),
+                  onTap: () {},
                 ),
               ),
               if (widget.showTranslation)
@@ -1443,6 +1481,7 @@ class _AyahMarker extends StatelessWidget {
     required this.darkPage,
     required this.selected,
     required this.onTap,
+    required this.onTapDown,
   });
 
   final int number;
@@ -1450,12 +1489,14 @@ class _AyahMarker extends StatelessWidget {
   final bool darkPage;
   final bool selected;
   final VoidCallback onTap;
+  final ValueChanged<TapDownDetails> onTapDown;
 
   @override
   Widget build(BuildContext context) {
     final markerColor = selected ? const Color(0xFFFF9800) : (darkPage ? const Color(0xFFE6E0C8) : color);
     return GestureDetector(
       onTap: onTap,
+      onTapDown: onTapDown,
       behavior: HitTestBehavior.opaque,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 2),
