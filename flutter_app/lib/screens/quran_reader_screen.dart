@@ -966,44 +966,9 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
       ),
       child: SafeArea(
         bottom: false,
-        child: Column(
+        child: Stack(
           children: [
-            if (_prayerHeaderVisible && _nextPrayer != null)
-              _ReaderPrayerHeader(prayer: _nextPrayer!, now: _clockNow),
-            if (_showToolbar) _ReaderToolbar(
-              onNavigate: _openNavigator,
-              onSearch: _searchQuran,
-              onSettings: _openReaderSettings,
-              onBookmark: _bookmarkCurrentPage,
-              page: _readerPage,
-              totalPages: totalReaderPages,
-            ),
-            _QuranReaderControls(
-              isPlaying: _isRecitationPlaying,
-              isLoading: _isRecitationLoading,
-              reciterName: _reciters[_selectedReciter]!,
-              translationEnabled: _showTranslation,
-              tajweedMode: _tajweedMode,
-              onPlayPause: _toggleRecitation,
-              onChooseReciter: _chooseReciter,
-              onTranslationChanged: (value) {
-                setState(() => _showTranslation = value);
-                _settingsService.saveTranslation(value);
-              },
-              onMushafModeChanged: (value) => setState(() => _tajweedMode = value),
-            ),
-            if (_tajweedMode)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 2, 16, 7),
-                child: Text(
-                  LocaleController.isArabic
-                      ? 'وضع التجويد محدد، لكن بيانات التجويد الملوّن غير مضمّنة في ملفات المصحف الحالية.'
-                      : 'Tajweed selected. Rule-accurate color highlighting requires tagged Tajweed text, which is not included in the current offline page data.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 11, color: CupertinoColors.secondaryLabel.resolveFrom(context)),
-                ),
-              ),
-            Expanded(
+            Positioned.fill(
               child: Listener(
                 behavior: HitTestBehavior.translucent,
                 onPointerDown: _handlePointerDown,
@@ -1012,67 +977,47 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
                 onPointerCancel: _handlePointerUp,
                 child: NotificationListener<ScrollNotification>(
                   onNotification: (notification) {
-                    if (notification is ScrollUpdateNotification) {
-                      final pixels = notification.metrics.pixels;
-                      final movingDown = pixels > _lastScrollPixels;
-                      if ((pixels - _lastScrollPixels).abs() > 0.5 && movingDown != _prayerHeaderVisible) {
-                        setState(() => _prayerHeaderVisible = movingDown);
-                      }
-                      _lastScrollPixels = pixels;
+                    if (notification is UserScrollNotification && notification.direction != ScrollDirection.idle && _autoScrollEnabled) {
+                      _autoScrollTimer?.cancel();
+                      setState(() => _autoScrollEnabled = false);
                     }
+                    if (notification is ScrollUpdateNotification) _lastScrollPixels = notification.metrics.pixels;
                     return false;
                   },
                   child: ScrollablePositionedList.builder(
                     itemScrollController: _itemScrollController,
                     itemPositionsListener: _itemPositionsListener,
                     scrollDirection: Axis.vertical,
-                    // Keep all 604 Mushaf pages in one continuous vertical
-                    // scroll so a drag/fling naturally crosses page edges.
                     physics: const FixedSpeedScrollPhysics(),
                     itemCount: totalReaderPages,
                     itemBuilder: (context, index) {
                       final page = index + 1;
                       return FutureBuilder<QuranPage>(
-                          future: _pageFuture(page),
-                          builder: (context, snapshot) {
-                            if (snapshot.connectionState != ConnectionState.done) {
-                              return const Center(
-                                child: CupertinoActivityIndicator(radius: 14),
-                              );
-                            }
-                            if (snapshot.hasError || snapshot.data == null) {
-                              return _ErrorPage(
-                                page: page,
-                                onRetry: () {
-                                  _pageFutures.remove(page);
-                                  setState(() {});
-                                },
-                              );
-                            }
-                            return _MushafPage(
-                                page: page,
-                                pageData: snapshot.data!,
-                                fontSize: _fontSize,
-                                lineHeight: _lineHeight,
-                                showTranslation: _showTranslation,
-                                darkPage: _darkPage,
-                                selectedAyahKey: _selectedAyahKey,
-                                onAyahTap: _handleAyahSelected,
-                              );
-                          },
-                        );
+                        future: _pageFuture(page),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState != ConnectionState.done) return const Center(child: CupertinoActivityIndicator(radius: 14));
+                          if (snapshot.hasError || snapshot.data == null) return _ErrorPage(page: page, onRetry: () { _pageFutures.remove(page); setState(() {}); });
+                          return _MushafPage(
+                            page: page, pageData: snapshot.data!, fontSize: _fontSize, lineHeight: _lineHeight,
+                            showTranslation: _showTranslation, darkPage: _darkPage, selectedAyahKey: _selectedAyahKey,
+                            onAyahTap: _handleAyahSelected,
+                          );
+                        },
+                      );
                     },
                   ),
                 ),
               ),
             ),
-            _PageControls(
-              page: _readerPage,
-              totalPages: totalReaderPages,
-              onPrevious: () => _scrollToPage(_readerPage - 1),
-              onNext: () => _scrollToPage(_readerPage + 1),
-              onJump: _jumpToPage,
-            ),
+            if (_bottomBarVisible)
+              Positioned(left: 12, right: 12, bottom: 8, child: _ReaderBottomBar(
+                page: _readerPage, totalPages: totalReaderPages,
+                isPlaying: _isRecitationPlaying, autoScrollEnabled: _autoScrollEnabled,
+                onPrevious: () => _scrollToPage(_readerPage - 1),
+                onNext: () => _scrollToPage(_readerPage + 1),
+                onJump: _jumpToPage, onPlayPause: _toggleRecitation, onAutoScroll: _toggleAutoScroll,
+                onChooseReciter: _chooseReciter, onSearch: _searchQuran, onBookmark: _bookmarkCurrentPage, onSettings: _openReaderSettings,
+              )),
           ],
         ),
       ),
