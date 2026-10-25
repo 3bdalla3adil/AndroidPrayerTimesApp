@@ -6,6 +6,7 @@ class StorageService {
   static const _locationName = 'location_name';
   static const _country = 'location_country';
   static const _city = 'location_city';
+  static const _locationIsDevice = 'location_is_device';
   static const _method = 'prayer_calculation_method';
   static const _quranFontSize = 'quran_font_size';
   static const _quranLineHeight = 'quran_line_height';
@@ -80,7 +81,7 @@ class StorageService {
         await prefs.getString(_locationName),
       );
 
-  Future<void> savePrayerCity({required String country, required String city, required double lat, required double lon, required int method}) async {
+  Future<void> savePrayerCity({required String country, required String city, required double lat, required double lon, required int method, bool isDeviceLocation = false}) async {
     final displayName = city == 'Current location' || country == 'Unknown country'
         ? city
         : '$city, $country';
@@ -88,7 +89,11 @@ class StorageService {
     await prefs.setString(_country, country);
     await prefs.setString(_city, city);
     await prefs.setInt(_method, method);
+    await prefs.setBool(_locationIsDevice, isDeviceLocation);
   }
+
+  Future<bool> loadLocationIsDevice() async =>
+      await prefs.getBool(_locationIsDevice) ?? false;
 
   Future<(String?, String?, int?)> loadPrayerCity() async => (
         await prefs.getString(_country),
@@ -100,6 +105,7 @@ class StorageService {
     await prefs.remove(_country);
     await prefs.remove(_city);
     await prefs.remove(_method);
+    await prefs.remove(_locationIsDevice);
   }
 
   Future<void> saveQuranFontSize(double size) => prefs.setDouble(_quranFontSize, size);
