@@ -837,12 +837,6 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
       context: context,
       builder: (popupContext) => StatefulBuilder(
         builder: (popupContext, sheetSetState) {
-          void updateFontSize(double value) {
-            sheetSetState(() {});
-            setState(() => _fontSize = value);
-            _settingsService.saveFontSize(value);
-          }
-
           void updateLineHeight(double value) {
             sheetSetState(() {});
             setState(() => _lineHeight = value);
@@ -866,13 +860,6 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
             message: Column(
               children: [
                 const SizedBox(height: 8),
-                Text(LocaleController.isArabic ? 'حجم الخط: ${_fontSize.round()}' : 'Font size: ${_fontSize.round()}'),
-                CupertinoSlider(
-                  min: 20,
-                  max: 38,
-                  value: _fontSize,
-                  onChanged: updateFontSize,
-                ),
                 Text(LocaleController.isArabic ? 'تباعد السطور: ${_lineHeight.toStringAsFixed(2)}' : 'Line spacing: ${_lineHeight.toStringAsFixed(2)}'),
                 CupertinoSlider(
                   min: 1.35,
