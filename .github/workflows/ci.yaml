@@ -106,6 +106,9 @@ jobs:
       - name: Generate iOS project
         run: flutter create . --platforms=ios --org com.salawat_quran --project-name salawat_quran
 
+      - name: Configure foreground location permission
+        run: bash tool/configure_ios_location_permissions.sh
+
       - name: Prepare Athan assets
         run: bash tool/fetch_athan_sounds.sh
 
