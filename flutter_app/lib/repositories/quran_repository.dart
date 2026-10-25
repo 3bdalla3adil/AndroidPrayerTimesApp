@@ -35,7 +35,7 @@ final class AssetQuranPageDataSource implements QuranPageDataSource {
 final class QuranRepository {
   QuranRepository(
     this._source, {
-    this.maximumCachedPages = 20,
+    this.maximumCachedPages = 32,
   }) : assert(maximumCachedPages > 0);
 
   final QuranPageDataSource _source;
