@@ -21,6 +21,7 @@ import '../services/bookmark_service.dart';
 import '../services/settings_service.dart';
 import '../providers/reader_provider.dart';
 import '../services/locale_controller.dart';
+import '../services/app_routes.dart';
 
 const kQuranFont = 'KFGQPC HAFS Uthmanic Script';
 
@@ -820,6 +821,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
       _AyahActionButton(icon: CupertinoIcons.book, active: _tajweedMode, label: _tajweedMode ? 'Tajweed' : 'Madinah', onPressed: () { setState(() => _tajweedMode = !_tajweedMode); _removeAyahToolbar(); }),
       _AyahActionButton(icon: CupertinoIcons.play_fill, active: false, label: 'Play', onPressed: () { _removeAyahToolbar(); _playSpecificAyah(verse); }),
       _AyahActionButton(icon: _memorizedAyahs.contains(verse.id) ? CupertinoIcons.checkmark_circle_fill : CupertinoIcons.bookmark, active: _memorizedAyahs.contains(verse.id), label: 'Memorize', onPressed: () async { await _toggleMemorizedAyah(verse); _removeAyahToolbar(); }),
+      _AyahActionButton(icon: CupertinoIcons.repeat, active: false, label: 'Practice', onPressed: () { _removeAyahToolbar(); Navigator.of(context).pushNamed(AppRoutes.quranMemorization); }),
       _AyahActionButton(icon: CupertinoIcons.xmark, active: false, label: 'Close', onPressed: _removeAyahToolbar),
     ])))));
     overlay.insert(_ayahActionOverlay!);
@@ -971,7 +973,6 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
             ),
             if (_bottomBarVisible)
               Positioned(left: 12, right: 12, bottom: 8, child: _ReaderBottomBar(
-                page: _readerPage, totalPages: totalReaderPages,
                 isPlaying: _isRecitationPlaying, autoScrollEnabled: _autoScrollEnabled,
                 onPrevious: () => _scrollToPage(_readerPage - 1),
                 onNext: () => _scrollToPage(_readerPage + 1),
@@ -1001,8 +1002,8 @@ class _AyahActionButton extends StatelessWidget {
 }
 
 class _ReaderBottomBar extends StatelessWidget {
-  const _ReaderBottomBar({required this.page, required this.totalPages, required this.isPlaying, required this.autoScrollEnabled, required this.onPrevious, required this.onNext, required this.onJump, required this.onPlayPause, required this.onAutoScroll, required this.onChooseReciter, required this.onSearch, required this.onBookmark, required this.onSettings});
-  final int page, totalPages; final bool isPlaying, autoScrollEnabled;
+  const _ReaderBottomBar({required this.isPlaying, required this.autoScrollEnabled, required this.onPrevious, required this.onNext, required this.onJump, required this.onPlayPause, required this.onAutoScroll, required this.onChooseReciter, required this.onSearch, required this.onBookmark, required this.onSettings});
+  final bool isPlaying, autoScrollEnabled;
   final VoidCallback onPrevious, onNext, onJump, onPlayPause, onAutoScroll, onChooseReciter, onSearch, onBookmark, onSettings;
   @override Widget build(BuildContext context) => Container(
     height: 58, padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -1010,7 +1011,7 @@ class _ReaderBottomBar extends StatelessWidget {
     child: Row(children: [
       _item(context, CupertinoIcons.chevron_up, 'Previous', onPrevious),
       _item(context, CupertinoIcons.chevron_down, 'Next', onNext),
-      CupertinoButton(padding: const EdgeInsets.symmetric(horizontal: 5), minimumSize: const Size(35, 45), onPressed: onJump, child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [const Icon(CupertinoIcons.list_number, size: 18), Text('$page/$totalPages', style: const TextStyle(fontSize: 8))])),
+      CupertinoButton(padding: const EdgeInsets.symmetric(horizontal: 5), minimumSize: const Size(35, 45), onPressed: onJump, child: const Icon(CupertinoIcons.list_number, size: 18)),
       _item(context, autoScrollEnabled ? CupertinoIcons.pause_circle_fill : CupertinoIcons.speedometer, 'Auto', onAutoScroll, active: autoScrollEnabled),
       _item(context, isPlaying ? CupertinoIcons.pause_fill : CupertinoIcons.play_fill, 'Listen', onPlayPause, active: isPlaying),
       _item(context, CupertinoIcons.person_crop_circle, 'Reciter', onChooseReciter),
