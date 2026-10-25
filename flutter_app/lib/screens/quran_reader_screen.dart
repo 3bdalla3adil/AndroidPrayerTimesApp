@@ -968,7 +968,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
                               },
                             );
                           }
-                          return const _MushafPagePlaceholder();
+                          return _MushafPagePlaceholder(darkPage: _darkPage);
                         },
                       );
                     },
@@ -1399,15 +1399,14 @@ class _MushafNavigationStrip extends StatelessWidget {
 }
 
 class _MushafPagePlaceholder extends StatelessWidget {
-  const _MushafPagePlaceholder();
+  const _MushafPagePlaceholder({required this.darkPage});
+
+  final bool darkPage;
 
   @override
-  Widget build(BuildContext context) => const ColoredBox(
-    color: Color(0xFF3A352F),
-    child: SizedBox(
-      width: double.infinity,
-      height: 480,
-    ),
+  Widget build(BuildContext context) => ColoredBox(
+    color: darkPage ? const Color(0xFF3A352F) : const Color(0xFFF6F0E4),
+    child: const SizedBox(width: double.infinity, height: 480),
   );
 }
 
