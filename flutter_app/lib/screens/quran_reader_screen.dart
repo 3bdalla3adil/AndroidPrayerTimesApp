@@ -791,7 +791,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
       _AyahActionButton(icon: _memorizedAyahs.contains(verse.id) ? CupertinoIcons.checkmark_circle_fill : CupertinoIcons.bookmark, active: _memorizedAyahs.contains(verse.id), label: 'Memorize', onPressed: () async { await _toggleMemorizedAyah(verse); _removeAyahToolbar(); }),
       _AyahActionButton(icon: CupertinoIcons.repeat, active: false, label: 'Practice', onPressed: () { _removeAyahToolbar(); Navigator.of(context).pushNamed(AppRoutes.quranMemorization); }),
       _AyahActionButton(icon: CupertinoIcons.xmark, active: false, label: 'Close', onPressed: _removeAyahToolbar),
-    ])))));
+    ]))))));
     overlay.insert(_ayahActionOverlay!);
   }
 
