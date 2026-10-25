@@ -21,8 +21,6 @@ import '../services/bookmark_service.dart';
 import '../services/settings_service.dart';
 import '../providers/reader_provider.dart';
 import '../services/locale_controller.dart';
-import '../models/prayer_entry.dart';
-import '../services/prayer_service.dart';
 import '../services/app_routes.dart';
 
 const kQuranFont = 'KFGQPC HAFS Uthmanic Script';
@@ -116,12 +114,6 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
   double _pinchStartFontSize = 25;
   Timer? _fontSaveDebounce;
   Timer? _autoScrollTimer;
-  double _lastScrollPixels = 0;
-  bool _prayerHeaderVisible = false;
-  List<PrayerEntry> _prayerTimes = const <PrayerEntry>[];
-  DateTime _clockNow = DateTime.now();
-  Timer? _clockTimer;
-  late final PrayerService _prayerService = PrayerService(_storage);
   final AudioPlayer _recitationPlayer = AudioPlayer();
   StreamSubscription<void>? _recitationCompleteSubscription;
   StreamSubscription<PlayerState>? _recitationStateSubscription;
@@ -156,10 +148,6 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
       _playNextRecitationVerse();
     });
     _loadInitialPage();
-    _loadPrayerHeader();
-    _clockTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) setState(() => _clockNow = DateTime.now());
-    });
   }
 
   @override
@@ -171,7 +159,6 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
     _recitationCompleteSubscription?.cancel();
     _recitationStateSubscription?.cancel();
     _recitationPlayer.dispose();
-    _clockTimer?.cancel();
     _fontSaveDebounce?.cancel();
     _autoScrollTimer?.cancel();
     _ayahActionOverlay?.remove();
@@ -314,29 +301,6 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
   void _handlePointerUp(PointerEvent event) {
     _activePointers.remove(event.pointer);
     if (_activePointers.length < 2) _initialPinchDistance = null;
-  }
-
-  Future<void> _loadPrayerHeader() async {
-    try {
-      final now = DateTime.now();
-      final prayers = await _prayerService.today();
-      final hasUpcomingPrayer = prayers.any((prayer) => prayer.time.isAfter(now));
-      final tomorrow = hasUpcomingPrayer
-          ? const <PrayerEntry>[]
-          : await _prayerService.forDate(DateTime(now.year, now.month, now.day + 1));
-      if (!mounted) return;
-      setState(() => _prayerTimes = <PrayerEntry>[...prayers, ...tomorrow]);
-    } catch (_) {
-      // Prayer details are optional in the reader; keep the Mushaf usable
-      // when location or prayer-time settings have not been configured.
-    }
-  }
-
-  PrayerEntry? get _nextPrayer {
-    for (final prayer in _prayerTimes) {
-      if (prayer.time.isAfter(_clockNow)) return prayer;
-    }
-    return null;
   }
 
   Future<void> _loadInitialPage() async {
@@ -1062,209 +1026,6 @@ class _ReaderBottomBar extends StatelessWidget {
   Widget _item(BuildContext context, IconData icon, String label, VoidCallback action, {bool active = false}) => Expanded(child: CupertinoButton(padding: EdgeInsets.zero, minimumSize: const Size(0, 44), onPressed: action, child: Column(mainAxisAlignment: MainAxisAlignment.center, mainAxisSize: MainAxisSize.min, children: [Icon(icon, size: 17, color: active ? const Color(0xFF176B52) : CupertinoColors.label.resolveFrom(context)), Text(label, maxLines: 1, style: TextStyle(fontSize: 8, color: active ? const Color(0xFF176B52) : CupertinoColors.secondaryLabel.resolveFrom(context)))])));
 }
 
-class _ReaderPrayerHeader extends StatelessWidget {
-  const _ReaderPrayerHeader({required this.prayer, required this.now});
-  final PrayerEntry prayer;
-  final DateTime now;
-
-  @override
-  Widget build(BuildContext context) {
-    final remaining = prayer.time.difference(now);
-    final hours = remaining.inHours;
-    final minutes = remaining.inMinutes.remainder(60);
-    final seconds = remaining.inSeconds.remainder(60);
-    final countdown = '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 6, 14, 8),
-      child: Row(children: [
-        Expanded(child: Text(countdown, textAlign: TextAlign.left, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15))),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [Text(LocaleController.isArabic ? 'الصلاة القادمة' : 'NEXT PRAYER', style: const TextStyle(fontSize: 9, letterSpacing: 1.0, color: CupertinoColors.secondaryLabel)), Text(LocaleController.isArabic ? prayer.arabicName : prayer.name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15))])),
-      ]),
-    );
-  }
-}
-
-class _QuranReaderControls extends StatelessWidget {
-  const _QuranReaderControls({
-    required this.isPlaying, required this.isLoading, required this.reciterName,
-    required this.translationEnabled, required this.tajweedMode,
-    required this.onPlayPause, required this.onChooseReciter,
-    required this.onTranslationChanged, required this.onMushafModeChanged,
-  });
-  final bool isPlaying, isLoading, translationEnabled, tajweedMode;
-  final String reciterName;
-  final VoidCallback onPlayPause, onChooseReciter;
-  final ValueChanged<bool> onTranslationChanged, onMushafModeChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final ar = LocaleController.isArabic;
-    const accent = Color(0xFF176B52);
-    return Container(
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 9),
-      decoration: BoxDecoration(
-        color: CupertinoColors.secondarySystemGroupedBackground.resolveFrom(context),
-        border: Border(bottom: BorderSide(color: CupertinoColors.separator.resolveFrom(context))),
-      ),
-      child: Column(children: [
-        Row(children: [
-          CupertinoButton(
-            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
-            color: accent,
-            borderRadius: BorderRadius.circular(22),
-            onPressed: isLoading ? null : onPlayPause,
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
-              if (isLoading)
-                const CupertinoActivityIndicator(color: CupertinoColors.white, radius: 8)
-              else
-                Icon(isPlaying ? CupertinoIcons.pause_fill : CupertinoIcons.play_fill,
-                    size: 16, color: CupertinoColors.white),
-              const SizedBox(width: 7),
-              Text(isLoading ? (ar ? 'جارٍ التحميل' : 'Loading')
-                  : isPlaying ? (ar ? 'إيقاف مؤقت' : 'Pause')
-                  : (ar ? 'تشغيل التلاوة' : 'Play recitation'),
-                style: const TextStyle(color: CupertinoColors.white, fontSize: 12, fontWeight: FontWeight.w600)),
-            ]),
-          ),
-          const SizedBox(width: 8),
-          Expanded(child: CupertinoButton(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-            onPressed: onChooseReciter,
-            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              const Icon(CupertinoIcons.person_crop_circle, size: 17),
-              const SizedBox(width: 5),
-              Flexible(child: Text(reciterName, maxLines: 1, overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 12))),
-              const SizedBox(width: 3),
-              const Icon(CupertinoIcons.chevron_down, size: 11),
-            ]),
-          )),
-        ]),
-        const SizedBox(height: 5),
-        Row(children: [
-          const Icon(CupertinoIcons.text_quote, size: 17),
-          const SizedBox(width: 7),
-          Expanded(child: Text(ar ? 'الترجمة الإنجليزية' : 'Translation',
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500))),
-          CupertinoSwitch(value: translationEnabled, onChanged: onTranslationChanged),
-        ]),
-        const SizedBox(height: 3),
-        Row(children: [
-          const Icon(CupertinoIcons.book, size: 17),
-          const SizedBox(width: 7),
-          Expanded(child: Text(ar ? 'نمط المصحف' : 'Mushaf mode',
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500))),
-          CupertinoSlidingSegmentedControl<bool>(
-            groupValue: tajweedMode,
-            padding: const EdgeInsets.all(3),
-            children: {
-              false: Padding(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                  child: Text(ar ? 'المدينة' : 'Madinah', style: const TextStyle(fontSize: 11))),
-              true: Padding(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                  child: Text(ar ? 'التجويد' : 'Tajweed', style: const TextStyle(fontSize: 11))),
-            },
-            onValueChanged: (value) { if (value != null) onMushafModeChanged(value); },
-          ),
-        ]),
-      ]),
-    );
-  }
-}
-
-class _ReaderToolbar extends StatelessWidget {
-  const _ReaderToolbar({
-    required this.onNavigate,
-    required this.onSearch,
-    required this.onSettings,
-    required this.onBookmark,
-    required this.page,
-    required this.totalPages,
-  });
-
-  final VoidCallback onNavigate;
-  final VoidCallback onSearch;
-  final VoidCallback onSettings;
-  final VoidCallback onBookmark;
-  final int page;
-  final int totalPages;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
-      decoration: BoxDecoration(
-        color: CupertinoColors.secondarySystemGroupedBackground
-            .resolveFrom(context),
-        border: Border(
-          bottom: BorderSide(
-            color: CupertinoColors.separator.resolveFrom(context),
-          ),
-        ),
-      ),
-      child: Row(
-        children: [
-          _ReaderButton(
-            icon: CupertinoIcons.list_bullet,
-            label: LocaleController.isArabic ? 'تنقّل' : 'Browse',
-            onPressed: onNavigate,
-          ),
-          _ReaderButton(
-            icon: CupertinoIcons.search,
-            label: LocaleController.isArabic ? 'بحث' : 'Search',
-            onPressed: onSearch,
-          ),
-          _ReaderButton(
-            icon: CupertinoIcons.slider_horizontal_3,
-            label: LocaleController.isArabic ? 'المظهر' : 'Appearance',
-            onPressed: onSettings,
-          ),
-          _ReaderButton(
-            icon: CupertinoIcons.bookmark,
-            label: LocaleController.isArabic ? 'حفظ' : 'Bookmark',
-            onPressed: onBookmark,
-          ),
-          const Spacer(),
-          Text(
-            '$page / $totalPages',
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ReaderButton extends StatelessWidget {
-  const _ReaderButton({
-    required this.icon,
-    required this.label,
-    required this.onPressed,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return CupertinoButton(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-      minimumSize: const Size(0, 0),
-      onPressed: onPressed,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 19),
-          Text(label, style: const TextStyle(fontSize: 9)),
-        ],
-      ),
-    );
-  }
-}
-
 class _MushafPage extends StatefulWidget {
   const _MushafPage({
     required this.page,
@@ -1304,7 +1065,7 @@ class _MushafPageState extends State<_MushafPage> {
     final existing = _ayahRecognizers[key];
     if (existing != null) return existing;
     final recognizer = TapGestureRecognizer()
-      ..onTapDown = (details) => widget.onAyahTap(verse, details.globalPosition);
+      ..onTapUp = (details) => widget.onAyahTap(verse, details.globalPosition);
     _ayahRecognizers[key] = recognizer;
     return recognizer;
   }
@@ -1436,8 +1197,7 @@ class _MushafPageState extends State<_MushafPage> {
                   color: widget.darkPage ? const Color(0xFFE6E0C8) : green,
                   darkPage: widget.darkPage,
                   selected: _isHighlighted(verse),
-                  onTapDown: (details) => _toggleHighlight(verse, details.globalPosition),
-                  onTap: () {},
+                  onTapUp: (details) => _toggleHighlight(verse, details.globalPosition),
                 ),
               ),
               if (widget.showTranslation)
@@ -1481,7 +1241,7 @@ class _AyahMarker extends StatelessWidget {
     required this.darkPage,
     required this.selected,
     required this.onTap,
-    required this.onTapDown,
+    required this.onTapUp,
   });
 
   final int number;
@@ -1489,14 +1249,14 @@ class _AyahMarker extends StatelessWidget {
   final bool darkPage;
   final bool selected;
   final VoidCallback onTap;
-  final ValueChanged<TapDownDetails> onTapDown;
+  final ValueChanged<TapUpDetails> onTapUp;
 
   @override
   Widget build(BuildContext context) {
     final markerColor = selected ? const Color(0xFFFF9800) : (darkPage ? const Color(0xFFE6E0C8) : color);
     return GestureDetector(
       onTap: onTap,
-      onTapDown: onTapDown,
+      onTapUp: onTapUp,
       behavior: HitTestBehavior.opaque,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 2),
@@ -1578,63 +1338,6 @@ String _arabicNumber(int value) {
       .split('')
       .map((digit) => arabic[western.indexOf(digit)])
       .join();
-}
-
-class _PageControls extends StatelessWidget {
-  const _PageControls({
-    required this.page,
-    required this.totalPages,
-    required this.onPrevious,
-    required this.onNext,
-    required this.onJump,
-  });
-
-  final int page;
-  final int totalPages;
-  final VoidCallback onPrevious;
-  final VoidCallback onNext;
-  final VoidCallback onJump;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(12, 6, 12, 7),
-      decoration: BoxDecoration(
-        color: CupertinoColors.secondarySystemGroupedBackground
-            .resolveFrom(context),
-        border: Border(
-          top: BorderSide(
-            color: CupertinoColors.separator.resolveFrom(context),
-          ),
-        ),
-      ),
-      child: Row(
-        children: [
-          CupertinoButton(
-            padding: const EdgeInsets.all(8),
-            onPressed: page > 1 ? onPrevious : null,
-            child: const Icon(CupertinoIcons.chevron_left),
-          ),
-          Expanded(
-            child: CupertinoButton(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              onPressed: onJump,
-              child: Text(
-                LocaleController.isArabic ? 'صفحة $page / $totalPages' : 'Page $page / $totalPages',
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontWeight: FontWeight.w700),
-              ),
-            ),
-          ),
-          CupertinoButton(
-            padding: const EdgeInsets.all(8),
-            onPressed: page < totalPages ? onNext : null,
-            child: const Icon(CupertinoIcons.chevron_right),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _ErrorPage extends StatelessWidget {
