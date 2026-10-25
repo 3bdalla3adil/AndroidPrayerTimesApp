@@ -105,7 +105,9 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
   set _showTranslation(bool value) =>
       ref.read(readerProvider.notifier).setTranslationEnabled(value);
 
-  bool _showToolbar = true;
+  bool _bottomBarVisible = true;
+  bool _autoScrollEnabled = false;
+  OverlayEntry? _ayahActionOverlay;
   bool _tajweedMode = false;
   String? _selectedAyahKey;
   Set<String> _memorizedAyahs = <String>{};
@@ -113,6 +115,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
   double? _initialPinchDistance;
   double _pinchStartFontSize = 25;
   Timer? _fontSaveDebounce;
+  Timer? _autoScrollTimer;
   double _lastScrollPixels = 0;
   bool _prayerHeaderVisible = false;
   List<PrayerEntry> _prayerTimes = const <PrayerEntry>[];
@@ -170,6 +173,9 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
     _recitationPlayer.dispose();
     _clockTimer?.cancel();
     _fontSaveDebounce?.cancel();
+    _autoScrollTimer?.cancel();
+    _ayahActionOverlay?.remove();
+    _ayahActionOverlay = null;
     super.dispose();
   }
 
@@ -796,9 +802,11 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
     );
   }
 
-  Future<void> _handleAyahSelected(Verse verse) async {
-    setState(() => _selectedAyahKey = _selectedAyahKey == verse.id ? null : verse.id);
-    await _showAyahToolbar(verse);
+  Future<void> _handleAyahSelected(Verse verse, Offset globalPosition) async {
+    final wasSelected = _selectedAyahKey == verse.id;
+    setState(() => _selectedAyahKey = wasSelected ? null : verse.id);
+    _removeAyahToolbar();
+    if (!wasSelected) _showAyahToolbar(verse, globalPosition);
   }
 
   Future<void> _playSpecificAyah(Verse verse) async {
@@ -835,41 +843,43 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
     if (mounted) setState(() => _memorizedAyahs = values);
   }
 
-  Future<void> _showAyahToolbar(Verse verse) async {
-    await showCupertinoModalPopup<void>(
-      context: context,
-      builder: (popupContext) => CupertinoPopupSurface(
-        child: SafeArea(
-          top: false,
-          child: StatefulBuilder(
-            builder: (context, sheetSetState) => SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 18),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Center(child: Container(width: 36, height: 4, decoration: BoxDecoration(color: CupertinoColors.systemGrey3.resolveFrom(context), borderRadius: BorderRadius.circular(4)))),
-                  const SizedBox(height: 10),
-                  Text(LocaleController.isArabic ? 'الآية ${verse.ayahNumber} • ${quran.getSurahNameArabic(verse.surahNumber)}' : '${quran.getSurahName(verse.surahNumber)} • Ayah ${verse.ayahNumber}', textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
-                  const SizedBox(height: 8),
-                  CupertinoListTile(title: Text(LocaleController.isArabic ? 'إظهار الترجمة' : 'Translation'), trailing: CupertinoSwitch(value: _showTranslation, onChanged: (value) { setState(() => _showTranslation = value); sheetSetState(() {}); _settingsService.saveTranslation(value); })),
-                  CupertinoListTile(title: Text(LocaleController.isArabic ? 'الوضع الداكن' : 'Dark page'), trailing: CupertinoSwitch(value: _darkPage, onChanged: (value) { setState(() => _darkPage = value); sheetSetState(() {}); _settingsService.saveDarkPage(value); })),
-                  CupertinoListTile(title: Text(LocaleController.isArabic ? 'التجويد / مصحف المدينة' : 'Tajweed / Madinah Mushaf'), subtitle: Text(_tajweedMode ? (LocaleController.isArabic ? 'التجويد' : 'Tajweed') : (LocaleController.isArabic ? 'مصحف المدينة' : 'Madinah Mushaf')), trailing: CupertinoSwitch(value: _tajweedMode, onChanged: (value) { setState(() => _tajweedMode = value); sheetSetState(() {}); })),
-                  const SizedBox(height: 6),
-                  CupertinoButton.filled(onPressed: () { Navigator.pop(popupContext); _playSpecificAyah(verse); }, child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(_isRecitationPlaying ? CupertinoIcons.pause_fill : CupertinoIcons.play_fill), const SizedBox(width: 8), Text(LocaleController.isArabic ? 'استمع إلى الآية' : 'Play this ayah')])),
-                  const SizedBox(height: 6),
-                  CupertinoButton(onPressed: () async { await _toggleMemorizedAyah(verse); sheetSetState(() {}); }, child: Text(_memorizedAyahs.contains(verse.id) ? (LocaleController.isArabic ? 'إزالة علامة الحفظ' : 'Remove memorized mark') : (LocaleController.isArabic ? 'وضع علامة محفوظة' : 'Mark as memorized'))),
-                  CupertinoButton(onPressed: () { Navigator.pop(popupContext); Navigator.of(context).pushNamed(AppRoutes.quranMemorization); }, child: Text(LocaleController.isArabic ? 'فتح تدريب الحفظ' : 'Open memorization practice')),
-                  CupertinoButton(onPressed: () => Navigator.pop(popupContext), child: Text(LocaleController.isArabic ? 'إغلاق' : 'Close')),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
+  void _showAyahToolbar(Verse verse, Offset globalPosition) {
+    final overlay = Overlay.of(context, rootOverlay: true);
+    final overlayBox = overlay.context.findRenderObject() as RenderBox?;
+    if (overlayBox == null) return;
+    final local = overlayBox.globalToLocal(globalPosition);
+    const width = 310.0, height = 62.0;
+    final screen = MediaQuery.sizeOf(context);
+    final left = (local.dx - width / 2).clamp(8.0, screen.width - width - 8.0);
+    final top = (local.dy - height - 18).clamp(90.0, screen.height - height - 95.0);
+    _ayahActionOverlay = OverlayEntry(builder: (overlayContext) => Positioned(left: left, top: top, width: width, child: Material(color: const Color(0x00000000), child: DecoratedBox(decoration: BoxDecoration(color: CupertinoColors.secondarySystemGroupedBackground.resolveFrom(overlayContext), borderRadius: BorderRadius.circular(22), border: Border.all(color: CupertinoColors.separator.resolveFrom(overlayContext).withValues(alpha: .45)), boxShadow: [BoxShadow(color: CupertinoColors.black.withValues(alpha: .18), blurRadius: 22, offset: const Offset(0, 8))]), child: SizedBox(height: height, child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
+      _AyahActionButton(icon: CupertinoIcons.text_quote, active: _showTranslation, label: 'Translation', onPressed: () { setState(() => _showTranslation = !_showTranslation); _settingsService.saveTranslation(_showTranslation); _removeAyahToolbar(); }),
+      _AyahActionButton(icon: _darkPage ? CupertinoIcons.moon_fill : CupertinoIcons.sun_max, active: _darkPage, label: 'Theme', onPressed: () { setState(() => _darkPage = !_darkPage); _settingsService.saveDarkPage(_darkPage); _removeAyahToolbar(); }),
+      _AyahActionButton(icon: CupertinoIcons.book, active: _tajweedMode, label: _tajweedMode ? 'Tajweed' : 'Madinah', onPressed: () { setState(() => _tajweedMode = !_tajweedMode); _removeAyahToolbar(); }),
+      _AyahActionButton(icon: CupertinoIcons.play_fill, active: false, label: 'Play', onPressed: () { _removeAyahToolbar(); _playSpecificAyah(verse); }),
+      _AyahActionButton(icon: _memorizedAyahs.contains(verse.id) ? CupertinoIcons.checkmark_circle_fill : CupertinoIcons.bookmark, active: _memorizedAyahs.contains(verse.id), label: 'Memorize', onPressed: () async { await _toggleMemorizedAyah(verse); _removeAyahToolbar(); }),
+      _AyahActionButton(icon: CupertinoIcons.xmark, active: false, label: 'Close', onPressed: _removeAyahToolbar),
+    ])))));
+    overlay.insert(_ayahActionOverlay!);
   }
 
+  void _removeAyahToolbar() { _ayahActionOverlay?.remove(); _ayahActionOverlay = null; }
+
+  void _toggleAutoScroll() {
+    if (_autoScrollEnabled) { _autoScrollTimer?.cancel(); setState(() => _autoScrollEnabled = false); return; }
+    setState(() => _autoScrollEnabled = true);
+    _runAutoScroll();
+  }
+
+  Future<void> _runAutoScroll() async {
+    while (mounted && _autoScrollEnabled) {
+      if (!_itemScrollController.isAttached) { await Future<void>.delayed(const Duration(milliseconds: 250)); continue; }
+      final visible = _itemPositionsListener.itemPositions.value.where((p) => p.itemTrailingEdge > 0).toList()..sort((a, b) => a.index.compareTo(b.index));
+      if (visible.isEmpty || visible.last.index >= totalReaderPages - 1) { if (mounted) setState(() => _autoScrollEnabled = false); return; }
+      try { await _itemScrollController.scrollTo(index: visible.last.index, alignment: 0, duration: const Duration(seconds: 18), curve: Curves.linear); } catch (_) { if (!mounted || !_autoScrollEnabled) return; }
+      await Future<void>.delayed(const Duration(milliseconds: 250));
+    }
+  }
   void _openReaderSettings() {
     showCupertinoModalPopup<void>(
       context: context,
@@ -947,27 +957,11 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
     return AdaptivePageScaffold(
       backgroundColor: background,
       navigationBar: CupertinoNavigationBar(
-        middle: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              LocaleController.isArabic ? 'القرآن الكريم' : 'The Holy Quran',
-              style: TextStyle(fontWeight: FontWeight.w700),
-            ),
-            Text(
-              LocaleController.isArabic ? 'صفحة $_readerPage من $totalQuranPages' : 'Page $_readerPage of $totalQuranPages',
-              style: const TextStyle(fontSize: 11),
-            ),
-          ],
-        ),
+        middle: Text(LocaleController.isArabic ? 'القرآن الكريم' : 'The Holy Quran', style: const TextStyle(fontWeight: FontWeight.w700)),
         trailing: CupertinoButton(
           padding: EdgeInsets.zero,
-          onPressed: () => setState(() => _showToolbar = !_showToolbar),
-          child: Icon(
-            _showToolbar
-                ? CupertinoIcons.eye_slash
-                : CupertinoIcons.eye,
-          ),
+          onPressed: () => setState(() => _bottomBarVisible = !_bottomBarVisible),
+          child: Icon(_bottomBarVisible ? CupertinoIcons.chevron_down : CupertinoIcons.chevron_up),
         ),
       ),
       child: SafeArea(
