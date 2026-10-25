@@ -1,5 +1,3 @@
-import 'package:flutter/foundation.dart';
-
 import '../models/prayer_entry.dart';
 import 'notification_service.dart';
 import 'prayer_service.dart';
