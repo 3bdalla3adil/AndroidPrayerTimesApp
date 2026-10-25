@@ -93,6 +93,16 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
   late final QuranSearchService _searchService;
 
   int get _readerPage => ref.read(readerProvider).currentPage;
+  int get _currentPageSurah {
+    final data = _repository.cachedPage(_readerPage);
+    return data?.verses.firstOrNull?.surahNumber ?? widget.surahNumber;
+  }
+  int get _currentPageJuz {
+    final verse = _repository.cachedPage(_readerPage)?.verses.firstOrNull;
+    return verse == null
+        ? quran.getJuzNumber(widget.surahNumber, widget.startingAyah)
+        : quran.getJuzNumber(verse.surahNumber, verse.ayahNumber);
+  }
   set _readerPage(int value) => ref.read(readerProvider.notifier).setCurrentPage(value);
 
   double get _fontSize => ref.read(readerProvider).fontSize;
@@ -905,6 +915,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
         child: Stack(
           children: [
             Positioned.fill(
+              top: 48,
               bottom: _bottomBarVisible ? 74 : 0,
               child: Listener(
                 behavior: HitTestBehavior.translucent,
@@ -963,6 +974,19 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
                     },
                   ),
                 ),
+              ),
+            ),
+            Positioned(
+              top: 0,
+              left: 4,
+              right: 4,
+              height: 44,
+              child: _MushafNavigationStrip(
+                page: _readerPage,
+                surah: _currentPageSurah,
+                juz: _currentPageJuz,
+                onPrevious: () => _scrollToPage(_readerPage - 1),
+                onNext: () => _scrollToPage(_readerPage + 1),
               ),
             ),
             if (_bottomBarVisible)
@@ -1127,7 +1151,6 @@ class _MushafPageState extends State<_MushafPage> {
       if (startsSurah) {
         sections.add(_SurahHeader(
           arabic: quran.getSurahNameArabic(surah),
-          english: quran.getSurahName(surah),
           color: green,
           border: divider,
         ));
@@ -1271,13 +1294,11 @@ class _AyahMarker extends StatelessWidget {
 class _SurahHeader extends StatelessWidget {
   const _SurahHeader({
     required this.arabic,
-    required this.english,
     required this.color,
     required this.border,
   });
 
   final String arabic;
-  final String english;
   final Color color;
   final Color border;
 
@@ -1315,6 +1336,66 @@ String _arabicNumber(int value) {
       .split('')
       .map((digit) => arabic[western.indexOf(digit)])
       .join();
+}
+
+class _MushafNavigationStrip extends StatelessWidget {
+  const _MushafNavigationStrip({
+    required this.page,
+    required this.surah,
+    required this.juz,
+    required this.onPrevious,
+    required this.onNext,
+  });
+
+  final int page;
+  final int surah;
+  final int juz;
+  final VoidCallback onPrevious;
+  final VoidCallback onNext;
+
+  @override
+  Widget build(BuildContext context) {
+    final foreground = CupertinoColors.label.resolveFrom(context);
+    final border = CupertinoColors.separator.resolveFrom(context);
+    final arabic = LocaleController.isArabic;
+    return Row(
+      children: [
+        CupertinoButton(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          minimumSize: const Size(32, 40),
+          onPressed: onPrevious,
+          child: Icon(CupertinoIcons.chevron_left, color: foreground),
+        ),
+        Expanded(child: _pill(arabic ? 'الجزء $juz' : 'Juz $juz', border, foreground)),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          child: Text(_arabicNumber(page), style: TextStyle(fontSize: 19, color: foreground)),
+        ),
+        Expanded(child: _pill(
+          arabic ? quran.getSurahNameArabic(surah) : quran.getSurahName(surah),
+          border,
+          foreground,
+        )),
+        CupertinoButton(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          minimumSize: const Size(32, 40),
+          onPressed: onNext,
+          child: Icon(CupertinoIcons.chevron_right, color: foreground),
+        ),
+      ],
+    );
+  }
+
+  Widget _pill(String label, Color border, Color foreground) => Container(
+    alignment: Alignment.center,
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+    decoration: BoxDecoration(
+      border: Border.all(color: border.withValues(alpha: .65)),
+      borderRadius: BorderRadius.circular(8),
+    ),
+    child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis,
+      style: TextStyle(color: foreground, fontSize: 14)),
+  );
 }
 
 class _MushafPagePlaceholder extends StatelessWidget {
