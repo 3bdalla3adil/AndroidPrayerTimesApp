@@ -81,7 +81,10 @@ class StorageService {
       );
 
   Future<void> savePrayerCity({required String country, required String city, required double lat, required double lon, required int method}) async {
-    await saveLocation(lat, lon, city);
+    final displayName = city == 'Current location' || country == 'Unknown country'
+        ? city
+        : '$city, $country';
+    await saveLocation(lat, lon, displayName);
     await prefs.setString(_country, country);
     await prefs.setString(_city, city);
     await prefs.setInt(_method, method);
