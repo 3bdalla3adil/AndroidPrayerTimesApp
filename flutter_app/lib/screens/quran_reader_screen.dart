@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart' show Material;
+import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/physics.dart';
@@ -730,40 +732,6 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
     );
   }
 
-  void _jumpToPage() {
-    final input = TextEditingController(text: '$_readerPage');
-    showCupertinoDialog<void>(
-      context: context,
-      builder: (dialogContext) => CupertinoAlertDialog(
-        title: Text(LocaleController.isArabic ? 'الانتقال إلى صفحة' : 'Go to page'),
-        content: Padding(
-          padding: const EdgeInsets.only(top: 14),
-          child: CupertinoTextField(
-            controller: input,
-            keyboardType: TextInputType.number,
-            textAlign: TextAlign.center,
-            placeholder: '1 - 604',
-          ),
-        ),
-        actions: [
-          CupertinoDialogAction(
-            child: Text(LocaleController.isArabic ? 'إلغاء' : 'Cancel'),
-            onPressed: () => Navigator.pop(dialogContext),
-          ),
-          CupertinoDialogAction(
-            isDefaultAction: true,
-            child: Text(LocaleController.isArabic ? 'انتقال' : 'Go'),
-            onPressed: () {
-              final value = int.tryParse(input.text.trim());
-              Navigator.pop(dialogContext);
-              if (value != null) _scrollToPage(value.clamp(1, totalQuranPages).toInt());
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
   Future<void> _handleAyahSelected(Verse verse, Offset globalPosition) async {
     final wasSelected = _selectedAyahKey == verse.id;
     setState(() => _selectedAyahKey = wasSelected ? null : verse.id);
@@ -976,7 +944,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
                 isPlaying: _isRecitationPlaying, autoScrollEnabled: _autoScrollEnabled,
                 onPrevious: () => _scrollToPage(_readerPage - 1),
                 onNext: () => _scrollToPage(_readerPage + 1),
-                onJump: _jumpToPage, onPlayPause: _toggleRecitation, onAutoScroll: _toggleAutoScroll,
+                onJump: _openNavigator, onPlayPause: _toggleRecitation, onAutoScroll: _toggleAutoScroll,
                 onChooseReciter: _chooseReciter, onSearch: _searchQuran, onBookmark: _bookmarkCurrentPage, onSettings: _openReaderSettings,
               )),
           ],
@@ -1237,7 +1205,6 @@ class _AyahMarker extends StatelessWidget {
     required this.color,
     required this.darkPage,
     required this.selected,
-    required this.onTap,
     required this.onTapUp,
   });
 
@@ -1245,14 +1212,12 @@ class _AyahMarker extends StatelessWidget {
   final Color color;
   final bool darkPage;
   final bool selected;
-  final VoidCallback onTap;
   final ValueChanged<TapUpDetails> onTapUp;
 
   @override
   Widget build(BuildContext context) {
     final markerColor = selected ? const Color(0xFFFF9800) : (darkPage ? const Color(0xFFE6E0C8) : color);
     return GestureDetector(
-      onTap: onTap,
       onTapUp: onTapUp,
       behavior: HitTestBehavior.opaque,
       child: Padding(
