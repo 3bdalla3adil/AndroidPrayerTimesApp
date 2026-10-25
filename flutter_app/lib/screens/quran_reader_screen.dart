@@ -1078,38 +1078,30 @@ class _MushafPageState extends State<_MushafPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Warm, book-like paper palette inspired by a printed Mushaf.
     final pageBg = widget.darkPage
-        ? const Color(0xFF17211C)
-        : const Color(0xFFFFFFFF);
+        ? const Color(0xFF3A352F)
+        : const Color(0xFFF6F0E4);
     final ink = widget.darkPage
-        ? const Color(0xFFECE8D9)
-        : const Color(0xFF202124);
+        ? const Color(0xFFF0EDE6)
+        : const Color(0xFF2D2924);
     final green = widget.darkPage
-        ? const Color(0xFF9CC8A8)
-        : const Color(0xFF176B52);
+        ? const Color(0xFFC9C0A9)
+        : const Color(0xFF6B705C);
     final divider = widget.darkPage
-        ? const Color(0xFF50675A)
-        : const Color(0xFFE0E0E0);
+        ? const Color(0xFF8D8477)
+        : const Color(0xFFC7BBA8);
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(14, 18, 14, 10),
+      padding: const EdgeInsets.fromLTRB(5, 8, 5, 6),
       color: pageBg,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           ..._buildSurahContent(ink: ink, green: green, divider: divider),
-          const SizedBox(height: 14),
-          Center(
-            child: Text(
-              '— ${widget.page} —',
-              style: TextStyle(
-                fontSize: 11,
-                color: green,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
+          const SizedBox(height: 4),
+          _OrnamentalPageNumber(page: widget.page, color: green, divider: divider),
         ],
       ),
     );
@@ -1307,14 +1299,8 @@ class _SurahHeader extends StatelessWidget {
               fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 3),
-          Text(
-            english,
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 11, color: color.withValues(alpha: .8)),
-          ),
-          const SizedBox(height: 8),
-          Container(height: 1, color: border.withValues(alpha: .6)),
+          const SizedBox(height: 7),
+          Container(height: 1, color: border.withValues(alpha: .75)),
         ],
       ),
     );
@@ -1329,6 +1315,58 @@ String _arabicNumber(int value) {
       .split('')
       .map((digit) => arabic[western.indexOf(digit)])
       .join();
+}
+
+class _MushafPagePlaceholder extends StatelessWidget {
+  const _MushafPagePlaceholder();
+
+  @override
+  Widget build(BuildContext context) => const ColoredBox(
+    color: Color(0xFF3A352F),
+    child: SizedBox(
+      width: double.infinity,
+      height: 480,
+    ),
+  );
+}
+
+class _OrnamentalPageNumber extends StatelessWidget {
+  const _OrnamentalPageNumber({
+    required this.page,
+    required this.color,
+    required this.divider,
+  });
+
+  final int page;
+  final Color color;
+  final Color divider;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 2),
+    child: Row(
+      children: [
+        Expanded(child: Container(height: 1, color: divider)),
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 34, vertical: 4),
+          decoration: BoxDecoration(
+            border: Border.all(color: divider, width: 1),
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Text(
+            _arabicNumber(page),
+            style: TextStyle(
+              fontFamily: kQuranFont,
+              fontSize: 20,
+              color: color,
+            ),
+          ),
+        ),
+        Expanded(child: Container(height: 1, color: divider)),
+      ],
+    ),
+  );
 }
 
 class _ErrorPage extends StatelessWidget {
