@@ -106,6 +106,9 @@ jobs:
       - name: Generate iOS project
         run: flutter create . --platforms=ios --org com.salawat_quran --project-name salawat_quran
 
+      - name: Disable signing for unsigned iOS CI build
+        run: bash tool/disable_ios_signing_for_ci.sh
+
       - name: Configure foreground location permission
         run: bash tool/configure_ios_location_permissions.sh
 
