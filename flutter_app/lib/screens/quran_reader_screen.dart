@@ -901,6 +901,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
         child: Stack(
           children: [
             Positioned.fill(
+              bottom: _bottomBarVisible ? 74 : 0,
               child: Listener(
                 behavior: HitTestBehavior.translucent,
                 onPointerDown: _handlePointerDown,
@@ -941,7 +942,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
               ),
             ),
             if (_bottomBarVisible)
-              Positioned(left: 12, right: 12, bottom: 8, child: _ReaderBottomBar(
+              Positioned(left: 12, right: 12, bottom: MediaQuery.paddingOf(context).bottom + 8, child: _ReaderBottomBar(
                 isPlaying: _isRecitationPlaying, autoScrollEnabled: _autoScrollEnabled,
                 onPrevious: () => _scrollToPage(_readerPage - 1),
                 onNext: () => _scrollToPage(_readerPage + 1),
