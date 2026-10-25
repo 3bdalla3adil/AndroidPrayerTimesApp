@@ -4,7 +4,7 @@ import 'package:adhan_dart/adhan_dart.dart';
 import 'package:flutter/cupertino.dart';
 import '../core/adaptive_page_scaffold.dart';
 import 'package:flutter_compass/flutter_compass.dart';
-import 'package:geolocator/geolocator.dart';
+import '../services/location_service.dart';
 
 import '../services/locale_controller.dart';
 import '../theme/app_theme.dart';
@@ -31,30 +31,7 @@ class _QiblaScreenState extends State<QiblaScreen> {
     });
 
     try {
-      if (!await Geolocator.isLocationServiceEnabled()) {
-        throw StateError(_isArabic
-            ? 'فعّل خدمات الموقع لحساب اتجاه القبلة.'
-            : 'Turn on location services to calculate Qibla.');
-      }
-
-      var permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-      }
-
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
-        throw StateError(_isArabic
-            ? 'إذن الموقع مطلوب لحساب اتجاه القبلة. يمكنك تفعيله من إعدادات الجهاز.'
-            : 'Location permission is needed to calculate Qibla. You can enable it in device settings.');
-      }
-
-      final position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-          timeLimit: Duration(seconds: 15),
-        ),
-      );
+      final position = await const LocationService().currentPosition();
       final rawBearing = Qibla.qibla(Coordinates(position.latitude, position.longitude));
       final bearing = _normalizeDegrees(rawBearing);
 
