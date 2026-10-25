@@ -113,7 +113,6 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
   double? _initialPinchDistance;
   double _pinchStartFontSize = 25;
   Timer? _fontSaveDebounce;
-  Timer? _autoScrollTimer;
   final AudioPlayer _recitationPlayer = AudioPlayer();
   StreamSubscription<void>? _recitationCompleteSubscription;
   StreamSubscription<PlayerState>? _recitationStateSubscription;
@@ -160,7 +159,6 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
     _recitationStateSubscription?.cancel();
     _recitationPlayer.dispose();
     _fontSaveDebounce?.cancel();
-    _autoScrollTimer?.cancel();
     _ayahActionOverlay?.remove();
     _ayahActionOverlay = null;
     super.dispose();
@@ -942,10 +940,8 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
                 child: NotificationListener<ScrollNotification>(
                   onNotification: (notification) {
                     if (notification is UserScrollNotification && notification.direction != ScrollDirection.idle && _autoScrollEnabled) {
-                      _autoScrollTimer?.cancel();
                       setState(() => _autoScrollEnabled = false);
                     }
-                    if (notification is ScrollUpdateNotification) _lastScrollPixels = notification.metrics.pixels;
                     return false;
                   },
                   child: ScrollablePositionedList.builder(
