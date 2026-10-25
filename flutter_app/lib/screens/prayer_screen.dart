@@ -74,23 +74,57 @@ class _PrayerScreenState extends State<PrayerScreen> {
 
   Future<void> _useDeviceLocation() async {
     try {
-      final position = await _service.determinePosition();
-      await StorageService().clearPrayerCity();
-      await StorageService().saveLocation(
-        position.latitude,
-        position.longitude,
-        'Current location',
+      final resolved = await _service.determineDeviceLocation();
+      final method = await StorageService().loadPrayerCalculationMethod() ??
+          resolved.calculationMethod;
+      await StorageService().savePrayerCity(
+        country: resolved.country,
+        city: resolved.city,
+        lat: resolved.latitude,
+        lon: resolved.longitude,
+        method: method,
+        isDeviceLocation: true,
       );
       await _load();
     } catch (e) {
-      if (mounted) setState(() => _message = e.toString().replaceFirst('Bad state: ', ''));
+      if (mounted) {
+        setState(() => _message = e.toString().replaceFirst('Bad state: ', ''));
+      }
     }
   }
 
   Future<void> _chooseCity() async {
-    final saved = await StorageService().loadPrayerCity();
+    final storage = StorageService();
+    final saved = await storage.loadPrayerCity();
+    final savedMethod = await storage.loadPrayerCalculationMethod();
+    final savedLocation = await storage.loadLocation();
+    final countries = <String>{
+      ...prayerCountries,
+      if (saved.$1 != null && saved.$1!.isNotEmpty) saved.$1!,
+    }.toList()
+      ..sort();
+
+    List<PrayerCity> optionsForCountry(String selectedCountry) {
+      final options = citiesForCountry(selectedCountry);
+      final savedCity = saved.$2;
+      if (saved.$1 == selectedCountry &&
+          savedCity != null &&
+          !options.any((city) => city.city == savedCity) &&
+          savedLocation.$1 != null &&
+          savedLocation.$2 != null) {
+        options.add(PrayerCity(
+          country: selectedCountry,
+          city: savedCity,
+          latitude: savedLocation.$1!,
+          longitude: savedLocation.$2!,
+          calculationMethod: saved.$3 ?? savedMethod ?? 3,
+        ));
+      }
+      return options;
+    }
+
     var country = saved.$1 ?? prayerCountries.first;
-    var cities = citiesForCountry(country);
+    var cities = optionsForCountry(country);
     var cityIndex = saved.$2 == null
         ? 0
         : cities.indexWhere((city) => city.city == saved.$2);
@@ -139,11 +173,11 @@ class _PrayerScreenState extends State<PrayerScreen> {
                           child: CupertinoPicker(
                             itemExtent: 44,
                             scrollController: FixedExtentScrollController(
-                              initialItem: prayerCountries.indexOf(selectedCountry),
+                              initialItem: countries.indexOf(selectedCountry),
                             ),
                             onSelectedItemChanged: (index) {
-                              final nextCountry = prayerCountries[index];
-                              final nextCities = citiesForCountry(nextCountry);
+                              final nextCountry = countries[index];
+                              final nextCities = optionsForCountry(nextCountry);
                               setModalState(() {
                                 selectedCountry = nextCountry;
                                 selectedCities = nextCities;
@@ -151,7 +185,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
                               });
                             },
                             children: [
-                              for (final item in prayerCountries) Center(
+                              for (final item in countries) Center(
                                 child: Text(item),
                               ),
                             ],
