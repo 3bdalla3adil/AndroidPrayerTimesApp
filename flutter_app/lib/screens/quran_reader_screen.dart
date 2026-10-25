@@ -21,7 +21,6 @@ import '../services/bookmark_service.dart';
 import '../services/settings_service.dart';
 import '../providers/reader_provider.dart';
 import '../services/locale_controller.dart';
-import '../services/app_routes.dart';
 
 const kQuranFont = 'KFGQPC HAFS Uthmanic Script';
 
@@ -810,8 +809,9 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
     final overlayBox = overlay.context.findRenderObject() as RenderBox?;
     if (overlayBox == null) return;
     final local = overlayBox.globalToLocal(globalPosition);
-    const width = 310.0, height = 62.0;
     final screen = MediaQuery.sizeOf(context);
+    final width = screen.width < 326 ? screen.width - 16.0 : 310.0;
+    const height = 62.0;
     final left = (local.dx - width / 2).clamp(8.0, screen.width - width - 8.0).toDouble();
     final top = (local.dy - height - 18).clamp(90.0, screen.height - height - 95.0).toDouble();
     _ayahActionOverlay = OverlayEntry(builder: (overlayContext) => Positioned(left: left, top: top, width: width, child: Material(color: const Color(0x00000000), child: DecoratedBox(decoration: BoxDecoration(color: CupertinoColors.secondarySystemGroupedBackground.resolveFrom(overlayContext), borderRadius: BorderRadius.circular(22), border: Border.all(color: CupertinoColors.separator.resolveFrom(overlayContext).withValues(alpha: .45)), boxShadow: [BoxShadow(color: CupertinoColors.black.withValues(alpha: .18), blurRadius: 22, offset: const Offset(0, 8))]), child: SizedBox(height: height, child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
@@ -828,7 +828,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
   void _removeAyahToolbar() { _ayahActionOverlay?.remove(); _ayahActionOverlay = null; }
 
   void _toggleAutoScroll() {
-    if (_autoScrollEnabled) { _autoScrollTimer?.cancel(); setState(() => _autoScrollEnabled = false); return; }
+    if (_autoScrollEnabled) { setState(() => _autoScrollEnabled = false); return; }
     setState(() => _autoScrollEnabled = true);
     _runAutoScroll();
   }
