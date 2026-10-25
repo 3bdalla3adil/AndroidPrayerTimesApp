@@ -109,7 +109,10 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
   bool _tajweedMode = false;
   String? _selectedAyahKey;
   Set<String> _memorizedAyahs = <String>{};
-  double _scaleStartFontSize = 25;
+  final Map<int, Offset> _activePointers = <int, Offset>{};
+  double? _initialPinchDistance;
+  double _pinchStartFontSize = 25;
+  Timer? _fontSaveDebounce;
   double _lastScrollPixels = 0;
   bool _prayerHeaderVisible = false;
   List<PrayerEntry> _prayerTimes = const <PrayerEntry>[];
@@ -166,6 +169,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
     _recitationStateSubscription?.cancel();
     _recitationPlayer.dispose();
     _clockTimer?.cancel();
+    _fontSaveDebounce?.cancel();
     super.dispose();
   }
 
@@ -270,6 +274,40 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
         ),
       ),
     );
+  }
+
+  // Raw pointer events avoid competing with the scroll view's one-finger drag.
+  // Pinch zoom only activates while two pointers are down; normal vertical
+  // scrolling stays in the scrollable's gesture arena.
+  void _handlePointerDown(PointerDownEvent event) {
+    _activePointers[event.pointer] = event.position;
+    if (_activePointers.length == 2) {
+      final points = _activePointers.values.toList(growable: false);
+      _initialPinchDistance = (points[0] - points[1]).distance;
+      _pinchStartFontSize = _fontSize;
+    }
+  }
+
+  void _handlePointerMove(PointerMoveEvent event) {
+    if (!_activePointers.containsKey(event.pointer)) return;
+    _activePointers[event.pointer] = event.position;
+    if (_activePointers.length < 2) return;
+    final points = _activePointers.values.take(2).toList(growable: false);
+    final initialDistance = _initialPinchDistance;
+    if (initialDistance == null || initialDistance <= 0) return;
+    final distance = (points[0] - points[1]).distance;
+    final size = (_pinchStartFontSize * distance / initialDistance).clamp(20.0, 38.0);
+    if ((size - _fontSize).abs() < 0.25) return;
+    setState(() => _fontSize = size);
+    _fontSaveDebounce?.cancel();
+    _fontSaveDebounce = Timer(const Duration(milliseconds: 300), () {
+      _settingsService.saveFontSize(size);
+    });
+  }
+
+  void _handlePointerUp(PointerEvent event) {
+    _activePointers.remove(event.pointer);
+    if (_activePointers.length < 2) _initialPinchDistance = null;
   }
 
   Future<void> _loadPrayerHeader() async {
@@ -972,16 +1010,12 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
                 ),
               ),
             Expanded(
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onScaleStart: (_) => _scaleStartFontSize = _fontSize,
-                onScaleUpdate: (details) {
-                  if (details.pointerCount < 2 || (details.scale - 1).abs() < 0.015) return;
-                  final size = (_scaleStartFontSize * details.scale).clamp(20.0, 38.0);
-                  if ((size - _fontSize).abs() < 0.25) return;
-                  setState(() => _fontSize = size);
-                  _settingsService.saveFontSize(size);
-                },
+              child: Listener(
+                behavior: HitTestBehavior.translucent,
+                onPointerDown: _handlePointerDown,
+                onPointerMove: _handlePointerMove,
+                onPointerUp: _handlePointerUp,
+                onPointerCancel: _handlePointerUp,
                 child: NotificationListener<ScrollNotification>(
                   onNotification: (notification) {
                     if (notification is ScrollUpdateNotification) {
