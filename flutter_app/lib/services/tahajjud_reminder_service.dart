@@ -43,10 +43,11 @@ class TahajjudReminderService {
         }
         return null;
       }
-      final isha = find(current, 'Isha');
+      // The Islamic night begins at Maghrib and ends at the following Fajr.
+      final maghrib = find(current, 'Maghrib');
       final fajr = find(next, 'Fajr');
-      if (isha == null || fajr == null || !fajr.time.isAfter(isha.time)) continue;
-      final nightLength = fajr.time.difference(isha.time);
+      if (maghrib == null || fajr == null || !fajr.time.isAfter(maghrib.time)) continue;
+      final nightLength = fajr.time.difference(maghrib.time);
       final lastThirdStart = fajr.time.subtract(Duration(seconds: nightLength.inSeconds ~/ 3));
       final didSchedule = await NotificationService.schedulePrayer(
         id: 3000 + offset,
