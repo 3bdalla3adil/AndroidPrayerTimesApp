@@ -1277,6 +1277,8 @@ class _MushafPage extends StatefulWidget {
     required this.lineHeight,
     required this.showTranslation,
     required this.darkPage,
+    required this.selectedAyahKey,
+    required this.onAyahTap,
   });
 
   final int page;
