@@ -78,8 +78,14 @@ final class QuranRepository {
     }
   }
 
-  void prefetchAround(int page) {
-    for (final neighbor in [page - 1, page + 1]) {
+  /// Returns an already decoded page synchronously so scrolling never shows
+  /// a loading placeholder for content that is in memory.
+  QuranPage? cachedPage(int page) => _cache[page];
+
+  /// Warms a small window around the visible page. Requests are deduplicated by
+  /// [loadPage], and the bounded LRU cache prevents unbounded memory growth.
+  void prefetchAround(int page, {int radius = 3}) {
+    for (var neighbor = page - radius; neighbor <= page + radius; neighbor++) {
       if (neighbor < 1 || neighbor > 604) continue;
       if (_cache.containsKey(neighbor) || _inFlight.containsKey(neighbor)) {
         continue;
