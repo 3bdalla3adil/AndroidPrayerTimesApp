@@ -348,7 +348,6 @@ class _QiblaScreenState extends State<QiblaScreen> {
                                           fontWeight: FontWeight.w800,
                                           letterSpacing: 1,
                                         ),
-                                        child: const Icon(CupertinoIcons.location_north_fill, color: CupertinoColors.white, size: 36),
                                       ),
                                     ),
                                   ],
