@@ -1527,7 +1527,6 @@ class _AyahMarker extends StatelessWidget {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border: Border.all(color: markerColor, width: selected ? 2.0 : 1.1),
-            color: selected ? const Color(0x33FF9800) : null,
           ),
           child: Text(
             _arabicNumber(number),
