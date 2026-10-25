@@ -366,16 +366,19 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
   }
 
   Future<QuranPage> _pageFuture(int page) {
-    final existing = _pageFutures.remove(page);
-    if (existing != null) {
-      _pageFutures[page] = existing;
-      return existing;
-    }
+    final existing = _pageFutures[page];
+    if (existing != null) return existing;
 
     final future = _loadPage(page);
     _pageFutures[page] = future;
-    while (_pageFutures.length > 24) {
-      _pageFutures.remove(_pageFutures.keys.first);
+    // Keep the active neighborhood and a few upcoming requests. The repository
+    // owns the decoded-page LRU cache; this map only deduplicates widget futures.
+    while (_pageFutures.length > 32) {
+      final removable = _pageFutures.keys.firstWhere(
+        (key) => (key - _readerPage).abs() > 4,
+        orElse: () => _pageFutures.keys.first,
+      );
+      _pageFutures.remove(removable);
     }
     return future;
   }
@@ -455,6 +458,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
     final page = nearest.index + 1;
     if (page != _readerPage) {
       setState(() => _readerPage = page);
+      _repository.prefetchAround(page, radius: 4);
     }
   }
 
@@ -926,14 +930,34 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
                       final page = index + 1;
                       return FutureBuilder<QuranPage>(
                         future: _pageFuture(page),
+                        // A prefetched/cached page renders immediately, avoiding
+                        // a spinner flash when the user scrolls back or ahead.
+                        initialData: _repository.cachedPage(page),
                         builder: (context, snapshot) {
-                          if (snapshot.connectionState != ConnectionState.done) return const Center(child: CupertinoActivityIndicator(radius: 14));
-                          if (snapshot.hasError || snapshot.data == null) return _ErrorPage(page: page, onRetry: () { _pageFutures.remove(page); setState(() {}); });
-                          return _MushafPage(
-                            page: page, pageData: snapshot.data!, fontSize: _fontSize, lineHeight: _lineHeight,
-                            showTranslation: _showTranslation, darkPage: _darkPage, selectedAyahKey: _selectedAyahKey,
-                            onAyahTap: _handleAyahSelected,
-                          );
+                          final pageData = snapshot.data;
+                          if (pageData != null) {
+                            return _MushafPage(
+                              key: ValueKey<int>(page),
+                              page: page,
+                              pageData: pageData,
+                              fontSize: _fontSize,
+                              lineHeight: _lineHeight,
+                              showTranslation: _showTranslation,
+                              darkPage: _darkPage,
+                              selectedAyahKey: _selectedAyahKey,
+                              onAyahTap: _handleAyahSelected,
+                            );
+                          }
+                          if (snapshot.hasError) {
+                            return _ErrorPage(
+                              page: page,
+                              onRetry: () {
+                                _pageFutures.remove(page);
+                                setState(() {});
+                              },
+                            );
+                          }
+                          return const _MushafPagePlaceholder();
                         },
                       );
                     },
