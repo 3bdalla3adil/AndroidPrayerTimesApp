@@ -59,11 +59,12 @@ class PrayerService {
   }) async {
     var (lat, lon, _) = await storage.loadLocation();
     final selected = await storage.loadPrayerCity();
+    final isDeviceLocation = await storage.loadLocationIsDevice();
     final method = await storage.loadPrayerCalculationMethod() ?? selected.$3 ?? 3;
 
     if (lat == null ||
         lon == null ||
-        (refreshLocation && selected.$1 == null)) {
+        (refreshLocation && (isDeviceLocation || selected.$1 == null))) {
       final resolved = await determineDeviceLocation();
       lat = resolved.latitude;
       lon = resolved.longitude;
@@ -77,6 +78,7 @@ class PrayerService {
         lat: lat,
         lon: lon,
         method: effectiveMethod,
+        isDeviceLocation: true,
       );
       return (lat, lon, effectiveMethod);
     }
