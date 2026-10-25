@@ -274,9 +274,14 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
 
   Future<void> _loadPrayerHeader() async {
     try {
+      final now = DateTime.now();
       final prayers = await _prayerService.today();
+      final hasUpcomingPrayer = prayers.any((prayer) => prayer.time.isAfter(now));
+      final tomorrow = hasUpcomingPrayer
+          ? const <PrayerEntry>[]
+          : await _prayerService.forDate(DateTime(now.year, now.month, now.day + 1));
       if (!mounted) return;
-      setState(() => _prayerTimes = prayers);
+      setState(() => _prayerTimes = <PrayerEntry>[...prayers, ...tomorrow]);
     } catch (_) {
       // Prayer details are optional in the reader; keep the Mushaf usable
       // when location or prayer-time settings have not been configured.
@@ -754,7 +759,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
   }
 
   Future<void> _handleAyahSelected(Verse verse) async {
-    setState(() => _selectedAyahKey = verse.id);
+    setState(() => _selectedAyahKey = _selectedAyahKey == verse.id ? null : verse.id);
     await _showAyahToolbar(verse);
   }
 
@@ -1076,7 +1081,7 @@ class _ReaderPrayerHeader extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(14, 6, 14, 8),
       child: Row(children: [
-        Expanded(child: Text(countdown, textAlign: TextAlign.left, style: const TextStyle(fontFeatures: [], fontWeight: FontWeight.w700, fontSize: 15))),
+        Expanded(child: Text(countdown, textAlign: TextAlign.left, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15))),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [Text(LocaleController.isArabic ? 'الصلاة القادمة' : 'NEXT PRAYER', style: const TextStyle(fontSize: 9, letterSpacing: 1.0, color: CupertinoColors.secondaryLabel)), Text(LocaleController.isArabic ? prayer.arabicName : prayer.name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15))])),
       ]),
     );
