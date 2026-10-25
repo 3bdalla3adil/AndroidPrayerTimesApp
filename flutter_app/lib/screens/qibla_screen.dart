@@ -50,12 +50,13 @@ class _QiblaScreenState extends State<QiblaScreen> {
       }
 
       final position = await Geolocator.getCurrentPosition(
-        locationSettings:
-            const LocationSettings(accuracy: LocationAccuracy.medium),
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 15),
+        ),
       );
-      final bearing = Qibla.qibla(
-        Coordinates(position.latitude, position.longitude),
-      );
+      final rawBearing = Qibla.qibla(Coordinates(position.latitude, position.longitude));
+      final bearing = _normalizeDegrees(rawBearing);
 
       if (!mounted) return;
       setState(() => _qiblaBearing = bearing);
@@ -69,15 +70,11 @@ class _QiblaScreenState extends State<QiblaScreen> {
     }
   }
 
+  double _normalizeDegrees(double value) => (value % 360 + 360) % 360;
+
   double _relativeHeading(double deviceHeading) {
-    var value = (_qiblaBearing ?? 0) - deviceHeading;
-    while (value < -180) {
-      value += 360;
-    }
-    while (value > 180) {
-      value -= 360;
-    }
-    return value;
+    final value = _normalizeDegrees((_qiblaBearing ?? 0) - deviceHeading);
+    return value > 180 ? value - 360 : value;
   }
 
   @override
@@ -102,14 +99,16 @@ class _QiblaScreenState extends State<QiblaScreen> {
         child: StreamBuilder<CompassEvent>(
           stream: FlutterCompass.events,
           builder: (context, snapshot) {
-            final heading = snapshot.data?.heading;
+            final rawHeading = snapshot.data?.heading;
+            final heading = rawHeading != null && rawHeading.isFinite
+                ? _normalizeDegrees(rawHeading)
+                : null;
             final compassUnavailable = snapshot.hasError ||
-                (snapshot.connectionState == ConnectionState.active &&
-                    heading == null);
+                (snapshot.connectionState == ConnectionState.active && heading == null);
             final relative = heading == null ? 0.0 : _relativeHeading(heading);
             final aligned = heading != null &&
                 _qiblaBearing != null &&
-                relative.abs() <= 4;
+                relative.abs() <= 5;
 
             return ListView(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 120),
@@ -338,59 +337,30 @@ class _QiblaScreenState extends State<QiblaScreen> {
                                 ),
                               ),
                               if (_qiblaBearing != null && heading != null)
-                                Transform.rotate(
-                                  angle: relative * math.pi / 180,
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Container(
-                                        width: 68,
-                                        height: 68,
+                                Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Transform.rotate(
+                                      angle: relative * math.pi / 180,
+                                      child: Container(
+                                        width: 76,
+                                        height: 76,
                                         decoration: BoxDecoration(
                                           color: accent,
                                           shape: BoxShape.circle,
-                                          border: Border.all(
-                                            color: CupertinoColors.white,
-                                            width: 4,
-                                          ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: accent
-                                                  .withValues(alpha: .28),
-                                              blurRadius: 16,
-                                              offset: const Offset(0, 5),
-                                            ),
-                                          ],
+                                          border: Border.all(color: CupertinoColors.white, width: 4),
+                                          boxShadow: [BoxShadow(color: accent.withValues(alpha: .28), blurRadius: 16, offset: const Offset(0, 5))],
                                         ),
-                                        child: const Icon(
-                                          CupertinoIcons.location_north_fill,
-                                          color: CupertinoColors.white,
-                                          size: 32,
-                                        ),
+                                        child: const Icon(CupertinoIcons.location_north_fill, color: CupertinoColors.white, size: 36),
                                       ),
-                                      const SizedBox(height: 8),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: 5,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: accent,
-                                          borderRadius:
-                                              BorderRadius.circular(20),
-                                        ),
-                                        child: Text(
-                                          _isArabic ? 'القبلة' : 'QIBLA',
-                                          style: const TextStyle(
-                                            color: CupertinoColors.white,
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.w800,
-                                            letterSpacing: 1,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                      decoration: BoxDecoration(color: accent, borderRadius: BorderRadius.circular(20)),
+                                      child: Text(_isArabic ? 'القبلة' : 'QIBLA', style: const TextStyle(color: CupertinoColors.white, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1)),
+                                    ),
+                                  ],
                                 )
                               else
                                 Container(
@@ -428,9 +398,9 @@ class _QiblaScreenState extends State<QiblaScreen> {
                                     ? (_isArabic
                                         ? 'أحسنت، أنت تواجه اتجاه القبلة.'
                                         : 'You are facing the Qibla direction.')
-                                    : (_isArabic
-                                        ? 'أدر الهاتف حتى يتجه السهم إلى الأعلى.'
-                                        : 'Rotate your phone until the arrow points up.'),
+                                    : relative > 0
+                                        ? (_isArabic ? 'أدر الهاتف إلى اليمين بمقدار ${relative.abs().round()}° حتى يتجه السهم إلى الأعلى.' : 'Turn right ${relative.abs().round()}° until the arrow points up.')
+                                        : (_isArabic ? 'أدر الهاتف إلى اليسار بمقدار ${relative.abs().round()}° حتى يتجه السهم إلى الأعلى.' : 'Turn left ${relative.abs().round()}° until the arrow points up.'),
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: muted,
