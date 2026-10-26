@@ -245,8 +245,13 @@ class NotificationService {
   /// This bypasses the OS notification scheduler, so the test validates the
   /// actual bundled recording even while the app is in the foreground.
   static Future<void> playTestAthan({String soundId = _defaultSoundId}) async {
+    // Use the same bundled asset selected for scheduled notifications, but play
+    // it through the foreground audio player so users can test it immediately.
+    // Explicitly restore full volume and stop any previous test before replaying.
     final resource = _soundResource(soundId);
     await _testAudioPlayer.stop();
+    await _testAudioPlayer.setReleaseMode(ReleaseMode.stop);
+    await _testAudioPlayer.setVolume(1.0);
     await _testAudioPlayer.play(AssetSource('audio/$resource.mp3'));
   }
 
