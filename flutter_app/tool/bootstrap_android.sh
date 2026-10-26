@@ -4,6 +4,39 @@ set -e
 # 1. Generate the android project
 flutter create --platforms=android .
 
+# Keep the generated Android project compatible with current AndroidX AAR metadata.
+# compileSdk only affects APIs available at build time; runtime target behavior is
+# intentionally left unchanged.
+python3 - <<'PY'
+from pathlib import Path
+import re
+
+candidates = (Path("android/app/build.gradle"), Path("android/app/build.gradle.kts"))
+for path in candidates:
+    if not path.exists():
+        continue
+    source = path.read_text()
+    if path.name.endswith(".kts"):
+        if re.search(r"(?m)^\\s*compileSdk\\s*=", source):
+            source = re.sub(r"(?m)^(\\s*compileSdk\\s*=\\s*)\\d+", r"\\g<1>35", source, count=1)
+        else:
+            source = re.sub(r"(?m)^(\\s*android\\s*\\{)", r"\\1\\n    compileSdk = 35", source, count=1)
+    else:
+        if re.search(r"(?m)^\\s*compileSdkVersion\\s+", source):
+            source = re.sub(r"(?m)^(\\s*compileSdkVersion\\s+)\\d+", r"\\g<1>35", source, count=1)
+        elif re.search(r"(?m)^\\s*compileSdk\\s+", source):
+            source = re.sub(r"(?m)^(\\s*compileSdk\\s+)\\d+", r"\\g<1>35", source, count=1)
+        else:
+            source = re.sub(r"(?m)^(\\s*android\\s*\\{)", r"\\1\\n    compileSdkVersion 35", source, count=1)
+    path.write_text(source)
+    if not re.search(r"(?m)^\\s*(?:compileSdkVersion\\s+35|compileSdk\\s*(?:=\\s*)35)\\s*$", source):
+        raise SystemExit(f"Failed to set compileSdk 35 in {path}")
+    print(f"Configured compileSdk 35 in {path}")
+    break
+else:
+    raise SystemExit("No generated Android app Gradle file found")
+PY
+
 # 2. Enable core library desugaring required by flutter_local_notifications
 GRADLE_FILE="android/app/build.gradle"
 KTS_FILE="android/app/build.gradle.kts"
