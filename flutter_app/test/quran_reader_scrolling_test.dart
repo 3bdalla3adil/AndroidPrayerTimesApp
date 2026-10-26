@@ -44,7 +44,17 @@ void main() {
         child: MaterialApp(home: QuranReaderScreen(surahNumber: 1)),
       ),
     );
-    await pumpReaderFrames(tester);
+    // Reader initialization now preloads all 604 bundled pages before exposing
+    // scrolling. Wait for that explicit state rather than flinging an obscured
+    // list and accidentally testing the loading overlay.
+    for (var frame = 0; frame < 2400; frame++) {
+      await tester.pump(const Duration(milliseconds: 50));
+      if (find.byKey(const ValueKey('quran-reader-preparing')).evaluate().isEmpty) {
+        break;
+      }
+    }
+    expect(find.byKey(const ValueKey('quran-reader-preparing')), findsNothing,
+        reason: 'Bundled Mushaf preload should finish within the test timeout.');
     expect(find.byType(ScrollablePositionedList), findsOneWidget);
     expect(find.byType(PageView), findsNothing);
   }
