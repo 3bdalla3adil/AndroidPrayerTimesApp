@@ -5,8 +5,29 @@ import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 
+import 'package:salawat_quran/models/quran_page.dart';
+import 'package:salawat_quran/models/verse.dart';
+import 'package:salawat_quran/providers/reader_provider.dart';
+import 'package:salawat_quran/repositories/quran_repository.dart';
+
 import 'package:salawat_quran/screens/quran_reader_screen.dart';
 import 'package:salawat_quran/services/locale_controller.dart';
+
+class _TestQuranSource implements QuranPageDataSource {
+  const _TestQuranSource();
+
+  @override
+  Future<QuranPage> loadPage(int page) async => QuranPage(
+    pageNumber: page,
+    verses: const [
+      Verse(
+        surahNumber: 1,
+        ayahNumber: 1,
+        text: 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ',
+      ),
+    ],
+  );
+}
 
 Future<void> pumpReaderFrames(WidgetTester tester, {int frames = 8}) async {
   for (var frame = 0; frame < frames; frame++) {
@@ -40,21 +61,17 @@ void main() {
   }) async {
     await tester.binding.setSurfaceSize(size);
     await tester.pumpWidget(
-      const ProviderScope(
-        child: MaterialApp(home: QuranReaderScreen(surahNumber: 1)),
+      ProviderScope(
+        overrides: [
+          quranRepositoryProvider.overrideWithValue(
+            QuranRepository(const _TestQuranSource(), maximumCachedPages: 604),
+          ),
+        ],
+        child: const MaterialApp(home: QuranReaderScreen(surahNumber: 1)),
       ),
     );
-    // Reader initialization now preloads all 604 bundled pages before exposing
-    // scrolling. Wait for that explicit state rather than flinging an obscured
-    // list and accidentally testing the loading overlay.
-    for (var frame = 0; frame < 2400; frame++) {
-      await tester.pump(const Duration(milliseconds: 50));
-      if (find.byKey(const ValueKey('quran-reader-preparing')).evaluate().isEmpty) {
-        break;
-      }
-    }
-    expect(find.byKey(const ValueKey('quran-reader-preparing')), findsNothing,
-        reason: 'Bundled Mushaf preload should finish within the test timeout.');
+    // Use an in-memory Quran source so this test exercises scrolling, not disk
+    // asset decoding. Production asset preloading is covered by repository tests.
     expect(find.byType(ScrollablePositionedList), findsOneWidget);
     expect(find.byType(PageView), findsNothing);
   }
