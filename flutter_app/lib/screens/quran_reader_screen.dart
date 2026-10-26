@@ -347,6 +347,9 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
       final requestedReaderPage =
           requestedQuranPage.clamp(1, totalQuranPages).toInt();
 
+      // Decode the bundled Mushaf before exposing the scroll view. This moves
+      // any loading to reader entry, never between pages while the user reads.
+      await _repository.preloadAllPages(batchSize: 16);
       if (!mounted) return;
       ref.read(readerProvider.notifier).restore(
         page: requestedReaderPage,
@@ -365,7 +368,8 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
         }
       });
     } catch (_) {
-      // The reader still starts at page 1 if the index cannot be read.
+      // Do not leave the screen permanently blocked if bundled data is invalid.
+      if (mounted) setState(() => _isInitializingReader = false);
     }
   }
 
@@ -988,7 +992,32 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
                 onNext: () => _scrollToPage(_readerPage + 1),
               ),
             ),
-            if (_bottomBarVisible)
+            if (_isInitializingReader)
+              Positioned.fill(
+                child: ColoredBox(
+                  color: _darkPage ? const Color(0xFF3A352F) : const Color(0xFFF6F0E4),
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const CupertinoActivityIndicator(radius: 15),
+                        const SizedBox(height: 14),
+                        Text(
+                          LocaleController.isArabic
+                              ? 'جارٍ تجهيز صفحات المصحف...'
+                              : 'Preparing Quran pages…',
+                          style: TextStyle(
+                            color: _darkPage
+                                ? const Color(0xFFF0EDE6)
+                                : const Color(0xFF2D2924),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            if (_bottomBarVisible && !_isInitializingReader)
               Positioned(left: 12, right: 12, bottom: MediaQuery.paddingOf(context).bottom + 8, child: _ReaderBottomBar(
                 isPlaying: _isRecitationPlaying, autoScrollEnabled: _autoScrollEnabled,
                 onPrevious: () => _scrollToPage(_readerPage - 1),
