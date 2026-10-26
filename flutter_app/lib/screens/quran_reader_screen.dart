@@ -994,6 +994,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
             ),
             if (_isInitializingReader)
               Positioned.fill(
+                key: const ValueKey('quran-reader-preparing'),
                 child: ColoredBox(
                   color: _darkPage ? const Color(0xFF3A352F) : const Color(0xFFF6F0E4),
                   child: Center(
