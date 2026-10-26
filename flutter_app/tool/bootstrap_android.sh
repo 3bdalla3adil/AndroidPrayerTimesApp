@@ -18,18 +18,18 @@ for path in candidates:
     source = path.read_text()
     if path.name.endswith(".kts"):
         if re.search(r"(?m)^\s*compileSdk\s*=", source):
-            source = re.sub(r"(?m)^(\s*compileSdk\s*=).*?$", r"\g<1> 35", source, count=1)
+            source = re.sub(r"(?m)^(\s*compileSdk\s*=).*?$", r"\g<1> 36", source, count=1)
         else:
             source = re.sub(r"(?m)^(\s*android\s*\{)", r"\1\n    compileSdk = 36", source, count=1)
     else:
         if re.search(r"(?m)^\s*compileSdkVersion\s+", source):
-            source = re.sub(r"(?m)^(\s*compileSdkVersion\s+).*?$", r"\g<1>35", source, count=1)
+            source = re.sub(r"(?m)^(\s*compileSdkVersion\s+).*?$", r"\g<1>36", source, count=1)
         elif re.search(r"(?m)^\s*compileSdk\s+", source):
-            source = re.sub(r"(?m)^(\s*compileSdk\s+).*?$", r"\g<1>35", source, count=1)
+            source = re.sub(r"(?m)^(\s*compileSdk\s+).*?$", r"\g<1>36", source, count=1)
         else:
             source = re.sub(r"(?m)^(\s*android\s*\{)", r"\1\n    compileSdkVersion 36", source, count=1)
     path.write_text(source)
-    if not re.search(r"(?m)^\s*(?:compileSdkVersion\s+35|compileSdk\s*(?:=\s*)35)\s*$", source):
+    if not re.search(r"(?m)^\s*(?:compileSdkVersion\s+36|compileSdk\s*(?:=\s*)36)\s*$", source):
         raise SystemExit(f"Failed to set compileSdk 36 in {path}")
     print(f"Configured compileSdk 36 in {path}")
     break
