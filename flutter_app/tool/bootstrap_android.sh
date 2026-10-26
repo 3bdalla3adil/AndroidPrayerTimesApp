@@ -37,6 +37,34 @@ else:
     raise SystemExit("No generated Android app Gradle file found")
 PY
 
+# Some Flutter Android plugins (notably geocoding_android) declare their own
+# compileSdk. Align Android subprojects with the app SDK so AAR metadata checks
+# use the supported API level instead of each plugin's legacy default.
+python3 - <<'PY'
+from pathlib import Path
+p = Path("android/build.gradle")
+if p.exists():
+    s = p.read_text()
+    block = """
+subprojects { project ->
+    afterEvaluate {
+        if (project.hasProperty('android')) {
+            project.android {
+                compileSdkVersion 36
+            }
+        }
+    }
+}
+"""
+    if "compileSdkVersion 36" not in s:
+        p.write_text(s.rstrip() + "\n" + block)
+        print("Aligned Android plugin subprojects to compileSdk 36")
+    else:
+        print("Android subproject compileSdk alignment already present")
+else:
+    raise SystemExit("Generated android/build.gradle not found")
+PY
+
 # 2. Enable core library desugaring required by flutter_local_notifications
 GRADLE_FILE="android/app/build.gradle"
 KTS_FILE="android/app/build.gradle.kts"
