@@ -35,7 +35,7 @@ final class AssetQuranPageDataSource implements QuranPageDataSource {
 final class QuranRepository {
   QuranRepository(
     this._source, {
-    this.maximumCachedPages = 32,
+    this.maximumCachedPages = 604,
   }) : assert(maximumCachedPages > 0);
 
   final QuranPageDataSource _source;
@@ -75,6 +75,26 @@ final class QuranRepository {
       return result;
     } finally {
       _inFlight.remove(page);
+    }
+  }
+
+  /// Loads all bundled Mushaf pages before the reader becomes interactive.
+  ///
+  /// Work is bounded in small batches to avoid issuing hundreds of simultaneous
+  /// asset reads. The decoded cache is capped at the 604-page Mushaf size, so
+  /// a normal reading session never evicts a page and flashes a loading state.
+  Future<void> preloadAllPages({
+    int batchSize = 16,
+    void Function(int loaded, int total)? onProgress,
+  }) async {
+    if (batchSize < 1) throw ArgumentError.value(batchSize, 'batchSize');
+    const totalPages = 604;
+    for (var start = 1; start <= totalPages; start += batchSize) {
+      final end = (start + batchSize - 1).clamp(1, totalPages);
+      await Future.wait([
+        for (var page = start; page <= end; page++) loadPage(page),
+      ]);
+      onProgress?.call(end, totalPages);
     }
   }
 
