@@ -29,7 +29,10 @@ jobs:
         uses: ./.github/actions/prepare-flutter-assets
 
       - name: Prepare Athan assets
-        run: bash tool/fetch_athan_sounds.sh
+        run: |
+          bash tool/fetch_athan_sounds.sh
+          brew install ffmpeg
+          bash tool/prepare_ios_athan_sounds.sh
 
       - name: Install dependencies
         run: flutter pub get
