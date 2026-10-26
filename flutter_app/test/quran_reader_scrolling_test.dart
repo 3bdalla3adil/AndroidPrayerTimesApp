@@ -71,7 +71,16 @@ void main() {
       ),
     );
     // Use an in-memory Quran source so this test exercises scrolling, not disk
-    // asset decoding. Production asset preloading is covered by repository tests.
+    // asset decoding. Wait until the complete preload has finished before
+    // interacting with the list; otherwise the preparation overlay absorbs taps.
+    for (var frame = 0; frame < 100; frame++) {
+      if (find.byKey(const ValueKey('quran-reader-preparing')).evaluate().isEmpty) {
+        break;
+      }
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    expect(find.byKey(const ValueKey('quran-reader-preparing')), findsNothing,
+        reason: 'In-memory Mushaf preload should complete before scrolling tests.');
     expect(find.byType(ScrollablePositionedList), findsOneWidget);
     expect(find.byType(PageView), findsNothing);
   }
