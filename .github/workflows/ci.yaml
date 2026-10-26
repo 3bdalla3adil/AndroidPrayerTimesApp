@@ -56,7 +56,7 @@ jobs:
           packages: platform-tools
 
       - name: Install Android SDK packages
-        run: sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+        run: sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
 
       - name: Prepare Flutter and offline Quran assets
         uses: ./.github/actions/prepare-flutter-assets
