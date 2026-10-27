@@ -114,10 +114,10 @@ class StorageService {
   /// Last Mushaf page is restored only when the reader is opened from its
   /// default entry point; explicit navigation always takes precedence.
   Future<int> loadLastQuranPage() async =>
-      (await prefs.getInt(_quranLastPage) ?? 1).clamp(1, 604);
+      (await prefs.getInt(_quranLastPage) ?? 1).clamp(1, 604).toInt();
 
   Future<void> saveLastQuranPage(int page) =>
-      prefs.setInt(_quranLastPage, page.clamp(1, 604));
+      prefs.setInt(_quranLastPage, page.clamp(1, 604).toInt());
 
   Future<(int, int)> loadTasbih() async => (await prefs.getInt(_tasbihCount) ?? 0, await prefs.getInt(_tasbihTarget) ?? 33);
   Future<void> saveTasbih(int count, int target) async {
