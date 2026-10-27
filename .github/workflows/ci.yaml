@@ -31,7 +31,15 @@ jobs:
       - name: Prepare Athan assets
         run: |
           bash tool/fetch_athan_sounds.sh
-          brew install ffmpeg
+          if command -v apt-get >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y ffmpeg
+          elif command -v brew >/dev/null 2>&1; then
+            brew install ffmpeg
+          else
+            echo "ERROR: ffmpeg is required to prepare Athan audio assets" >&2
+            exit 1
+          fi
           bash tool/prepare_ios_athan_sounds.sh
 
       - name: Install dependencies
