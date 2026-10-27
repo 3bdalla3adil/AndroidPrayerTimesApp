@@ -42,27 +42,26 @@ PY
 # use the supported API level instead of each plugin's legacy default.
 python3 - <<'PY'
 from pathlib import Path
-p = Path("android/build.gradle")
-if p.exists():
-    s = p.read_text()
-    block = """
-subprojects { project ->
-    afterEvaluate {
-        if (project.hasProperty('android')) {
-            project.android {
-                compileSdkVersion 36
-            }
-        }
-    }
-}
-"""
-    if "compileSdkVersion 36" not in s:
-        p.write_text(s.rstrip() + "\n" + block)
-        print("Aligned Android plugin subprojects to compileSdk 36")
-    else:
-        print("Android subproject compileSdk alignment already present")
+
+# Flutter 3.47 generates Kotlin DSL by default. Patch whichever root Gradle
+# script was generated, rather than assuming the older Groovy filename.
+groovy = Path("android/build.gradle")
+kotlin = Path("android/build.gradle.kts")
+if groovy.exists():
+    source = groovy.read_text()
+    if "compileSdkVersion 36" not in source:
+        source += """\n\n// Align Android library plugins with the app's compile SDK.\nsubprojects { project ->\n    afterEvaluate {\n        if (project.hasProperty('android')) {\n            project.android { compileSdkVersion 36 }\n        }\n    }\n}\n"""
+        groovy.write_text(source)
+    print("Aligned Android plugin subprojects to compileSdk 36 (Groovy DSL)")
+elif kotlin.exists():
+    source = kotlin.read_text()
+    marker = "// Align Android library plugins with the app's compile SDK."
+    if marker not in source:
+        source += """\n\n// Align Android library plugins with the app's compile SDK.\nsubprojects { subproject ->\n    subproject.afterEvaluate {\n        val androidExtension = subproject.extensions.findByName("android")\n        if (androidExtension != null) {\n            val compileSdkSetter = androidExtension.javaClass.methods.firstOrNull {\n                it.name == "setCompileSdk" && it.parameterCount == 1\n            }\n            compileSdkSetter?.invoke(androidExtension, 36)\n        }\n    }\n}\n"""
+        kotlin.write_text(source)
+    print("Aligned Android plugin subprojects to compileSdk 36 (Kotlin DSL)")
 else:
-    raise SystemExit("Generated android/build.gradle not found")
+    raise SystemExit("Generated Android root Gradle script not found")
 PY
 
 # 2. Enable core library desugaring required by flutter_local_notifications
