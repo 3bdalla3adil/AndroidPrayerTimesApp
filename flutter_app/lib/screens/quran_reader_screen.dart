@@ -125,6 +125,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
   double? _initialPinchDistance;
   double _pinchStartFontSize = 25;
   Timer? _fontSaveDebounce;
+  Timer? _pageSaveDebounce;
   final AudioPlayer _recitationPlayer = AudioPlayer();
   StreamSubscription<void>? _recitationCompleteSubscription;
   StreamSubscription<PlayerState>? _recitationStateSubscription;
@@ -171,6 +172,10 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
     _recitationStateSubscription?.cancel();
     _recitationPlayer.dispose();
     _fontSaveDebounce?.cancel();
+    _pageSaveDebounce?.cancel();
+    // Persist synchronously from the current state when the reader is closed;
+    // the debounced write handles normal scrolling without excessive I/O.
+    unawaited(_storage.saveLastQuranPage(_readerPage));
     _ayahActionOverlay?.remove();
     _ayahActionOverlay = null;
     super.dispose();
@@ -323,7 +328,13 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
       final settings = await _settingsService.load();
       final bookmarks = await _bookmarkService.loadAll();
       final memorizedAyahs = await _storage.loadMemorizedAyahs();
+      final shouldRestoreLastPage = widget.startingPage == null &&
+          widget.surahNumber == 1 && widget.startingAyah == 1;
+      final lastOpenedPage = shouldRestoreLastPage
+          ? await _storage.loadLastQuranPage()
+          : null;
       var requestedQuranPage = widget.startingPage ??
+          lastOpenedPage ??
           (starts[widget.surahNumber.toString()] as num?)?.toInt() ??
           1;
 
@@ -442,6 +453,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
 
       if (mounted && generation == _navigationGeneration) {
         _readerPage = page;
+        _scheduleSaveLastPage(page);
         _repository.prefetchAround(page);
       }
     } finally {
@@ -472,8 +484,16 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
     final page = nearest.index + 1;
     if (page != _readerPage) {
       setState(() => _readerPage = page);
+      _scheduleSaveLastPage(page);
       _repository.prefetchAround(page, radius: 4);
     }
+  }
+
+  void _scheduleSaveLastPage(int page) {
+    _pageSaveDebounce?.cancel();
+    _pageSaveDebounce = Timer(const Duration(milliseconds: 250), () {
+      unawaited(_storage.saveLastQuranPage(page));
+    });
   }
 
   Future<void> _bookmarkCurrentPage() async {
