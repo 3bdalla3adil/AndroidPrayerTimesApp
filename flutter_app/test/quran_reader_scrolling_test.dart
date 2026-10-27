@@ -12,6 +12,7 @@ import 'package:salawat_quran/repositories/quran_repository.dart';
 
 import 'package:salawat_quran/screens/quran_reader_screen.dart';
 import 'package:salawat_quran/services/locale_controller.dart';
+import 'package:salawat_quran/services/storage_service.dart';
 
 class _TestQuranSource implements QuranPageDataSource {
   const _TestQuranSource();
@@ -84,6 +85,22 @@ void main() {
     expect(find.byType(ScrollablePositionedList), findsOneWidget);
     expect(find.byType(PageView), findsNothing);
   }
+
+  test('last opened Quran page persists and is restored by storage', () async {
+    final storage = StorageService();
+    await storage.saveLastQuranPage(287);
+
+    // A new service instance represents a fresh app/reader session.
+    expect(await StorageService().loadLastQuranPage(), 287);
+  });
+
+  test('last opened Quran page is clamped to the 604-page Mushaf', () async {
+    final storage = StorageService();
+    await storage.saveLastQuranPage(999);
+    expect(await storage.loadLastQuranPage(), 604);
+    await storage.saveLastQuranPage(0);
+    expect(await storage.loadLastQuranPage(), 1);
+  });
 
   testWidgets('Quran reader continuously scrolls across page boundaries',
       (tester) async {
