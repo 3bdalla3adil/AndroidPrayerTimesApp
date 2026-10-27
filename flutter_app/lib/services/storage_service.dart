@@ -12,6 +12,7 @@ class StorageService {
   static const _quranLineHeight = 'quran_line_height';
   static const _quranShowTranslation = 'quran_show_translation';
   static const _quranDarkPage = 'quran_dark_page';
+  static const _quranLastPage = 'quran_last_opened_page';
   static const _bookmarks = 'quran_bookmarks';
   static const _bookmarkRecords = 'quran_bookmark_records_v2';
   static const _athanReminders = 'athan_reminders_enabled';
@@ -109,6 +110,14 @@ class StorageService {
   }
 
   Future<void> saveQuranFontSize(double size) => prefs.setDouble(_quranFontSize, size);
+
+  /// Last Mushaf page is restored only when the reader is opened from its
+  /// default entry point; explicit navigation always takes precedence.
+  Future<int> loadLastQuranPage() async =>
+      (await prefs.getInt(_quranLastPage) ?? 1).clamp(1, 604);
+
+  Future<void> saveLastQuranPage(int page) =>
+      prefs.setInt(_quranLastPage, page.clamp(1, 604));
 
   Future<(int, int)> loadTasbih() async => (await prefs.getInt(_tasbihCount) ?? 0, await prefs.getInt(_tasbihTarget) ?? 33);
   Future<void> saveTasbih(int count, int target) async {
