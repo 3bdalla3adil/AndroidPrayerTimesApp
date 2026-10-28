@@ -1,9 +1,11 @@
 name: Flutter CI
 
 on:
+  # PRs run CI for feature branches; push runs are reserved for main to avoid
+  # duplicate builds for every commit on an open pull request.
   push:
     branches:
-      - "**"
+      - main
   pull_request:
   workflow_dispatch:
 
