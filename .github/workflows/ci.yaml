@@ -160,3 +160,52 @@ jobs:
           path: flutter_app/salawat-quran-unsigned.ipa
           if-no-files-found: error
           retention-days: 1
+
+  publish-artifacts:
+    name: Publish combined mobile artifacts
+    runs-on: ubuntu-latest
+    needs:
+      - build-android
+      - build-ios
+    if: ${{ success() }}
+    permissions:
+      contents: read
+    steps:
+      - name: Download release APK
+        uses: actions/download-artifact@v4
+        with:
+          name: salawat-quran-release-apk
+          path: dist/android
+
+      - name: Download unsigned iOS IPA
+        uses: actions/download-artifact@v4
+        with:
+          name: salawat-quran-release-ipa-unsigned
+          path: dist/ios
+
+      - name: Verify and package mobile releases
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s dist/android/app-release.apk
+          test -s dist/ios/salawat-quran-unsigned.ipa
+          unzip -t dist/android/app-release.apk
+          unzip -t dist/ios/salawat-quran-unsigned.ipa
+          mkdir -p dist/package
+          cp dist/android/app-release.apk dist/package/salawat-quran-release.apk
+          cp dist/ios/salawat-quran-unsigned.ipa dist/package/salawat-quran-unsigned.ipa
+          cat > dist/package/README.txt <<'EOF'
+          Salawat Quran mobile build artifacts
+          - salawat-quran-release.apk: Android release APK
+          - salawat-quran-unsigned.ipa: unsigned iOS IPA; signing is required before normal device installation
+          EOF
+          cd dist/package
+          zip -qry ../salawat-quran-mobile-release.zip .
+
+      - name: Publish combined mobile release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: salawat-quran-mobile-release
+          path: dist/salawat-quran-mobile-release.zip
+          if-no-files-found: error
+          retention-days: 1
