@@ -1131,7 +1131,10 @@ class _MushafPageState extends State<_MushafPage> {
   LongPressGestureRecognizer _recognizerFor(String key, Verse verse) {
     final existing = _ayahRecognizers[key];
     if (existing != null) return existing;
-    final recognizer = LongPressGestureRecognizer()\n      ..onLongPressStart = (details) => widget.onAyahTap(verse, details.globalPosition);\n    _ayahRecognizers[key] = recognizer;
+    final recognizer = LongPressGestureRecognizer()
+      ..onLongPressStart = (details) =>
+          widget.onAyahTap(verse, details.globalPosition);
+    _ayahRecognizers[key] = recognizer;
     return recognizer;
   }
 
