@@ -7,7 +7,6 @@ import 'package:flutter/material.dart' show Material;
 import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/gestures.dart';
-import 'package:flutter/physics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/adaptive_page_scaffold.dart';
 import 'package:flutter/services.dart';
@@ -1143,6 +1142,7 @@ class _ReaderBottomBar extends StatelessWidget {
 
 class _MushafPage extends StatefulWidget {
   const _MushafPage({
+    super.key,
     required this.page,
     required this.pageData,
     required this.fontSize,
