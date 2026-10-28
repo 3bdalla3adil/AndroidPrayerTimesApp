@@ -69,6 +69,9 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Align geocoding Android plugin compile SDK
+        run: bash tool/patch_android_plugin_compile_sdk.sh
+
       - name: Generate launcher icon and splash screen
         run: |
           dart run flutter_launcher_icons -f flutter_launcher_icons_android.yaml
