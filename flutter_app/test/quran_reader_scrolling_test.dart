@@ -71,17 +71,29 @@ void main() {
         child: const MaterialApp(home: QuranReaderScreen(surahNumber: 1)),
       ),
     );
-    // Use an in-memory Quran source so this test exercises scrolling, not disk
-    // asset decoding. Wait until the complete preload has finished before
-    // interacting with the list; otherwise the preparation overlay absorbs taps.
+    // The screen's initial-page restore includes asset and preferences I/O.
+    // Pump frames, then briefly leave the fake-async zone so platform-backed
+    // futures can complete on slower CI runners.
     for (var frame = 0; frame < 200; frame++) {
       if (find.byKey(const ValueKey('quran-reader-preparing')).evaluate().isEmpty) {
         break;
       }
       await tester.pump(const Duration(milliseconds: 50));
+      if (frame == 20) {
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 50)),
+        );
+      }
     }
-    expect(find.byKey(const ValueKey('quran-reader-preparing')), findsNothing,
-        reason: 'In-memory Mushaf preload should complete before scrolling tests (allowing slower CI runners).');
+    expect(
+      find.byKey(const ValueKey('quran-reader-preparing')),
+      findsNothing,
+      reason: 'Reader initialization should finish before scrolling assertions.',
+    );
+
+    // _loadInitialPage schedules its initial indexed jump for the next frame.
+    // Let that positioning complete before measuring a user-driven scroll.
+    await pumpReaderFrames(tester, frames: 4);
     expect(find.byType(ScrollablePositionedList), findsOneWidget);
     expect(find.byType(PageView), findsNothing);
   }
