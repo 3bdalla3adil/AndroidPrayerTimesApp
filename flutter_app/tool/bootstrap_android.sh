@@ -95,10 +95,9 @@ import os
 import re
 
 roots = []
-for key in ("PUB_CACHE",):
-    value = os.environ.get(key)
-    if value:
-        roots.append(Path(value) / "hosted" / "pub.dev")
+value = os.environ.get("PUB_CACHE")
+if value:
+    roots.append(Path(value) / "hosted" / "pub.dev")
 roots.append(Path.home() / ".pub-cache" / "hosted" / "pub.dev")
 candidates = []
 for root in roots:
@@ -108,12 +107,12 @@ if not candidates:
     raise SystemExit("Could not find flutter_compass Android Gradle file in pub cache")
 for path in candidates:
     source = path.read_text()
-    if re.search(r"(?m)^\\s*namespace\\s+", source):
+    if re.search(r"(?m)^\s*namespace\s+", source):
         print(f"flutter_compass namespace already present: {path}")
         continue
     patched, count = re.subn(
-        r"(?m)^(\\s*android\\s*\\{)",
-        r'\\1\\n    namespace "compass"',
+        r"(?m)^(\s*android\s*\{)",
+        r'\1\n    namespace "compass"',
         source,
         count=1,
     )
