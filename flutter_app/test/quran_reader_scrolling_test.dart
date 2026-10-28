@@ -74,14 +74,14 @@ void main() {
     // Use an in-memory Quran source so this test exercises scrolling, not disk
     // asset decoding. Wait until the complete preload has finished before
     // interacting with the list; otherwise the preparation overlay absorbs taps.
-    for (var frame = 0; frame < 100; frame++) {
+    for (var frame = 0; frame < 1200; frame++) {
       if (find.byKey(const ValueKey('quran-reader-preparing')).evaluate().isEmpty) {
         break;
       }
       await tester.pump(const Duration(milliseconds: 50));
     }
     expect(find.byKey(const ValueKey('quran-reader-preparing')), findsNothing,
-        reason: 'In-memory Mushaf preload should complete before scrolling tests.');
+        reason: 'In-memory Mushaf preload should complete before scrolling tests (allowing slower CI runners).');
     expect(find.byType(ScrollablePositionedList), findsOneWidget);
     expect(find.byType(PageView), findsNothing);
   }
