@@ -43,21 +43,39 @@ PY
 python3 - <<'PY'
 from pathlib import Path
 
-# Flutter 3.47 generates Kotlin DSL by default. Patch whichever root Gradle
-# script was generated, rather than assuming the older Groovy filename.
 groovy = Path("android/build.gradle")
 kotlin = Path("android/build.gradle.kts")
+marker = "// Align Android library plugins with the app's compile SDK."
 if groovy.exists():
     source = groovy.read_text()
-    if "compileSdkVersion 36" not in source:
-        source += """\n\n// Align Android library plugins with the app's compile SDK.\nsubprojects { project ->\n    afterEvaluate {\n        if (project.hasProperty('android')) {\n            project.android { compileSdkVersion 36 }\n        }\n    }\n}\n"""
+    if marker not in source:
+        source += """
+// Align Android library plugins with the app's compile SDK.
+subprojects { project ->
+    project.plugins.withId('com.android.library') {
+        project.extensions.getByName('android').compileSdkVersion 36
+    }
+}
+"""
         groovy.write_text(source)
     print("Aligned Android plugin subprojects to compileSdk 36 (Groovy DSL)")
 elif kotlin.exists():
     source = kotlin.read_text()
-    marker = "// Align Android library plugins with the app's compile SDK."
     if marker not in source:
-        source += """\n\n// Align Android library plugins with the app's compile SDK.\nsubprojects { subproject ->\n    subproject.afterEvaluate {\n        val androidExtension = subproject.extensions.findByName("android")\n        if (androidExtension != null) {\n            val compileSdkSetter = androidExtension.javaClass.methods.firstOrNull {\n                it.name == "setCompileSdk" && it.parameterCount == 1\n            }\n            compileSdkSetter?.invoke(androidExtension, 36)\n        }\n    }\n}\n"""
+        source += """
+// Align Android library plugins with the app's compile SDK.
+subprojects {
+    plugins.withId("com.android.library") {
+        val androidExtension = extensions.findByName("android")
+        if (androidExtension != null) {
+            val setter = androidExtension.javaClass.methods.firstOrNull {
+                it.name == "setCompileSdk" && it.parameterCount == 1
+            }
+            setter?.invoke(androidExtension, 36)
+        }
+    }
+}
+"""
         kotlin.write_text(source)
     print("Aligned Android plugin subprojects to compileSdk 36 (Kotlin DSL)")
 else:
