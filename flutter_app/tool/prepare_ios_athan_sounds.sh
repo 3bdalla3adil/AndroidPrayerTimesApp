@@ -31,10 +31,15 @@ import re
 project = Path("ios/Runner.xcodeproj/project.pbxproj")
 text = project.read_text()
 sounds = ("azan.wav", "azan_madinah.wav", "azan_dubai.wav", "azan_fajr_madinah.wav")
-resources = re.search(r"(PBXResourcesBuildPhase section \*/.*?)(\n\t\t\t\t\t\t\tfiles = \(.*?\n    match = re.search(r"(\\w+ /[*] Resources [*] = [{].*?files = [(])(.*?)([)];)", text, re.S)\n\t\t\t\t\t\t\t\);", text, re.S)
-else:
-    match = None
-
+# Find the Runner Copy Bundle Resources phase without depending on indentation.
+phase_start = text.find("/* Begin PBXResourcesBuildPhase section */")
+phase_end = text.find("/* End PBXResourcesBuildPhase section */", phase_start)
+if phase_start < 0 or phase_end < 0:
+    raise SystemExit("Could not find PBXResourcesBuildPhase section.")
+phase_text = text[phase_start:phase_end]
+match = re.search(r"([A-F0-9]+ /[*] Resources [*] = [{].*?files = [(])(.*?)([)];)", phase_text, re.S)
+if not match:
+    raise SystemExit("Could not find Runner Copy Bundle Resources file list.")
 # Insert PBXBuildFile and PBXFileReference records only if absent.
 build_records = []
 file_records = []
