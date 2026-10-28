@@ -380,11 +380,12 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
       _lastKnownReaderPage = requestedReaderPage;
       unawaited(_repository.preloadAllPages(batchSize: 16));
 
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        await _scrollToPage(requestedReaderPage, animated: false);
-        if (mounted) {
-          setState(() => _isInitializingReader = false);
-        }
+      // The requested page is ready and provider state is restored. Make the
+      // reader interactive now; initial positioning must not keep the loading
+      // overlay alive if ScrollablePositionedList is still attaching its controller.
+      if (mounted) setState(() => _isInitializingReader = false);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) unawaited(_scrollToPage(requestedReaderPage, animated: false));
       });
     } catch (_) {
       // Do not leave the screen permanently blocked if bundled data is invalid.
