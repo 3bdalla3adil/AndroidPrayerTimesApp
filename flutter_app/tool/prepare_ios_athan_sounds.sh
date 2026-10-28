@@ -31,14 +31,12 @@ import re
 project = Path("ios/Runner.xcodeproj/project.pbxproj")
 text = project.read_text()
 sounds = ("azan.wav", "azan_madinah.wav", "azan_dubai.wav", "azan_fajr_madinah.wav")
-# Find the Runner Copy Bundle Resources phase without depending on indentation.
-phase_start = text.find("/* Begin PBXResourcesBuildPhase section */")
-phase_end = text.find("/* End PBXResourcesBuildPhase section */", phase_start)
-if phase_start < 0 or phase_end < 0:
-    raise SystemExit("Could not find PBXResourcesBuildPhase section.")
-phase_text = text[phase_start:phase_end]
-match = re.search(r"([A-F0-9]+ /[*] Resources [*] = [{].*?files = [(])(.*?)([)];)", phase_text, re.S)
-if not match:
+# Find the Resources build phase directly in the complete project text.
+# Do not constrain the phase body to a single brace-free line: Xcode project
+# formatting varies between Flutter/Xcode versions.
+phase_pattern = r"([A-F0-9]+ /[*] Resources [*] = [{].*?files = [(])(.*?)([)];)"
+phase = re.search(phase_pattern, text, re.S)
+if not phase:
     raise SystemExit("Could not find Runner Copy Bundle Resources file list.")
 # Insert PBXBuildFile and PBXFileReference records only if absent.
 build_records = []
@@ -53,7 +51,7 @@ for index, sound in enumerate(sounds):
         build_records.append(f"\t\t{build_id} /* {sound} in Resources */ = {{isa = PBXBuildFile; fileRef = {file_id} /* {sound} */; }};")
     if f"{build_id} /* {sound} in Resources */" not in text:
         # Add each sound to the Runner Resources phase (the first phase matching that name).
-        phase = re.search(r"([A-F0-9]+ /[*] Resources [*] = [{][^}]*?files = [(])(.*?)([)];)", text, re.S)
+        phase = re.search(phase_pattern, text, re.S)
         if not phase:
             raise SystemExit("Could not find Runner Copy Bundle Resources phase.")
         text = text[:phase.start(2)] + phase.group(2) + f"\n\t\t\t\t{build_id} /* {sound} in Resources */," + text[phase.end(2):]
