@@ -27,7 +27,7 @@ for attempt in $(seq 1 "${attempts}"); do
   rm -rf "${ndk_path}"
   rm -rf "${sdk_root}/.downloadIntermediates" "${sdk_root}/.temp"
 
-  if yes | "${sdk_root}/cmdline-tools/latest/bin/sdkmanager" --install "ndk;${ndk_revision}" --sdk_root="${sdk_root}" &&
+  if "${sdk_root}/cmdline-tools/latest/bin/sdkmanager" --install "ndk;${ndk_revision}" --sdk_root="${sdk_root}" &&
      [[ -s "${ndk_path}/source.properties" ]] &&
      grep -Fq "Pkg.Revision = ${ndk_revision}" "${ndk_path}/source.properties"; then
     echo "Android NDK ${ndk_revision} installed and validated."
