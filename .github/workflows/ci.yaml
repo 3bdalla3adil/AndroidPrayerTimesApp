@@ -28,19 +28,8 @@ jobs:
       - name: Prepare Flutter and offline Quran assets
         uses: ./.github/actions/prepare-flutter-assets
 
-      - name: Prepare Athan assets
-        run: |
-          bash tool/fetch_athan_sounds.sh
-          if command -v apt-get >/dev/null 2>&1; then
-            sudo apt-get update
-            sudo apt-get install -y ffmpeg
-          elif command -v brew >/dev/null 2>&1; then
-            brew install ffmpeg
-          else
-            echo "ERROR: ffmpeg is required to prepare Athan audio assets" >&2
-            exit 1
-          fi
-          bash tool/prepare_ios_athan_sounds.sh
+      - name: Prepare Athan source assets
+        run: bash tool/fetch_athan_sounds.sh
 
       - name: Install dependencies
         run: flutter pub get
@@ -123,8 +112,16 @@ jobs:
       - name: Configure foreground location permission
         run: bash tool/configure_ios_location_permissions.sh
 
-      - name: Prepare Athan assets
-        run: bash tool/fetch_athan_sounds.sh
+      - name: Prepare iOS Athan notification sounds
+        run: |
+          set -euo pipefail
+          bash tool/fetch_athan_sounds.sh
+          if ! command -v ffmpeg >/dev/null 2>&1; then
+            brew install ffmpeg
+          fi
+          # The iOS project is generated earlier in this job, so the script can
+          # register the converted WAV files in Runner's Copy Bundle Resources.
+          bash tool/prepare_ios_athan_sounds.sh
 
       - name: Install dependencies
         run: flutter pub get
