@@ -24,10 +24,13 @@ def patch(match):
         '\n\t\t\t\tCODE_SIGNING_REQUIRED = NO;'
         '\n\t\t\t\tCODE_SIGN_IDENTITY = "";'
         '\n\t\t\t\tPROVISIONING_PROFILE_SPECIFIER = "";'
+        '\n\t\t\t\tDEVELOPMENT_TEAM = "";'
+        '\n\t\t\t\tCODE_SIGN_STYLE = Manual;'
     )
     # Avoid duplicate entries if CI setup is rerun.
     for key in ("CODE_SIGNING_ALLOWED", "CODE_SIGNING_REQUIRED",
-                "CODE_SIGN_IDENTITY", "PROVISIONING_PROFILE_SPECIFIER"):
+                "CODE_SIGN_IDENTITY", "PROVISIONING_PROFILE_SPECIFIER",
+                "DEVELOPMENT_TEAM", "CODE_SIGN_STYLE"):
         body = re.sub(rf"^\s*{key} = .*?;\s*$", "", body, flags=re.M)
     count += 1
     return match.group(1) + body + settings + match.group(3)
