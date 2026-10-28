@@ -71,13 +71,11 @@ void main() {
         child: const MaterialApp(home: QuranReaderScreen(surahNumber: 1)),
       ),
     );
-    // The screen's initial-page restore includes asset and preferences I/O.
-    // Pump frames, then briefly leave the fake-async zone so platform-backed
-    // futures can complete on slower CI runners.
-    for (var frame = 0; frame < 200; frame++) {
-      if (find.byKey(const ValueKey('quran-reader-preparing')).evaluate().isEmpty) {
-        break;
-      }
+    // The reader intentionally has no blocking preparation overlay. Wait for
+    // page 1's data-backed widget instead, leaving the UI interactive while
+    // bundled data and preferences finish loading in the background.
+    final firstPage = find.byKey(const ValueKey('quran-page-loaded-1'));
+    for (var frame = 0; frame < 200 && firstPage.evaluate().isEmpty; frame++) {
       await tester.pump(const Duration(milliseconds: 50));
       if (frame == 20) {
         await tester.runAsync(
@@ -86,13 +84,14 @@ void main() {
       }
     }
     expect(
-      find.byKey(const ValueKey('quran-reader-preparing')),
-      findsNothing,
-      reason: 'Reader initialization should finish before scrolling assertions.',
+      firstPage,
+      findsOneWidget,
+      reason: 'The first Mushaf page should load without a blocking spinner.',
     );
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    expect(find.byType(CupertinoActivityIndicator), findsNothing);
 
-    // _loadInitialPage schedules its initial indexed jump for the next frame.
-    // Let that positioning complete before measuring a user-driven scroll.
+    // Allow the initial indexed jump to settle before user-driven scroll checks.
     await pumpReaderFrames(tester, frames: 4);
     expect(find.byType(ScrollablePositionedList), findsOneWidget);
     expect(find.byType(PageView), findsNothing);
