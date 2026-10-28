@@ -53,7 +53,7 @@ for index, sound in enumerate(sounds):
         build_records.append(f"\t\t{build_id} /* {sound} in Resources */ = {{isa = PBXBuildFile; fileRef = {file_id} /* {sound} */; }};")
     if f"{build_id} /* {sound} in Resources */" not in text:
         # Add each sound to the Runner Resources phase (the first phase matching that name).
-        phase = re.search(r"(\w+ /\* Resources \*/ = \{[^}]*?files = \()(.*?)(\);)", text, re.S)
+        phase = re.search(r"([A-F0-9]+ /[*] Resources [*] = [{][^}]*?files = [(])(.*?)([)];)", text, re.S)
         if not phase:
             raise SystemExit("Could not find Runner Copy Bundle Resources phase.")
         text = text[:phase.start(2)] + phase.group(2) + f"\n\t\t\t\t{build_id} /* {sound} in Resources */," + text[phase.end(2):]
