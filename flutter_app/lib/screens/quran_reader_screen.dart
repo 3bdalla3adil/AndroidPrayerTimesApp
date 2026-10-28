@@ -1118,7 +1118,7 @@ class _MushafPage extends StatefulWidget {
 }
 
 class _MushafPageState extends State<_MushafPage> {
-  final Map<String, TapGestureRecognizer> _ayahRecognizers = {};
+  final Map<String, LongPressGestureRecognizer> _ayahRecognizers = {};
 
   @override
   void dispose() {
@@ -1128,7 +1128,7 @@ class _MushafPageState extends State<_MushafPage> {
     super.dispose();
   }
 
-  TapGestureRecognizer _recognizerFor(String key, Verse verse) {
+  LongPressGestureRecognizer _recognizerFor(String key, Verse verse) {
     final existing = _ayahRecognizers[key];
     if (existing != null) return existing;
     final recognizer = TapGestureRecognizer()
@@ -1255,7 +1255,7 @@ class _MushafPageState extends State<_MushafPage> {
                   color: widget.darkPage ? const Color(0xFFE6E0C8) : green,
                   darkPage: widget.darkPage,
                   selected: _isHighlighted(verse),
-                  onTapUp: (details) => _toggleHighlight(verse, details.globalPosition),
+                  onLongPressStart: (details) => _toggleHighlight(verse, details.globalPosition),
                 ),
               ),
               if (widget.showTranslation)
@@ -1298,20 +1298,20 @@ class _AyahMarker extends StatelessWidget {
     required this.color,
     required this.darkPage,
     required this.selected,
-    required this.onTapUp,
+    required this.onLongPressStart,
   });
 
   final int number;
   final Color color;
   final bool darkPage;
   final bool selected;
-  final ValueChanged<TapUpDetails> onTapUp;
+  final ValueChanged<LongPressStartDetails> onLongPressStart;
 
   @override
   Widget build(BuildContext context) {
     final markerColor = selected ? const Color(0xFFFF9800) : (darkPage ? const Color(0xFFE6E0C8) : color);
     return GestureDetector(
-      onTapUp: onTapUp,
+      onLongPressStart: onLongPressStart,
       behavior: HitTestBehavior.opaque,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 2),
