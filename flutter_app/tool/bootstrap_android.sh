@@ -87,6 +87,42 @@ else:
     raise SystemExit("Generated Android root Gradle script not found")
 PY
 
+# Work around flutter_compass 0.8.1's missing Android namespace with AGP 8+.
+# Patch only the resolved pub-cache copy; this keeps the package API unchanged.
+python3 - <<'PY'
+from pathlib import Path
+import os
+import re
+
+roots = []
+for key in ("PUB_CACHE",):
+    value = os.environ.get(key)
+    if value:
+        roots.append(Path(value) / "hosted" / "pub.dev")
+roots.append(Path.home() / ".pub-cache" / "hosted" / "pub.dev")
+candidates = []
+for root in roots:
+    if root.exists():
+        candidates.extend(root.glob("flutter_compass-*/android/build.gradle"))
+if not candidates:
+    raise SystemExit("Could not find flutter_compass Android Gradle file in pub cache")
+for path in candidates:
+    source = path.read_text()
+    if re.search(r"(?m)^\\s*namespace\\s+", source):
+        print(f"flutter_compass namespace already present: {path}")
+        continue
+    patched, count = re.subn(
+        r"(?m)^(\\s*android\\s*\\{)",
+        r'\\1\\n    namespace "compass"',
+        source,
+        count=1,
+    )
+    if count != 1:
+        raise SystemExit(f"Could not safely add namespace to {path}")
+    path.write_text(patched)
+    print(f"Added AGP-compatible namespace to {path}")
+PY
+
 # 2. Enable core library desugaring required by flutter_local_notifications
 GRADLE_FILE="android/app/build.gradle"
 KTS_FILE="android/app/build.gradle.kts"
