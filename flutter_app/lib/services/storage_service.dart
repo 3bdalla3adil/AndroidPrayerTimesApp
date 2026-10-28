@@ -12,6 +12,8 @@ class StorageService {
   static const _quranLineHeight = 'quran_line_height';
   static const _quranShowTranslation = 'quran_show_translation';
   static const _quranDarkPage = 'quran_dark_page';
+  static const _quranAutoScrollSecondsPerPage =
+      'quran_auto_scroll_seconds_per_page';
   static const _quranLastPage = 'quran_last_opened_page';
   static const _bookmarks = 'quran_bookmarks';
   static const _bookmarkRecords = 'quran_bookmark_records_v2';
@@ -135,7 +137,15 @@ class StorageService {
   Future<void> saveQuranShowTranslation(bool value) => prefs.setBool(_quranShowTranslation, value);
   Future<bool> loadQuranShowTranslation() async => await prefs.getBool(_quranShowTranslation) ?? false;
   Future<void> saveQuranDarkPage(bool value) => prefs.setBool(_quranDarkPage, value);
-  Future<bool> loadQuranDarkPage() async => await prefs.getBool(_quranDarkPage) ?? false;
+  Future<bool> loadQuranDarkPage() async =>
+      await prefs.getBool(_quranDarkPage) ?? false;
+  Future<double> loadQuranAutoScrollSecondsPerPage() async =>
+      await prefs.getDouble(_quranAutoScrollSecondsPerPage) ?? 30;
+  Future<void> saveQuranAutoScrollSecondsPerPage(double value) =>
+      prefs.setDouble(
+        _quranAutoScrollSecondsPerPage,
+        value.clamp(10, 60).toDouble(),
+      );
 
   Future<List<(int, int)>> loadBookmarks() async {
     final values = await prefs.getStringList(_bookmarks) ?? const [];
