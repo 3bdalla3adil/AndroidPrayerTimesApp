@@ -53,12 +53,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
         with:
-          packages: platform-tools
-
-      - name: Install Android SDK packages
-        run: sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+          packages: "platform-tools,platforms;android-36,build-tools;36.0.0"
 
       - name: Prepare Flutter and offline Quran assets
         uses: ./.github/actions/prepare-flutter-assets
@@ -71,6 +68,9 @@ jobs:
 
       - name: Align geocoding Android plugin compile SDK
         run: bash tool/patch_android_plugin_compile_sdk.sh
+
+      - name: Install and validate pinned Android NDK
+        run: bash tool/install_android_ndk.sh
 
       - name: Generate launcher icon and splash screen
         run: |
