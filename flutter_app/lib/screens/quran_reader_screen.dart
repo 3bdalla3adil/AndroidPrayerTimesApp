@@ -92,6 +92,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
   final LinkedHashMap<int, Future<QuranPage>> _pageFutures = LinkedHashMap();
   late final QuranSearchService _searchService;
 
+  int _lastKnownReaderPage = 1;
   int get _readerPage => ref.read(readerProvider).currentPage;
   int get _currentPageSurah {
     final data = _repository.cachedPage(_readerPage);
@@ -103,7 +104,10 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
         ? quran.getJuzNumber(widget.surahNumber, widget.startingAyah)
         : quran.getJuzNumber(verse.surahNumber, verse.ayahNumber);
   }
-  set _readerPage(int value) => ref.read(readerProvider.notifier).setCurrentPage(value);
+  set _readerPage(int value) {
+    _lastKnownReaderPage = value;
+    ref.read(readerProvider.notifier).setCurrentPage(value);
+  }
 
   double get _fontSize => ref.read(readerProvider).fontSize;
   set _fontSize(double value) => ref.read(readerProvider.notifier).setFontSize(value);
@@ -175,7 +179,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
     _pageSaveDebounce?.cancel();
     // Persist synchronously from the current state when the reader is closed;
     // the debounced write handles normal scrolling without excessive I/O.
-    unawaited(_storage.saveLastQuranPage(_readerPage));
+    unawaited(_storage.saveLastQuranPage(_lastKnownReaderPage));
     _ayahActionOverlay?.remove();
     _ayahActionOverlay = null;
     super.dispose();
@@ -358,9 +362,11 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
       final requestedReaderPage =
           requestedQuranPage.clamp(1, totalQuranPages).toInt();
 
-      // Decode the bundled Mushaf before exposing the scroll view. This moves
-      // any loading to reader entry, never between pages while the user reads.
-      await _repository.preloadAllPages(batchSize: 16);
+      // Load the requested page before showing the reader. Preloading all 604
+      // pages on the critical path makes startup unnecessarily slow (and can
+      // leave the reader blocked on slower devices). Warm the full offline cache
+      // in the background while the visible page and its neighbors render.
+      await _loadPage(requestedReaderPage, prefetch: false);
       if (!mounted) return;
       ref.read(readerProvider.notifier).restore(
         page: requestedReaderPage,
@@ -371,6 +377,8 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
         bookmarks: bookmarks,
       );
       _memorizedAyahs = memorizedAyahs;
+      _lastKnownReaderPage = requestedReaderPage;
+      unawaited(_repository.preloadAllPages(batchSize: 16));
 
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         await _scrollToPage(requestedReaderPage, animated: false);
