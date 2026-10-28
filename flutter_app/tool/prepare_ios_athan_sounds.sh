@@ -31,10 +31,7 @@ import re
 project = Path("ios/Runner.xcodeproj/project.pbxproj")
 text = project.read_text()
 sounds = ("azan.wav", "azan_madinah.wav", "azan_dubai.wav", "azan_fajr_madinah.wav")
-resources = re.search(r"(PBXResourcesBuildPhase section \*/.*?)(\n\t\t\t\t\t\t\tfiles = \(.*?\n\t\t\t\t\t\t\t\);)", text, re.S)
-if not resources:
-    # Use the first PBXResourcesBuildPhase files list; this is the Runner app target.
-    match = re.search(r"(\w+ /\* Resources \*/ = \{.*?files = \(.*?)(\n\t\t\t\t\t\t\t\);", text, re.S)
+resources = re.search(r"(PBXResourcesBuildPhase section \*/.*?)(\n\t\t\t\t\t\t\tfiles = \(.*?\n    match = re.search(r"(\\w+ /[*] Resources [*] = [{].*?files = [(])(.*?)([)];)", text, re.S)\n\t\t\t\t\t\t\t\);", text, re.S)
 else:
     match = None
 
