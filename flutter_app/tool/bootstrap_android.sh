@@ -66,12 +66,17 @@ elif kotlin.exists():
 // Align Android library plugins with the app's compile SDK.
 subprojects {
     plugins.withId("com.android.library") {
-        val androidExtension = extensions.findByName("android")
-        if (androidExtension != null) {
-            val setter = androidExtension.javaClass.methods.firstOrNull {
-                it.name == "setCompileSdk" && it.parameterCount == 1
+        // Plugin build scripts can assign their legacy compileSdk after the
+        // plugin is applied. Override at afterEvaluate so AAR metadata checks
+        // consistently see the app's supported SDK level.
+        afterEvaluate {
+            val androidExtension = extensions.findByName("android")
+            if (androidExtension != null) {
+                val setter = androidExtension.javaClass.methods.firstOrNull {
+                    it.name == "setCompileSdk" && it.parameterCount == 1
+                }
+                setter?.invoke(androidExtension, 36)
             }
-            setter?.invoke(androidExtension, 36)
         }
     }
 }
