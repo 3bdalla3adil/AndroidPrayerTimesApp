@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Some transitive AndroidX AARs now require compileSdk >= 34. The app itself
-# already compiles against SDK 36, but geocoding_android's library module can
-# still declare SDK 33 and fail CheckAarMetadata before the app is compiled.
-# Patch only the resolved package in Pub's cache; do not install a global
-# Gradle hook, which can break unrelated plugins such as flutter_compass.
+# The app uses Android SDK 36. Some older Flutter plugins still declare a
+# lower compile SDK, which causes CheckAarMetadata failures with newer AndroidX
+# dependencies. Patch only the resolved geocoding_android package in Pub's
+# cache; never install a global Gradle hook or modify unrelated plugins.
 
 PUB_CACHE_DIR="${PUB_CACHE:-$HOME/.pub-cache}"
 mapfile -t candidates < <(
@@ -18,29 +17,32 @@ if [ "${#candidates[@]}" -eq 0 ]; then
   exit 1
 fi
 
-patched=0
 for file in "${candidates[@]}"; do
-  if grep -Eq 'compileSdkVersion[[:space:]]+33|compileSdk[[:space:]]*=[[:space:]]*33' "$file"; then
+  # Accept Groovy and Kotlin-style assignment syntax and values supplied via
+  # Flutter's extension (for example: compileSdk = flutter.compileSdkVersion).
+  # Replace the value, not the declaration syntax, so Gradle can still parse it.
+  if grep -Eq '^[[:space:]]*compileSdk(Version)?([[:space:]]*=|[[:space:]]+)' "$file"; then
     sed -i -E \
-      -e 's/compileSdkVersion[[:space:]]+33/compileSdkVersion 36/g' \
-      -e 's/compileSdk[[:space:]]*=[[:space:]]*33/compileSdk = 36/g' \
+      -e '/^[[:space:]]*compileSdkVersion[[:space:]]+/s/^([[:space:]]*compileSdkVersion[[:space:]]+).*/\1 36/' \
+      -e '/^[[:space:]]*compileSdkVersion[[:space:]]*=/s/^([[:space:]]*compileSdkVersion[[:space:]]*=[[:space:]]*).*/\1 36/' \
+      -e '/^[[:space:]]*compileSdk[[:space:]]*=/s/^([[:space:]]*compileSdk[[:space:]]*=[[:space:]]*).*/\1 36/' \
+      -e '/^[[:space:]]*compileSdk[[:space:]]+/s/^([[:space:]]*compileSdk[[:space:]]+).*/\1 36/' \
       "$file"
-    patched=1
-    echo "Patched geocoding Android library compile SDK to 36: $file"
-  elif grep -Eq 'compileSdkVersion[[:space:]]+([0-9]+)|compileSdk[[:space:]]*=[[:space:]]*([0-9]+)' "$file"; then
-    # Do not downgrade a package that already targets a newer SDK.
-    sdk="$(grep -Eo 'compileSdkVersion[[:space:]]+[0-9]+|compileSdk[[:space:]]*=[[:space:]]*[0-9]+' "$file" | head -n1 | grep -Eo '[0-9]+' | tail -n1)"
-    if [ "$sdk" -lt 34 ]; then
-      echo "ERROR: Unsupported geocoding_android compile SDK declaration in $file" >&2
+  else
+    # Do not silently continue when upstream changes its Gradle syntax. Inject
+    # an explicit declaration into the Android block only when none exists.
+    if ! grep -Eq '^[[:space:]]*android[[:space:]]*\{' "$file"; then
+      echo "ERROR: Could not locate an Android Gradle block in $file" >&2
       exit 1
     fi
-    echo "geocoding_android already uses compile SDK $sdk: $file"
-  else
-    echo "ERROR: Could not identify compile SDK declaration in $file" >&2
+    sed -i -E '/^[[:space:]]*android[[:space:]]*\{/a\
+    compileSdkVersion 36
+    ' "$file"
+  fi
+
+  if ! grep -Eq '^[[:space:]]*compileSdk(Version)?([[:space:]]*=|[[:space:]]+)[[:space:]]*36([[:space:]]|$)' "$file"; then
+    echo "ERROR: Failed to set compile SDK 36 in $file" >&2
     exit 1
   fi
+  echo "Configured geocoding_android compile SDK 36: $file"
 done
-
-if [ "$patched" -ne 1 ]; then
-  echo "No patch was needed; all resolved geocoding_android modules already meet AndroidX metadata requirements."
-fi
