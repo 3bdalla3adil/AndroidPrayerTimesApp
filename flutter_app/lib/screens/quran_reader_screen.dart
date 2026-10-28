@@ -121,6 +121,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
 
   bool _bottomBarVisible = true;
   bool _autoScrollEnabled = false;
+  double _autoScrollSecondsPerPage = 30;
   OverlayEntry? _ayahActionOverlay;
   bool _tajweedMode = false;
   String? _selectedAyahKey;
@@ -377,6 +378,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
         bookmarks: bookmarks,
       );
       _memorizedAyahs = memorizedAyahs;
+      _autoScrollSecondsPerPage = settings.autoScrollSecondsPerPage;
       _lastKnownReaderPage = requestedReaderPage;
       unawaited(_repository.preloadAllPages(batchSize: 16));
 
@@ -851,12 +853,44 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
   }
 
   Future<void> _runAutoScroll() async {
+    // Advance one page at a time. A fixed duration per page is predictable,
+    // configurable, and avoids long estimated jumps across variable-height pages.
     while (mounted && _autoScrollEnabled) {
-      if (!_itemScrollController.isAttached) { await Future<void>.delayed(const Duration(milliseconds: 250)); continue; }
-      final visible = _itemPositionsListener.itemPositions.value.where((p) => p.itemTrailingEdge > 0).toList()..sort((a, b) => a.index.compareTo(b.index));
-      if (visible.isEmpty || visible.last.index >= totalReaderPages - 1) { if (mounted) setState(() => _autoScrollEnabled = false); return; }
-      try { await _itemScrollController.scrollTo(index: visible.last.index, alignment: 0, duration: const Duration(seconds: 18), curve: Curves.linear); } catch (_) { if (!mounted || !_autoScrollEnabled) return; }
-      await Future<void>.delayed(const Duration(milliseconds: 250));
+      if (!_itemScrollController.isAttached) {
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+        continue;
+      }
+      final visible = _itemPositionsListener.itemPositions.value
+          .where((p) => p.index >= 0 && p.index < totalReaderPages &&
+              p.itemTrailingEdge > 0 && p.itemLeadingEdge < 1)
+          .toList(growable: false);
+      if (visible.isEmpty) {
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+        continue;
+      }
+      final current = visible.reduce((left, right) {
+        final leftCenter = (left.itemLeadingEdge + left.itemTrailingEdge) / 2;
+        final rightCenter = (right.itemLeadingEdge + right.itemTrailingEdge) / 2;
+        return (leftCenter - 0.5).abs() <= (rightCenter - 0.5).abs()
+            ? left : right;
+      });
+      final targetIndex = current.index + 1;
+      if (targetIndex >= totalReaderPages) {
+        if (mounted) setState(() => _autoScrollEnabled = false);
+        return;
+      }
+      try {
+        await _itemScrollController.scrollTo(
+          index: targetIndex,
+          alignment: 0,
+          duration: Duration(
+            milliseconds: (_autoScrollSecondsPerPage * 1000).round(),
+          ),
+          curve: Curves.linear,
+        );
+      } catch (_) {
+        if (!mounted || !_autoScrollEnabled) return;
+      }
     }
   }
   void _openReaderSettings() {
@@ -880,6 +914,12 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
             sheetSetState(() {});
             setState(() => _darkPage = value);
             _settingsService.saveDarkPage(value);
+          }
+
+          void updateAutoScrollSpeed(double value) {
+            sheetSetState(() {});
+            setState(() => _autoScrollSecondsPerPage = value);
+            unawaited(_settingsService.saveAutoScrollSecondsPerPage(value));
           }
 
           return CupertinoActionSheet(
@@ -907,6 +947,29 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
                     value: _darkPage,
                     onChanged: updateDarkPage,
                   ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  LocaleController.isArabic
+                      ? 'سرعة التمرير التلقائي: ${_autoScrollSecondsPerPage.round()} ثانية لكل صفحة'
+                      : 'Auto-scroll speed: ${_autoScrollSecondsPerPage.round()} seconds per page',
+                ),
+                CupertinoSlider(
+                  min: 10,
+                  max: 60,
+                  divisions: 10,
+                  value: _autoScrollSecondsPerPage,
+                  onChanged: updateAutoScrollSpeed,
+                ),
+                Text(
+                  LocaleController.isArabic
+                      ? 'حرّك المؤشر نحو اليسار للتمرير الأسرع'
+                      : 'Faster scrolling uses fewer seconds per page.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: CupertinoColors.secondaryLabel.resolveFrom(popupContext),
+                  ),
+                  textAlign: TextAlign.center,
                 ),
               ],
             ),
@@ -965,6 +1028,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
                     return false;
                   },
                   child: ScrollablePositionedList.builder(
+                    key: const ValueKey('quran-reader-list'),
                     itemScrollController: _itemScrollController,
                     itemPositionsListener: _itemPositionsListener,
                     scrollDirection: Axis.vertical,
@@ -1021,33 +1085,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
                 onNext: () => _scrollToPage(_readerPage + 1),
               ),
             ),
-            if (_isInitializingReader)
-              Positioned.fill(
-                key: const ValueKey('quran-reader-preparing'),
-                child: ColoredBox(
-                  color: _darkPage ? const Color(0xFF3A352F) : const Color(0xFFF6F0E4),
-                  child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const CupertinoActivityIndicator(radius: 15),
-                        const SizedBox(height: 14),
-                        Text(
-                          LocaleController.isArabic
-                              ? 'جارٍ تجهيز صفحات المصحف...'
-                              : 'Preparing Quran pages…',
-                          style: TextStyle(
-                            color: _darkPage
-                                ? const Color(0xFFF0EDE6)
-                                : const Color(0xFF2D2924),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            if (_bottomBarVisible && !_isInitializingReader)
+            if (_bottomBarVisible)
               Positioned(left: 12, right: 12, bottom: MediaQuery.paddingOf(context).bottom + 8, child: _ReaderBottomBar(
                 isPlaying: _isRecitationPlaying, autoScrollEnabled: _autoScrollEnabled,
                 onPrevious: () => _scrollToPage(_readerPage - 1),
