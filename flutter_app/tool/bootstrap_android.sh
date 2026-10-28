@@ -37,91 +37,9 @@ else:
     raise SystemExit("No generated Android app Gradle file found")
 PY
 
-# Some Flutter Android plugins (notably geocoding_android) declare their own
-# compileSdk. Align Android subprojects with the app SDK so AAR metadata checks
-# use the supported API level instead of each plugin's legacy default.
-python3 - <<'PY'
-from pathlib import Path
-
-groovy = Path("android/build.gradle")
-kotlin = Path("android/build.gradle.kts")
-marker = "// Align Android library plugins with the app's compile SDK."
-if groovy.exists():
-    source = groovy.read_text()
-    if marker not in source:
-        source += """
-// Align Android library plugins with the app's compile SDK.
-subprojects { project ->
-    project.plugins.withId('com.android.library') {
-        project.extensions.getByName('android').compileSdkVersion 36
-    }
-}
-"""
-        groovy.write_text(source)
-    print("Aligned Android plugin subprojects to compileSdk 36 (Groovy DSL)")
-elif kotlin.exists():
-    source = kotlin.read_text()
-    if marker not in source:
-        source += """
-// Align Android library plugins with the app's compile SDK.
-subprojects {
-    plugins.withId("com.android.library") {
-        // Plugin build scripts can assign their legacy compileSdk after the
-        // plugin is applied. Override at afterEvaluate so AAR metadata checks
-        // consistently see the app's supported SDK level.
-        afterEvaluate {
-            val androidExtension = extensions.findByName("android")
-            if (androidExtension != null) {
-                val setter = androidExtension.javaClass.methods.firstOrNull {
-                    it.name == "setCompileSdk" && it.parameterCount == 1
-                }
-                setter?.invoke(androidExtension, 36)
-            }
-        }
-    }
-}
-"""
-        kotlin.write_text(source)
-    print("Aligned Android plugin subprojects to compileSdk 36 (Kotlin DSL)")
-else:
-    raise SystemExit("Generated Android root Gradle script not found")
-PY
-
-# Work around flutter_compass 0.8.1's missing Android namespace with AGP 8+.
-# Patch only the resolved pub-cache copy; this keeps the package API unchanged.
-python3 - <<'PY'
-from pathlib import Path
-import os
-import re
-
-roots = []
-value = os.environ.get("PUB_CACHE")
-if value:
-    roots.append(Path(value) / "hosted" / "pub.dev")
-roots.append(Path.home() / ".pub-cache" / "hosted" / "pub.dev")
-candidates = []
-for root in roots:
-    if root.exists():
-        candidates.extend(root.glob("flutter_compass-*/android/build.gradle"))
-if not candidates:
-    raise SystemExit("Could not find flutter_compass Android Gradle file in pub cache")
-for path in candidates:
-    source = path.read_text()
-    if re.search(r"(?m)^\s*namespace\s+", source):
-        print(f"flutter_compass namespace already present: {path}")
-        continue
-    patched, count = re.subn(
-        r"(?m)^(\s*android\s*\{)",
-        r'\1\n    namespace "compass"',
-        source,
-        count=1,
-    )
-    if count != 1:
-        raise SystemExit(f"Could not safely add namespace to {path}")
-    path.write_text(patched)
-    print(f"Added AGP-compatible namespace to {path}")
-PY
-
+# Android library plugins retain their own declared compile SDK. Avoid global
+# Gradle hooks here: newer Android Gradle Plugin versions changed the legacy
+# compileSdkVersion API and can fail during plugin evaluation.
 # 2. Enable core library desugaring required by flutter_local_notifications
 GRADLE_FILE="android/app/build.gradle"
 KTS_FILE="android/app/build.gradle.kts"
