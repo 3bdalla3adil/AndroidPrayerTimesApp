@@ -34,7 +34,7 @@ sounds = ("azan.wav", "azan_madinah.wav", "azan_dubai.wav", "azan_fajr_madinah.w
 # Find the Resources build phase directly in the complete project text.
 # Do not constrain the phase body to a single brace-free line: Xcode project
 # formatting varies between Flutter/Xcode versions.
-phase_pattern = r"([A-F0-9]+ /[*] Resources [*] = [{].*?files = [(])(.*?)([)];)"
+phase_pattern = r"(isa = PBXResourcesBuildPhase;.*?files = \()(.*?)(\);)"
 phase = re.search(phase_pattern, text, re.S)
 if not phase:
     raise SystemExit("Could not find Runner Copy Bundle Resources file list.")
