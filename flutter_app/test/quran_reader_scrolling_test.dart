@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
@@ -96,6 +97,16 @@ void main() {
     expect(find.byType(ScrollablePositionedList), findsOneWidget);
     expect(find.byType(PageView), findsNothing);
   }
+
+  test('auto-scroll speed preference persists and is clamped', () async {
+    final storage = StorageService();
+    await storage.saveQuranAutoScrollSecondsPerPage(42);
+    expect(await storage.loadQuranAutoScrollSecondsPerPage(), 42);
+    await storage.saveQuranAutoScrollSecondsPerPage(2);
+    expect(await storage.loadQuranAutoScrollSecondsPerPage(), 10);
+    await storage.saveQuranAutoScrollSecondsPerPage(90);
+    expect(await storage.loadQuranAutoScrollSecondsPerPage(), 60);
+  });
 
   test('last opened Quran page persists and is restored by storage', () async {
     final storage = StorageService();
