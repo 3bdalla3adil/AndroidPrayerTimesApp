@@ -9,7 +9,9 @@ set -euo pipefail
 PUB_CACHE_DIR="${PUB_CACHE:-$HOME/.pub-cache}"
 mapfile -t candidates < <(
   find "$PUB_CACHE_DIR/hosted" -type f \
-    -path '*/geocoding_android-*/android/build.gradle' -print 2>/dev/null | sort
+    -path '*/geocoding_android-*/android/build.gradle' \
+    ! -path '*/example/*' \
+    -print 2>/dev/null | sort
 )
 
 if [ "${#candidates[@]}" -eq 0 ]; then
