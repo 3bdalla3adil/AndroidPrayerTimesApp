@@ -119,6 +119,8 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
       ref.read(readerProvider.notifier).setTranslationEnabled(value);
 
   bool _bottomBarVisible = true;
+  bool _readerChromeVisible = true;
+  Timer? _chromeVisibilityTimer;
   bool _autoScrollEnabled = false;
   int _autoScrollGeneration = 0;
   double _autoScrollSecondsPerPage = 30;
@@ -179,6 +181,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
     _recitationPlayer.dispose();
     _fontSaveDebounce?.cancel();
     _pageSaveDebounce?.cancel();
+    _chromeVisibilityTimer?.cancel();
     // Persist synchronously from the current state when the reader is closed;
     // the debounced write handles normal scrolling without excessive I/O.
     unawaited(_storage.saveLastQuranPage(_lastKnownReaderPage));
@@ -932,6 +935,40 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
       if (!mounted || generation != _autoScrollGeneration) return;
     }
   }
+  void _hideReaderChromeDuringScroll() {
+    _chromeVisibilityTimer?.cancel();
+    if (_readerChromeVisible && mounted) {
+      setState(() => _readerChromeVisible = false);
+    }
+    _removeAyahToolbar();
+  }
+
+  void _scheduleReaderChromeRestore() {
+    _chromeVisibilityTimer?.cancel();
+    _chromeVisibilityTimer = Timer(const Duration(milliseconds: 1400), () {
+      if (mounted && !_readerChromeVisible) {
+        setState(() => _readerChromeVisible = true);
+      }
+    });
+  }
+
+  bool _handleReaderScrollNotification(ScrollNotification notification) {
+    // Only direct user drags hide the chrome. Programmatic navigation and
+    // auto-scroll should not cause controls to flash between pages.
+    if (notification is ScrollStartNotification &&
+        notification.dragDetails != null) {
+      _hideReaderChromeDuringScroll();
+      if (_autoScrollEnabled) {
+        // Invalidate the auto-scroll loop when the reader takes manual control.
+        // The active indexed animation is interrupted so it cannot fight the drag.
+        _stopAutoScroll(interruptAnimation: true);
+      }
+    } else if (notification is ScrollEndNotification) {
+      _scheduleReaderChromeRestore();
+    }
+    return false;
+  }
+
   void _openReaderSettings() {
     showCupertinoModalPopup<void>(
       context: context,
@@ -1054,21 +1091,21 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
 
     return AdaptivePageScaffold(
       backgroundColor: background,
-      navigationBar: CupertinoNavigationBar(
+      navigationBar: _readerChromeVisible ? CupertinoNavigationBar(
         middle: Text(LocaleController.isArabic ? 'القرآن الكريم' : 'The Holy Quran', style: const TextStyle(fontWeight: FontWeight.w700)),
         trailing: CupertinoButton(
           padding: EdgeInsets.zero,
           onPressed: () => setState(() => _bottomBarVisible = !_bottomBarVisible),
           child: Icon(_bottomBarVisible ? CupertinoIcons.chevron_down : CupertinoIcons.chevron_up),
         ),
-      ),
+      ) : null,
       child: SafeArea(
         bottom: false,
         child: Stack(
           children: [
             Positioned.fill(
-              top: 48,
-              bottom: _bottomBarVisible ? 74 : 0,
+              top: _readerChromeVisible ? 48 : 0,
+              bottom: _readerChromeVisible && _bottomBarVisible ? 74 : 0,
               child: Listener(
                 behavior: HitTestBehavior.translucent,
                 onPointerDown: _handlePointerDown,
@@ -1076,13 +1113,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
                 onPointerUp: _handlePointerUp,
                 onPointerCancel: _handlePointerUp,
                 child: NotificationListener<ScrollNotification>(
-                  onNotification: (notification) {
-                    if (notification is UserScrollNotification && notification.direction != ScrollDirection.idle) {
-                      _removeAyahToolbar();
-                      if (_autoScrollEnabled) _stopAutoScroll(interruptAnimation: false);
-                    }
-                    return false;
-                  },
+                  onNotification: _handleReaderScrollNotification,
                   child: ScrollablePositionedList.builder(
                     key: const ValueKey('quran-reader-list'),
                     itemScrollController: _itemScrollController,
@@ -1129,7 +1160,8 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
                 ),
               ),
             ),
-            Positioned(
+            if (_readerChromeVisible)
+              Positioned(
               top: 0,
               left: 4,
               right: 4,
@@ -1142,7 +1174,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
                 onNext: () => _scrollToPage(_readerPage + 1),
               ),
             ),
-            if (_bottomBarVisible)
+            if (_readerChromeVisible && _bottomBarVisible)
               Positioned(left: 12, right: 12, bottom: MediaQuery.paddingOf(context).bottom + 8, child: _ReaderBottomBar(
                 isPlaying: _isRecitationPlaying, autoScrollEnabled: _autoScrollEnabled,
                 onPrevious: () => _scrollToPage(_readerPage - 1),
