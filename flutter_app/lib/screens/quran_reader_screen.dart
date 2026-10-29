@@ -785,15 +785,48 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
     );
   }
 
-  Future<void> _handleAyahSelected(Verse verse, Offset globalPosition) async {
-    // This callback is wired exclusively to long-press recognizers, so an
-    // ordinary tap never changes the ayah color or opens the action toolbar.
+  void _handleAyahTap(Verse verse) {
+    // A normal tap only toggles the verse highlight. It never opens actions.
     final wasSelected = _selectedAyahKey == verse.id;
     setState(() => _selectedAyahKey = wasSelected ? null : verse.id);
     _removeAyahToolbar();
-    if (!wasSelected && _ayahToolbarEnabled) {
-      _showAyahToolbar(verse, globalPosition);
-    }
+  }
+
+  void _handleAyahLongPress(Verse verse, Offset globalPosition) {
+    // Long press selects the verse and opens its contextual actions, when enabled.
+    setState(() => _selectedAyahKey = verse.id);
+    _removeAyahToolbar();
+    if (_ayahToolbarEnabled) _showAyahToolbar(verse, globalPosition);
+  }
+
+  Future<void> _openSurahNavigator() async {
+    await showCupertinoModalPopup<void>(
+      context: context,
+      builder: (popupContext) => CupertinoActionSheet(
+        title: Text(LocaleController.isArabic ? 'انتقال إلى سورة' : 'Navigate to surah'),
+        message: Text(LocaleController.isArabic ? 'اختر سورة للانتقال إلى بدايتها' : 'Choose a surah to open its beginning'),
+        actions: [
+          for (var surah = 1; surah <= 114; surah++)
+            CupertinoActionSheetAction(
+              isDefaultAction: surah == _currentPageSurah,
+              onPressed: () {
+                Navigator.pop(popupContext);
+                unawaited(_scrollToPage(quran.getPageNumber(surah, 1)));
+              },
+              child: Text(
+                LocaleController.isArabic
+                    ? '${surah.toString()} · ${quran.getSurahNameArabic(surah)}'
+                    : '${surah.toString()}. ${quran.getSurahName(surah)}',
+                textDirection: LocaleController.isArabic ? TextDirection.rtl : TextDirection.ltr,
+              ),
+            ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          onPressed: () => Navigator.pop(popupContext),
+          child: Text(LocaleController.isArabic ? 'إلغاء' : 'Cancel'),
+        ),
+      ),
+    );
   }
 
   Future<void> _playSpecificAyah(Verse verse) async {
@@ -1140,7 +1173,8 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
                               showTranslation: _showTranslation,
                               darkPage: _darkPage,
                               selectedAyahKey: _selectedAyahKey,
-                              onAyahTap: _handleAyahSelected,
+                              onAyahTap: _handleAyahTap,
+                              onAyahLongPress: _handleAyahLongPress,
                             );
                           }
                           if (snapshot.hasError) {
@@ -1173,6 +1207,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
                 juz: _currentPageJuz,
                 onPrevious: () => _scrollToPage(_readerPage - 1),
                 onNext: () => _scrollToPage(_readerPage + 1),
+                onChooseSurah: _openSurahNavigator,
               ),
             ),
             if (_readerChromeVisible && _bottomBarVisible)
@@ -1241,6 +1276,7 @@ class _MushafPage extends StatefulWidget {
     required this.darkPage,
     required this.selectedAyahKey,
     required this.onAyahTap,
+    required this.onAyahLongPress,
   });
 
   final int page;
@@ -1250,39 +1286,49 @@ class _MushafPage extends StatefulWidget {
   final bool showTranslation;
   final bool darkPage;
   final String? selectedAyahKey;
-  final void Function(Verse verse, Offset globalPosition) onAyahTap;
+  final ValueChanged<Verse> onAyahTap;
+  final void Function(Verse verse, Offset globalPosition) onAyahLongPress;
   @override
   State<_MushafPage> createState() => _MushafPageState();
 }
 
 class _MushafPageState extends State<_MushafPage> {
-  final Map<String, LongPressGestureRecognizer> _ayahRecognizers = {};
+  final Map<String, LongPressGestureRecognizer> _longPressRecognizers = {};
+  final Map<String, TapGestureRecognizer> _tapRecognizers = {};
 
   @override
   void dispose() {
-    for (final recognizer in _ayahRecognizers.values) {
+    for (final recognizer in _longPressRecognizers.values) {
+      recognizer.dispose();
+    }
+    for (final recognizer in _tapRecognizers.values) {
       recognizer.dispose();
     }
     super.dispose();
   }
 
-  LongPressGestureRecognizer _recognizerFor(String key, Verse verse) {
-    final existing = _ayahRecognizers[key];
+  LongPressGestureRecognizer _longPressRecognizerFor(String key, Verse verse) {
+    final existing = _longPressRecognizers[key];
     if (existing != null) return existing;
     final recognizer = LongPressGestureRecognizer()
       ..onLongPressStart = (details) =>
-          widget.onAyahTap(verse, details.globalPosition);
-    _ayahRecognizers[key] = recognizer;
+          widget.onAyahLongPress(verse, details.globalPosition);
+    _longPressRecognizers[key] = recognizer;
+    return recognizer;
+  }
+
+  TapGestureRecognizer _tapRecognizerFor(String key, Verse verse) {
+    final existing = _tapRecognizers[key];
+    if (existing != null) return existing;
+    final recognizer = TapGestureRecognizer()
+      ..onTap = () => widget.onAyahTap(verse);
+    _tapRecognizers[key] = recognizer;
     return recognizer;
   }
 
   String _ayahKey(Verse verse) => verse.id;
 
   bool _isHighlighted(Verse verse) => widget.selectedAyahKey == _ayahKey(verse);
-
-  void _toggleHighlight(Verse verse, Offset globalPosition) {
-    widget.onAyahTap(verse, globalPosition);
-  }
 
   List<Verse> get verses => widget.pageData.verses;
 
@@ -1382,10 +1428,11 @@ class _MushafPageState extends State<_MushafPage> {
                       : ink,
                   fontWeight: FontWeight.w400,
                 ),
-                recognizer: _recognizerFor(
-                  _ayahKey(verse),
-                  verse,
-                ),
+                recognizer: _tapRecognizerFor(_ayahKey(verse), verse),
+              ),
+              TextSpan(
+                text: '',
+                recognizer: _longPressRecognizerFor(_ayahKey(verse), verse),
               ),
               WidgetSpan(
                 alignment: PlaceholderAlignment.middle,
@@ -1394,7 +1441,8 @@ class _MushafPageState extends State<_MushafPage> {
                   color: widget.darkPage ? const Color(0xFFE6E0C8) : green,
                   darkPage: widget.darkPage,
                   selected: _isHighlighted(verse),
-                  onLongPressStart: (details) => _toggleHighlight(verse, details.globalPosition),
+                  onTap: () => widget.onAyahTap(verse),
+                  onLongPressStart: (details) => widget.onAyahLongPress(verse, details.globalPosition),
                 ),
               ),
               if (widget.showTranslation)
@@ -1437,6 +1485,7 @@ class _AyahMarker extends StatelessWidget {
     required this.color,
     required this.darkPage,
     required this.selected,
+    required this.onTap,
     required this.onLongPressStart,
   });
 
@@ -1444,12 +1493,14 @@ class _AyahMarker extends StatelessWidget {
   final Color color;
   final bool darkPage;
   final bool selected;
+  final VoidCallback onTap;
   final ValueChanged<LongPressStartDetails> onLongPressStart;
 
   @override
   Widget build(BuildContext context) {
     final markerColor = selected ? const Color(0xFFFF9800) : (darkPage ? const Color(0xFFE6E0C8) : color);
     return GestureDetector(
+      onTap: onTap,
       onLongPressStart: onLongPressStart,
       behavior: HitTestBehavior.opaque,
       child: Padding(
@@ -1533,6 +1584,7 @@ class _MushafNavigationStrip extends StatelessWidget {
     required this.juz,
     required this.onPrevious,
     required this.onNext,
+    required this.onChooseSurah,
   });
 
   final int page;
@@ -1540,6 +1592,7 @@ class _MushafNavigationStrip extends StatelessWidget {
   final int juz;
   final VoidCallback onPrevious;
   final VoidCallback onNext;
+  final VoidCallback onChooseSurah;
 
   @override
   Widget build(BuildContext context) {
@@ -1559,11 +1612,36 @@ class _MushafNavigationStrip extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14),
           child: Text(_arabicNumber(page), style: TextStyle(fontSize: 19, color: foreground)),
         ),
-        Expanded(child: _pill(
-          arabic ? quran.getSurahNameArabic(surah) : quran.getSurahName(surah),
-          border,
-          foreground,
-        )),
+        Expanded(
+          child: CupertinoButton(
+            padding: EdgeInsets.zero,
+            minimumSize: const Size(44, 40),
+            onPressed: onChooseSurah,
+            child: Container(
+              alignment: Alignment.center,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              decoration: BoxDecoration(
+                border: Border.all(color: border.withValues(alpha: .65)),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Flexible(
+                    child: Text(
+                      arabic ? quran.getSurahNameArabic(surah) : quran.getSurahName(surah),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: foreground, fontSize: 14),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(CupertinoIcons.chevron_down, size: 12, color: foreground),
+                ],
+              ),
+            ),
+          ),
+        ),
         CupertinoButton(
           padding: const EdgeInsets.symmetric(horizontal: 8),
           minimumSize: const Size(32, 40),
