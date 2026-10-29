@@ -1380,10 +1380,6 @@ class _MemorizationBottomBar extends StatelessWidget {
           Expanded(child: _control(context, CupertinoIcons.arrow_counterclockwise, ar ? 'مراجعة' : 'Review', onReview, active: needsReview, enabled: !busy)),
           Expanded(child: _control(context, CupertinoIcons.checkmark_circle_fill, ar ? 'حفظت' : 'Memorized', onMemorized, active: memorized, enabled: !busy)),
         ]),
-        if (busy) const Padding(
-          padding: EdgeInsets.only(top: 3),
-          child: SizedBox(height: 2, child: LinearProgressIndicator(minHeight: 2)),
-        ),
       ]),
     );
   }
