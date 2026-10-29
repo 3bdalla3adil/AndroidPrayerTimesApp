@@ -120,7 +120,9 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
 
   bool _bottomBarVisible = true;
   bool _autoScrollEnabled = false;
+  int _autoScrollGeneration = 0;
   double _autoScrollSecondsPerPage = 30;
+  bool _ayahToolbarEnabled = true;
   OverlayEntry? _ayahActionOverlay;
   bool _tajweedMode = false;
   String? _selectedAyahKey;
@@ -378,6 +380,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
       );
       _memorizedAyahs = memorizedAyahs;
       _autoScrollSecondsPerPage = settings.autoScrollSecondsPerPage;
+      _ayahToolbarEnabled = settings.ayahToolbarEnabled;
       _lastKnownReaderPage = requestedReaderPage;
       unawaited(_repository.preloadAllPages(batchSize: 16));
 
@@ -781,10 +784,14 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
   }
 
   Future<void> _handleAyahSelected(Verse verse, Offset globalPosition) async {
+    // This callback is wired exclusively to long-press recognizers, so an
+    // ordinary tap never changes the ayah color or opens the action toolbar.
     final wasSelected = _selectedAyahKey == verse.id;
     setState(() => _selectedAyahKey = wasSelected ? null : verse.id);
     _removeAyahToolbar();
-    if (!wasSelected) _showAyahToolbar(verse, globalPosition);
+    if (!wasSelected && _ayahToolbarEnabled) {
+      _showAyahToolbar(verse, globalPosition);
+    }
   }
 
   Future<void> _playSpecificAyah(Verse verse) async {
@@ -846,15 +853,45 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
   void _removeAyahToolbar() { _ayahActionOverlay?.remove(); _ayahActionOverlay = null; }
 
   void _toggleAutoScroll() {
-    if (_autoScrollEnabled) { setState(() => _autoScrollEnabled = false); return; }
+    if (_autoScrollEnabled) {
+      _stopAutoScroll(interruptAnimation: true);
+      return;
+    }
+    // A fresh generation invalidates any older scrollTo future that is still
+    // unwinding. Repeated taps therefore never create competing scroll loops.
+    final generation = ++_autoScrollGeneration;
     setState(() => _autoScrollEnabled = true);
-    _runAutoScroll();
+    unawaited(_runAutoScroll(generation));
   }
 
-  Future<void> _runAutoScroll() async {
-    // Advance one page at a time. A fixed duration per page is predictable,
-    // configurable, and avoids long estimated jumps across variable-height pages.
-    while (mounted && _autoScrollEnabled) {
+  void _stopAutoScroll({required bool interruptAnimation}) {
+    ++_autoScrollGeneration;
+    if (_autoScrollEnabled && mounted) {
+      setState(() => _autoScrollEnabled = false);
+    }
+    if (!interruptAnimation || !_itemScrollController.isAttached) return;
+
+    // scrollTo has no public cancellation token. An indexed jump cancels its
+    // active animation; resume starts from the page currently nearest the view.
+    final visible = _itemPositionsListener.itemPositions.value
+        .where((p) => p.index >= 0 && p.index < totalReaderPages &&
+            p.itemTrailingEdge > 0 && p.itemLeadingEdge < 1)
+        .toList(growable: false);
+    if (visible.isEmpty) return;
+    final current = visible.reduce((left, right) {
+      final leftCenter = (left.itemLeadingEdge + left.itemTrailingEdge) / 2;
+      final rightCenter = (right.itemLeadingEdge + right.itemTrailingEdge) / 2;
+      return (leftCenter - 0.5).abs() <= (rightCenter - 0.5).abs()
+          ? left : right;
+    });
+    _itemScrollController.jumpTo(index: current.index, alignment: 0);
+  }
+
+  Future<void> _runAutoScroll(int generation) async {
+    // Advance one page at a time with a linear, user-configurable duration.
+    // The generation token makes pause/resume race-safe.
+    while (mounted && _autoScrollEnabled &&
+        generation == _autoScrollGeneration) {
       if (!_itemScrollController.isAttached) {
         await Future<void>.delayed(const Duration(milliseconds: 100));
         continue;
@@ -875,7 +912,9 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
       });
       final targetIndex = current.index + 1;
       if (targetIndex >= totalReaderPages) {
-        if (mounted) setState(() => _autoScrollEnabled = false);
+        if (mounted && generation == _autoScrollGeneration) {
+          setState(() => _autoScrollEnabled = false);
+        }
         return;
       }
       try {
@@ -888,8 +927,9 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
           curve: Curves.linear,
         );
       } catch (_) {
-        if (!mounted || !_autoScrollEnabled) return;
+        if (!mounted || generation != _autoScrollGeneration) return;
       }
+      if (!mounted || generation != _autoScrollGeneration) return;
     }
   }
   void _openReaderSettings() {
@@ -921,6 +961,15 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
             unawaited(_settingsService.saveAutoScrollSecondsPerPage(value));
           }
 
+          void updateAyahToolbar(bool value) {
+            sheetSetState(() {});
+            setState(() {
+              _ayahToolbarEnabled = value;
+              if (!value) _removeAyahToolbar();
+            });
+            unawaited(_settingsService.saveAyahToolbarEnabled(value));
+          }
+
           return CupertinoActionSheet(
             title: Text(LocaleController.isArabic ? 'إعدادات المصحف' : 'Mushaf settings'),
             message: Column(
@@ -945,6 +994,14 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
                   trailing: CupertinoSwitch(
                     value: _darkPage,
                     onChanged: updateDarkPage,
+                  ),
+                ),
+                CupertinoListTile(
+                  title: Text(LocaleController.isArabic ? 'أدوات الآية عند الضغط المطوّل' : 'Ayah toolbar on long press'),
+                  subtitle: Text(LocaleController.isArabic ? 'تغيير لون الآية وإظهار أدواتها' : 'Highlight an ayah and show its actions'),
+                  trailing: CupertinoSwitch(
+                    value: _ayahToolbarEnabled,
+                    onChanged: updateAyahToolbar,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -1022,7 +1079,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
                   onNotification: (notification) {
                     if (notification is UserScrollNotification && notification.direction != ScrollDirection.idle) {
                       _removeAyahToolbar();
-                      if (_autoScrollEnabled) setState(() => _autoScrollEnabled = false);
+                      if (_autoScrollEnabled) _stopAutoScroll(interruptAnimation: false);
                     }
                     return false;
                   },
