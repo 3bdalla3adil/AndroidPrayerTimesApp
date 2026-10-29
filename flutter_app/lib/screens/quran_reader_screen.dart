@@ -1111,15 +1111,6 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
             unawaited(_settingsService.saveAutoScrollSecondsPerPage(value));
           }
 
-          void updateAyahToolbar(bool value) {
-            sheetSetState(() {});
-            setState(() {
-              _ayahToolbarEnabled = value;
-              if (!value) _removeAyahToolbar();
-            });
-            unawaited(_settingsService.saveAyahToolbarEnabled(value));
-          }
-
           return CupertinoActionSheet(
             title: Text(LocaleController.isArabic ? 'إعدادات المصحف' : 'Mushaf settings'),
             message: Column(
@@ -1144,14 +1135,6 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
                   trailing: CupertinoSwitch(
                     value: _darkPage,
                     onChanged: updateDarkPage,
-                  ),
-                ),
-                CupertinoListTile(
-                  title: Text(LocaleController.isArabic ? 'أدوات الآية عند الضغط المطوّل' : 'Ayah toolbar on long press'),
-                  subtitle: Text(LocaleController.isArabic ? 'تغيير لون الآية وإظهار أدواتها' : 'Highlight an ayah and show its actions'),
-                  trailing: CupertinoSwitch(
-                    value: _ayahToolbarEnabled,
-                    onChanged: updateAyahToolbar,
                   ),
                 ),
                 const SizedBox(height: 12),
