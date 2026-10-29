@@ -21,7 +21,6 @@ import '../services/bookmark_service.dart';
 import '../services/settings_service.dart';
 import '../providers/reader_provider.dart';
 import '../services/locale_controller.dart';
-import '../services/app_routes.dart';
 
 const kQuranFont = 'KFGQPC HAFS Uthmanic Script';
 
@@ -863,23 +862,6 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
     } finally {
       if (mounted && generation == _recitationGeneration) setState(() => _isRecitationLoading = false);
     }
-  }
-
-  Future<void> _toggleMemorizedAyah(Verse verse) async {
-    final key = verse.id;
-    final values = Set<String>.from(_memorizedAyahs);
-    final review = Set<String>.from(_reviewAyahs);
-    if (!values.add(key)) {
-      values.remove(key);
-    } else {
-      review.remove(key);
-    }
-    await _storage.saveMemorizedAyahs(values);
-    await _storage.saveMemorizationReviewAyahs(review);
-    if (mounted) setState(() {
-      _memorizedAyahs = values;
-      _reviewAyahs = review;
-    });
   }
 
   void _enterMemorizationMode(Verse verse) {
