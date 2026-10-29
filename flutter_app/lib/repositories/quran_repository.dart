@@ -85,16 +85,27 @@ final class QuranRepository {
   /// a normal reading session never evicts a page and flashes a loading state.
   Future<void> preloadAllPages({
     int batchSize = 16,
+    int prioritizePage = 1,
     void Function(int loaded, int total)? onProgress,
   }) async {
     if (batchSize < 1) throw ArgumentError.value(batchSize, 'batchSize');
     const totalPages = 604;
-    for (var start = 1; start <= totalPages; start += batchSize) {
-      final end = (start + batchSize - 1).clamp(1, totalPages);
+    final priority = prioritizePage.clamp(1, totalPages);
+    // Warm the visible page's neighborhood first, then expand outward. This
+    // avoids blank placeholders when a reader opens deep into the Mushaf.
+    final orderedPages = List<int>.generate(totalPages, (index) => index + 1)
+      ..sort((left, right) {
+        final distance = (left - priority).abs().compareTo((right - priority).abs());
+        return distance != 0 ? distance : left.compareTo(right);
+      });
+    var loaded = 0;
+    for (var start = 0; start < orderedPages.length; start += batchSize) {
+      final end = (start + batchSize).clamp(0, orderedPages.length);
       await Future.wait([
-        for (var page = start; page <= end; page++) loadPage(page),
+        for (final page in orderedPages.sublist(start, end)) loadPage(page),
       ]);
-      onProgress?.call(end, totalPages);
+      loaded = end;
+      onProgress?.call(loaded, totalPages);
     }
   }
 
