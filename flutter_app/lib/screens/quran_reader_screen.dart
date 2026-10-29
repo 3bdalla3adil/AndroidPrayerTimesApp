@@ -797,12 +797,14 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
 
   void _handleAyahTap(Verse verse) {
     // A normal tap never changes the ayah color or opens the toolbar.
-    // Selection/highlighting is reserved for an intentional long press.
+    // It pauses auto-scroll so the reader can resume from the current position.
+    if (_autoScrollEnabled) _stopAutoScroll(interruptAnimation: true);
     _removeAyahToolbar();
   }
 
   void _handleAyahLongPress(Verse verse, Offset globalPosition) {
     // Long press selects the verse and opens its contextual actions, when enabled.
+    if (_autoScrollEnabled) _stopAutoScroll(interruptAnimation: true);
     setState(() => _selectedAyahKey = verse.id);
     _removeAyahToolbar();
     if (_ayahToolbarEnabled) _showAyahToolbar(verse, globalPosition);
