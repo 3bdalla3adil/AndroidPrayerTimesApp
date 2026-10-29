@@ -1293,35 +1293,51 @@ class _MushafPage extends StatefulWidget {
 }
 
 class _MushafPageState extends State<_MushafPage> {
-  final Map<String, LongPressGestureRecognizer> _longPressRecognizers = {};
   final Map<String, TapGestureRecognizer> _tapRecognizers = {};
+  final Map<String, Timer> _longPressTimers = {};
+  final Set<String> _longPressTriggered = <String>{};
+  final Map<String, Offset> _pressPositions = {};
 
   @override
   void dispose() {
-    for (final recognizer in _longPressRecognizers.values) {
-      recognizer.dispose();
-    }
     for (final recognizer in _tapRecognizers.values) {
       recognizer.dispose();
     }
+    for (final timer in _longPressTimers.values) {
+      timer.cancel();
+    }
     super.dispose();
-  }
-
-  LongPressGestureRecognizer _longPressRecognizerFor(String key, Verse verse) {
-    final existing = _longPressRecognizers[key];
-    if (existing != null) return existing;
-    final recognizer = LongPressGestureRecognizer()
-      ..onLongPressStart = (details) =>
-          widget.onAyahLongPress(verse, details.globalPosition);
-    _longPressRecognizers[key] = recognizer;
-    return recognizer;
   }
 
   TapGestureRecognizer _tapRecognizerFor(String key, Verse verse) {
     final existing = _tapRecognizers[key];
     if (existing != null) return existing;
     final recognizer = TapGestureRecognizer()
-      ..onTap = () => widget.onAyahTap(verse);
+      ..onTapDown = (details) {
+        _longPressTimers.remove(key)?.cancel();
+        _longPressTriggered.remove(key);
+        _pressPositions[key] = details.globalPosition;
+        _longPressTimers[key] = Timer(
+          kLongPressTimeout,
+          () {
+            _longPressTimers.remove(key);
+            final position = _pressPositions[key];
+            if (!mounted || position == null) return;
+            _longPressTriggered.add(key);
+            widget.onAyahLongPress(verse, position);
+          },
+        );
+      }
+      ..onTap = () {
+        _longPressTimers.remove(key)?.cancel();
+        _pressPositions.remove(key);
+        if (_longPressTriggered.remove(key)) return;
+        widget.onAyahTap(verse);
+      }
+      ..onTapCancel = () {
+        _longPressTimers.remove(key)?.cancel();
+        _pressPositions.remove(key);
+      };
     _tapRecognizers[key] = recognizer;
     return recognizer;
   }
@@ -1432,7 +1448,6 @@ class _MushafPageState extends State<_MushafPage> {
               ),
               TextSpan(
                 text: '',
-                recognizer: _longPressRecognizerFor(_ayahKey(verse), verse),
               ),
               WidgetSpan(
                 alignment: PlaceholderAlignment.middle,
