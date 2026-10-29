@@ -14,6 +14,7 @@ class StorageService {
   static const _quranDarkPage = 'quran_dark_page';
   static const _quranAutoScrollSecondsPerPage =
       'quran_auto_scroll_seconds_per_page';
+  static const _quranAyahToolbarEnabled = 'quran_ayah_toolbar_enabled';
   static const _quranLastPage = 'quran_last_opened_page';
   static const _bookmarks = 'quran_bookmarks';
   static const _bookmarkRecords = 'quran_bookmark_records_v2';
@@ -146,6 +147,12 @@ class StorageService {
         _quranAutoScrollSecondsPerPage,
         value.clamp(10, 60).toDouble(),
       );
+
+  Future<bool> loadQuranAyahToolbarEnabled() async =>
+      await prefs.getBool(_quranAyahToolbarEnabled) ?? true;
+
+  Future<void> saveQuranAyahToolbarEnabled(bool enabled) =>
+      prefs.setBool(_quranAyahToolbarEnabled, enabled);
 
   Future<List<(int, int)>> loadBookmarks() async {
     final values = await prefs.getStringList(_bookmarks) ?? const [];
