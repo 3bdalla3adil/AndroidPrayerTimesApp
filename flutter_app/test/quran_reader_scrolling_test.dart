@@ -135,6 +135,30 @@ void main() {
     expect(await storage.loadLastQuranPage(), 1);
   });
 
+  testWidgets('reader chrome hides during manual scrolling and returns when idle',
+      (tester) async {
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await mountReader(tester);
+
+    final listFinder = find.byType(ScrollablePositionedList);
+    expect(find.byKey(const ValueKey('quran-reader-app-bar')), findsOneWidget);
+    expect(find.byKey(const ValueKey('quran-reader-header-navigator')), findsOneWidget);
+    expect(find.byKey(const ValueKey('quran-reader-bottom-toolbar')), findsOneWidget);
+
+    await tester.drag(listFinder, const Offset(0, -220));
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.byKey(const ValueKey('quran-reader-app-bar')), findsNothing);
+    expect(find.byKey(const ValueKey('quran-reader-header-navigator')), findsNothing);
+    expect(find.byKey(const ValueKey('quran-reader-bottom-toolbar')), findsNothing);
+
+    await tester.pump(const Duration(milliseconds: 1500));
+    await tester.pump();
+    expect(find.byKey(const ValueKey('quran-reader-app-bar')), findsOneWidget);
+    expect(find.byKey(const ValueKey('quran-reader-header-navigator')), findsOneWidget);
+    expect(find.byKey(const ValueKey('quran-reader-bottom-toolbar')), findsOneWidget);
+  });
+
   testWidgets('Quran reader continuously scrolls across page boundaries',
       (tester) async {
     addTearDown(() => tester.binding.setSurfaceSize(null));
