@@ -7,6 +7,7 @@ class ReaderSettings {
     required this.showTranslation,
     required this.darkPage,
     required this.autoScrollSecondsPerPage,
+    required this.ayahToolbarEnabled,
   });
 
   final double fontSize;
@@ -15,6 +16,7 @@ class ReaderSettings {
   final bool darkPage;
   /// Number of seconds used to move through one Mushaf page during auto-scroll.
   final double autoScrollSecondsPerPage;
+  final bool ayahToolbarEnabled;
 }
 
 /// Single persistence boundary for reader appearance settings.
@@ -30,6 +32,7 @@ final class SettingsService {
       _storage.loadQuranShowTranslation(),
       _storage.loadQuranDarkPage(),
       _storage.loadQuranAutoScrollSecondsPerPage(),
+      _storage.loadQuranAyahToolbarEnabled(),
     ]);
     return ReaderSettings(
       fontSize: (values[0] as double).clamp(20, 38).toDouble(),
@@ -38,6 +41,7 @@ final class SettingsService {
       darkPage: values[3] as bool,
       autoScrollSecondsPerPage:
           (values[4] as double).clamp(10, 60).toDouble(),
+      ayahToolbarEnabled: values[5] as bool,
     );
   }
 
@@ -57,4 +61,7 @@ final class SettingsService {
       _storage.saveQuranAutoScrollSecondsPerPage(
         value.clamp(10, 60).toDouble(),
       );
+
+  Future<void> saveAyahToolbarEnabled(bool enabled) =>
+      _storage.saveQuranAyahToolbarEnabled(enabled);
 }
