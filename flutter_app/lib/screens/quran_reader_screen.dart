@@ -384,7 +384,12 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
       _autoScrollSecondsPerPage = settings.autoScrollSecondsPerPage;
       _ayahToolbarEnabled = settings.ayahToolbarEnabled;
       _lastKnownReaderPage = requestedReaderPage;
-      unawaited(_repository.preloadAllPages(batchSize: 16));
+      // Prime both sides of the opening page before the full background warmup.
+      _repository.prefetchAround(requestedReaderPage, radius: 8);
+      unawaited(_repository.preloadAllPages(
+        batchSize: 16,
+        prioritizePage: requestedReaderPage,
+      ));
 
       // The requested page is ready and provider state is restored. Make the
       // reader interactive now; initial positioning must not keep the loading
@@ -1445,9 +1450,6 @@ class _MushafPageState extends State<_MushafPage> {
                   fontWeight: FontWeight.w400,
                 ),
                 recognizer: _tapRecognizerFor(_ayahKey(verse), verse),
-              ),
-              TextSpan(
-                text: '',
               ),
               WidgetSpan(
                 alignment: PlaceholderAlignment.middle,
