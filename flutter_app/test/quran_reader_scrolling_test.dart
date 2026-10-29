@@ -108,6 +108,17 @@ void main() {
     expect(await storage.loadQuranAutoScrollSecondsPerPage(), 60);
   });
 
+  test('ayah toolbar preference persists with enabled default', () async {
+    final storage = StorageService();
+    expect(await storage.loadQuranAyahToolbarEnabled(), isTrue);
+
+    await storage.saveQuranAyahToolbarEnabled(false);
+    expect(await StorageService().loadQuranAyahToolbarEnabled(), isFalse);
+
+    await storage.saveQuranAyahToolbarEnabled(true);
+    expect(await StorageService().loadQuranAyahToolbarEnabled(), isTrue);
+  });
+
   test('last opened Quran page persists and is restored by storage', () async {
     final storage = StorageService();
     await storage.saveLastQuranPage(287);
