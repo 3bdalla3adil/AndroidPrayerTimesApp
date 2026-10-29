@@ -1091,6 +1091,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
     return AdaptivePageScaffold(
       backgroundColor: background,
       navigationBar: _readerChromeVisible ? CupertinoNavigationBar(
+        key: const ValueKey('quran-reader-app-bar'),
         middle: Text(LocaleController.isArabic ? 'القرآن الكريم' : 'The Holy Quran', style: const TextStyle(fontWeight: FontWeight.w700)),
         trailing: CupertinoButton(
           padding: EdgeInsets.zero,
@@ -1161,6 +1162,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
             ),
             if (_readerChromeVisible)
               Positioned(
+              key: const ValueKey('quran-reader-header-navigator'),
               top: 0,
               left: 4,
               right: 4,
@@ -1174,7 +1176,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
               ),
             ),
             if (_readerChromeVisible && _bottomBarVisible)
-              Positioned(left: 12, right: 12, bottom: MediaQuery.paddingOf(context).bottom + 8, child: _ReaderBottomBar(
+              Positioned(key: const ValueKey('quran-reader-bottom-toolbar'), left: 12, right: 12, bottom: MediaQuery.paddingOf(context).bottom + 8, child: _ReaderBottomBar(
                 isPlaying: _isRecitationPlaying, autoScrollEnabled: _autoScrollEnabled,
                 onPrevious: () => _scrollToPage(_readerPage - 1),
                 onNext: () => _scrollToPage(_readerPage + 1),
