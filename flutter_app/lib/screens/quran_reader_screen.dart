@@ -128,6 +128,10 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
   bool _tajweedMode = false;
   String? _selectedAyahKey;
   Set<String> _memorizedAyahs = <String>{};
+  Set<String> _reviewAyahs = <String>{};
+  bool _memorizationMode = false;
+  Verse? _memorizationVerse;
+  bool _memorizationBusy = false;
   final Map<int, Offset> _activePointers = <int, Offset>{};
   double? _initialPinchDistance;
   double _pinchStartFontSize = 25;
@@ -336,6 +340,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
       final settings = await _settingsService.load();
       final bookmarks = await _bookmarkService.loadAll();
       final memorizedAyahs = await _storage.loadMemorizedAyahs();
+      final reviewAyahs = await _storage.loadMemorizationReviewAyahs();
       final shouldRestoreLastPage = widget.startingPage == null &&
           widget.surahNumber == 1 && widget.startingAyah == 1;
       final lastOpenedPage = shouldRestoreLastPage
@@ -381,6 +386,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
         bookmarks: bookmarks,
       );
       _memorizedAyahs = memorizedAyahs;
+      _reviewAyahs = reviewAyahs;
       _autoScrollSecondsPerPage = settings.autoScrollSecondsPerPage;
       _ayahToolbarEnabled = settings.ayahToolbarEnabled;
       _lastKnownReaderPage = requestedReaderPage;
@@ -791,9 +797,8 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
   }
 
   void _handleAyahTap(Verse verse) {
-    // A normal tap only toggles the verse highlight. It never opens actions.
-    final wasSelected = _selectedAyahKey == verse.id;
-    setState(() => _selectedAyahKey = wasSelected ? null : verse.id);
+    // A normal tap never changes the ayah color or opens the toolbar.
+    // Selection/highlighting is reserved for an intentional long press.
     _removeAyahToolbar();
   }
 
@@ -863,9 +868,96 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
   Future<void> _toggleMemorizedAyah(Verse verse) async {
     final key = verse.id;
     final values = Set<String>.from(_memorizedAyahs);
-    if (!values.add(key)) values.remove(key);
+    final review = Set<String>.from(_reviewAyahs);
+    if (!values.add(key)) {
+      values.remove(key);
+    } else {
+      review.remove(key);
+    }
     await _storage.saveMemorizedAyahs(values);
-    if (mounted) setState(() => _memorizedAyahs = values);
+    await _storage.saveMemorizationReviewAyahs(review);
+    if (mounted) setState(() {
+      _memorizedAyahs = values;
+      _reviewAyahs = review;
+    });
+  }
+
+  void _enterMemorizationMode(Verse verse) {
+    _removeAyahToolbar();
+    _stopAutoScroll(interruptAnimation: true);
+    setState(() {
+      _memorizationMode = true;
+      _memorizationVerse = verse;
+      _selectedAyahKey = null;
+      _bottomBarVisible = true;
+    });
+    unawaited(_saveMemorizationPosition(verse));
+  }
+
+  Future<void> _saveMemorizationPosition(Verse verse) async {
+    await _storage.saveMemorizationSession(
+      surah: verse.surahNumber,
+      startAyah: 1,
+      endAyah: quran.getVerseCount(verse.surahNumber),
+      currentAyah: verse.ayahNumber,
+    );
+  }
+
+  Future<void> _moveMemorizationAyah(int delta) async {
+    if (_memorizationBusy || _memorizationVerse == null) return;
+    final current = _memorizationVerse!;
+    var surah = current.surahNumber;
+    var ayah = current.ayahNumber + delta;
+    if (ayah < 1) {
+      if (surah == 1) return;
+      surah--;
+      ayah = quran.getVerseCount(surah);
+    } else if (ayah > quran.getVerseCount(surah)) {
+      if (surah == 114) return;
+      surah++;
+      ayah = 1;
+    }
+    final next = Verse(surahNumber: surah, ayahNumber: ayah, text: quran.getVerse(surah, ayah));
+    setState(() => _memorizationVerse = next);
+    await _saveMemorizationPosition(next);
+    final page = quran.getPageNumber(surah, ayah);
+    if (page != _readerPage) await _scrollToPage(page);
+  }
+
+  Future<void> _recordMemorization({required bool needsReview}) async {
+    final verse = _memorizationVerse;
+    if (verse == null || _memorizationBusy) return;
+    setState(() => _memorizationBusy = true);
+    final key = verse.id;
+    final memorized = Set<String>.from(_memorizedAyahs);
+    final review = Set<String>.from(_reviewAyahs);
+    if (needsReview) {
+      review.add(key);
+      memorized.remove(key);
+    } else {
+      memorized.add(key);
+      review.remove(key);
+    }
+    try {
+      await _storage.saveMemorizedAyahs(memorized);
+      await _storage.saveMemorizationReviewAyahs(review);
+      if (!mounted) return;
+      setState(() {
+        _memorizedAyahs = memorized;
+        _reviewAyahs = review;
+      });
+      await _moveMemorizationAyah(1);
+    } finally {
+      if (mounted) setState(() => _memorizationBusy = false);
+    }
+  }
+
+  void _exitMemorizationMode() {
+    setState(() {
+      _memorizationMode = false;
+      _memorizationVerse = null;
+      _memorizationBusy = false;
+    });
   }
 
   void _showAyahToolbar(Verse verse, Offset globalPosition) {
@@ -883,8 +975,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
       _AyahActionButton(icon: _darkPage ? CupertinoIcons.moon_fill : CupertinoIcons.sun_max, active: _darkPage, label: LocaleController.isArabic ? 'المظهر' : 'Theme', onPressed: () { setState(() => _darkPage = !_darkPage); _settingsService.saveDarkPage(_darkPage); _removeAyahToolbar(); }),
       _AyahActionButton(icon: CupertinoIcons.book, active: _tajweedMode, label: _tajweedMode ? (LocaleController.isArabic ? 'تجويد' : 'Tajweed') : (LocaleController.isArabic ? 'المدينة' : 'Madinah'), onPressed: () { setState(() => _tajweedMode = !_tajweedMode); _removeAyahToolbar(); }),
       _AyahActionButton(icon: CupertinoIcons.play_fill, active: false, label: LocaleController.isArabic ? 'استمع' : 'Play', onPressed: () { _removeAyahToolbar(); _playSpecificAyah(verse); }),
-      _AyahActionButton(icon: _memorizedAyahs.contains(verse.id) ? CupertinoIcons.checkmark_circle_fill : CupertinoIcons.bookmark, active: _memorizedAyahs.contains(verse.id), label: LocaleController.isArabic ? 'حفظ' : 'Memorize', onPressed: () async { await _toggleMemorizedAyah(verse); _removeAyahToolbar(); }),
-      _AyahActionButton(icon: CupertinoIcons.repeat, active: false, label: LocaleController.isArabic ? 'تدريب' : 'Practice', onPressed: () { _removeAyahToolbar(); Navigator.of(context).pushNamed(AppRoutes.quranMemorization); }),
+      _AyahActionButton(icon: _memorizedAyahs.contains(verse.id) ? CupertinoIcons.checkmark_circle_fill : CupertinoIcons.bookmark, active: _memorizedAyahs.contains(verse.id), label: LocaleController.isArabic ? 'حفظ' : 'Memorize', onPressed: () => _enterMemorizationMode(verse)),
       _AyahActionButton(icon: CupertinoIcons.xmark, active: false, label: LocaleController.isArabic ? 'إغلاق' : 'Close', onPressed: _removeAyahToolbar),
     ]))))));
     overlay.insert(_ayahActionOverlay!);
@@ -1216,13 +1307,29 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
               ),
             ),
             if (_readerChromeVisible && _bottomBarVisible)
-              Positioned(key: const ValueKey('quran-reader-bottom-toolbar'), left: 12, right: 12, bottom: MediaQuery.paddingOf(context).bottom + 8, child: _ReaderBottomBar(
-                isPlaying: _isRecitationPlaying, autoScrollEnabled: _autoScrollEnabled,
-                onPrevious: () => _scrollToPage(_readerPage - 1),
-                onNext: () => _scrollToPage(_readerPage + 1),
-                onJump: _openNavigator, onPlayPause: _toggleRecitation, onAutoScroll: _toggleAutoScroll,
-                onChooseReciter: _chooseReciter, onSearch: _searchQuran, onBookmark: _bookmarkCurrentPage, onSettings: _openReaderSettings,
-              )),
+              Positioned(
+                key: const ValueKey('quran-reader-bottom-toolbar'),
+                left: 8, right: 8, bottom: MediaQuery.paddingOf(context).bottom + 8,
+                child: _memorizationMode && _memorizationVerse != null
+                    ? _MemorizationBottomBar(
+                        verse: _memorizationVerse!,
+                        memorized: _memorizedAyahs.contains(_memorizationVerse!.id),
+                        needsReview: _reviewAyahs.contains(_memorizationVerse!.id),
+                        busy: _memorizationBusy,
+                        onPrevious: () => _moveMemorizationAyah(-1),
+                        onNext: () => _moveMemorizationAyah(1),
+                        onMemorized: () => _recordMemorization(needsReview: false),
+                        onReview: () => _recordMemorization(needsReview: true),
+                        onClose: _exitMemorizationMode,
+                      )
+                    : _ReaderBottomBar(
+                        isPlaying: _isRecitationPlaying, autoScrollEnabled: _autoScrollEnabled,
+                        onPrevious: () => _scrollToPage(_readerPage - 1),
+                        onNext: () => _scrollToPage(_readerPage + 1),
+                        onJump: _openNavigator, onPlayPause: _toggleRecitation, onAutoScroll: _toggleAutoScroll,
+                        onChooseReciter: _chooseReciter, onSearch: _searchQuran, onBookmark: _bookmarkCurrentPage, onSettings: _openReaderSettings,
+                      ),
+              ),
           ],
         ),
       ),
@@ -1230,6 +1337,86 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
   }
 }
 
+
+class _MemorizationBottomBar extends StatelessWidget {
+  const _MemorizationBottomBar({
+    required this.verse,
+    required this.memorized,
+    required this.needsReview,
+    required this.busy,
+    required this.onPrevious,
+    required this.onNext,
+    required this.onMemorized,
+    required this.onReview,
+    required this.onClose,
+  });
+
+  final Verse verse;
+  final bool memorized;
+  final bool needsReview;
+  final bool busy;
+  final VoidCallback onPrevious;
+  final VoidCallback onNext;
+  final VoidCallback onMemorized;
+  final VoidCallback onReview;
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    final ar = LocaleController.isArabic;
+    final status = memorized
+        ? (ar ? 'محفوظة' : 'Memorized')
+        : needsReview
+            ? (ar ? 'تحتاج مراجعة' : 'Needs review')
+            : (ar ? 'قيد الحفظ' : 'In progress');
+    return Container(
+      padding: const EdgeInsets.fromLTRB(8, 8, 8, 6),
+      decoration: BoxDecoration(
+        color: CupertinoColors.secondarySystemGroupedBackground.resolveFrom(context).withValues(alpha: .98),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: CupertinoColors.separator.resolveFrom(context).withValues(alpha: .5)),
+        boxShadow: [BoxShadow(color: CupertinoColors.black.withValues(alpha: .14), blurRadius: 18, offset: const Offset(0, 5))],
+      ),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Row(children: [
+          Expanded(child: Text(
+            ar
+              ? '${quran.getSurahNameArabic(verse.surahNumber)} · الآية ${verse.ayahNumber} · $status'
+              : '${quran.getSurahName(verse.surahNumber)} · Ayah ${verse.ayahNumber} · $status',
+            maxLines: 1, overflow: TextOverflow.ellipsis,
+            textAlign: ar ? TextAlign.right : TextAlign.left,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+          )),
+          CupertinoButton(padding: const EdgeInsets.all(4), minimumSize: const Size(36, 36), onPressed: onClose, child: const Icon(CupertinoIcons.xmark_circle, size: 19)),
+        ]),
+        Row(children: [
+          Expanded(child: _control(context, CupertinoIcons.chevron_left, ar ? 'السابق' : 'Previous', onPrevious)),
+          Expanded(child: _control(context, CupertinoIcons.chevron_right, ar ? 'التالي' : 'Next', onNext)),
+          Expanded(child: _control(context, CupertinoIcons.arrow_counterclockwise, ar ? 'مراجعة' : 'Review', onReview, active: needsReview, enabled: !busy)),
+          Expanded(child: _control(context, CupertinoIcons.checkmark_circle_fill, ar ? 'حفظت' : 'Memorized', onMemorized, active: memorized, enabled: !busy)),
+        ]),
+        if (busy) const Padding(
+          padding: EdgeInsets.only(top: 3),
+          child: SizedBox(height: 2, child: LinearProgressIndicator(minHeight: 2)),
+        ),
+      ]),
+    );
+  }
+
+  Widget _control(BuildContext context, IconData icon, String label, VoidCallback action, {bool active = false, bool enabled = true}) {
+    final foreground = active ? const Color(0xFF176B52) : CupertinoColors.label.resolveFrom(context);
+    return CupertinoButton(
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 5),
+      minimumSize: const Size(44, 44),
+      onPressed: enabled ? action : null,
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, size: 18, color: foreground),
+        const SizedBox(height: 2),
+        Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 9, color: foreground)),
+      ]),
+    );
+  }
+}
 
 class _AyahActionButton extends StatelessWidget {
   const _AyahActionButton({required this.icon, required this.active, required this.label, required this.onPressed});
