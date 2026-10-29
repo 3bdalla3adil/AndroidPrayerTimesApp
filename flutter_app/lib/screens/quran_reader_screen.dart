@@ -945,10 +945,13 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
       setState(() {
         _memorizedAyahs = memorized;
         _reviewAyahs = review;
+        _memorizationBusy = false;
       });
       await _moveMemorizationAyah(1);
     } finally {
-      if (mounted) setState(() => _memorizationBusy = false);
+      if (mounted && _memorizationBusy) {
+        setState(() => _memorizationBusy = false);
+      }
     }
   }
 
