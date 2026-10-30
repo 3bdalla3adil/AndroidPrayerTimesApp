@@ -6,6 +6,7 @@ import 'package:timezone/timezone.dart' as tz;
 
 import '../models/prayer_entry.dart';
 import 'storage_service.dart';
+import 'location_service.dart';
 
 class PrayerService {
   PrayerService(this.storage);
@@ -18,21 +19,12 @@ class PrayerService {
     tz.setLocalLocation(tz.getLocation(info.identifier));
   }
 
-  Future<Position> determinePosition() async {
-    if (!await Geolocator.isLocationServiceEnabled()) {
-      throw StateError('Location services are disabled.');
-    }
-    var permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-    }
-    if (permission == LocationPermission.denied ||
-        permission == LocationPermission.deniedForever) {
-      throw StateError('Location permission was not granted.');
-    }
-    return Geolocator.getCurrentPosition(
-      locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
-    );
+  Future<Position> determinePosition() =>
+      const LocationService().currentPosition();
+
+  Future<ResolvedLocation> determineDeviceLocation() async {
+    final position = await determinePosition();
+    return const LocationService().resolve(position);
   }
 
   CalculationParameters _parameters(int method, Coordinates coordinates) {
@@ -67,15 +59,28 @@ class PrayerService {
   }) async {
     var (lat, lon, _) = await storage.loadLocation();
     final selected = await storage.loadPrayerCity();
+    final isDeviceLocation = await storage.loadLocationIsDevice();
     final method = await storage.loadPrayerCalculationMethod() ?? selected.$3 ?? 3;
 
     if (lat == null ||
         lon == null ||
-        (refreshLocation && selected.$1 == null)) {
-      final position = await determinePosition();
-      lat = position.latitude;
-      lon = position.longitude;
-      await storage.saveLocation(lat, lon, 'Current location');
+        (refreshLocation && (isDeviceLocation || selected.$1 == null))) {
+      final resolved = await determineDeviceLocation();
+      lat = resolved.latitude;
+      lon = resolved.longitude;
+      final effectiveMethod =
+          await storage.loadPrayerCalculationMethod() ??
+          selected.$3 ??
+          resolved.calculationMethod;
+      await storage.savePrayerCity(
+        country: resolved.country,
+        city: resolved.city,
+        lat: lat,
+        lon: lon,
+        method: effectiveMethod,
+        isDeviceLocation: true,
+      );
+      return (lat, lon, effectiveMethod);
     }
 
     return (lat, lon, method);

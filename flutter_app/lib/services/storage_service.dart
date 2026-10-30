@@ -6,14 +6,20 @@ class StorageService {
   static const _locationName = 'location_name';
   static const _country = 'location_country';
   static const _city = 'location_city';
+  static const _locationIsDevice = 'location_is_device';
   static const _method = 'prayer_calculation_method';
   static const _quranFontSize = 'quran_font_size';
   static const _quranLineHeight = 'quran_line_height';
   static const _quranShowTranslation = 'quran_show_translation';
   static const _quranDarkPage = 'quran_dark_page';
+  static const _quranAutoScrollSecondsPerPage =
+      'quran_auto_scroll_seconds_per_page';
+  static const _quranAyahToolbarEnabled = 'quran_ayah_toolbar_enabled';
+  static const _quranLastPage = 'quran_last_opened_page';
   static const _bookmarks = 'quran_bookmarks';
   static const _bookmarkRecords = 'quran_bookmark_records_v2';
   static const _athanReminders = 'athan_reminders_enabled';
+  static const _tahajjudReminders = 'tahajjud_reminders_enabled';
   static const _athanPrayers = 'athan_enabled_prayers';
   static const _athanSound = 'athan_sound';
   static const _preReminderMinutes = 'pre_prayer_reminder_minutes';
@@ -79,12 +85,19 @@ class StorageService {
         await prefs.getString(_locationName),
       );
 
-  Future<void> savePrayerCity({required String country, required String city, required double lat, required double lon, required int method}) async {
-    await saveLocation(lat, lon, city);
+  Future<void> savePrayerCity({required String country, required String city, required double lat, required double lon, required int method, bool isDeviceLocation = false}) async {
+    final displayName = city == 'Current location' || country == 'Unknown country'
+        ? city
+        : '$city, $country';
+    await saveLocation(lat, lon, displayName);
     await prefs.setString(_country, country);
     await prefs.setString(_city, city);
     await prefs.setInt(_method, method);
+    await prefs.setBool(_locationIsDevice, isDeviceLocation);
   }
+
+  Future<bool> loadLocationIsDevice() async =>
+      await prefs.getBool(_locationIsDevice) ?? false;
 
   Future<(String?, String?, int?)> loadPrayerCity() async => (
         await prefs.getString(_country),
@@ -96,9 +109,18 @@ class StorageService {
     await prefs.remove(_country);
     await prefs.remove(_city);
     await prefs.remove(_method);
+    await prefs.remove(_locationIsDevice);
   }
 
   Future<void> saveQuranFontSize(double size) => prefs.setDouble(_quranFontSize, size);
+
+  /// Last Mushaf page is restored only when the reader is opened from its
+  /// default entry point; explicit navigation always takes precedence.
+  Future<int> loadLastQuranPage() async =>
+      (await prefs.getInt(_quranLastPage) ?? 1).clamp(1, 604).toInt();
+
+  Future<void> saveLastQuranPage(int page) =>
+      prefs.setInt(_quranLastPage, page.clamp(1, 604).toInt());
 
   Future<(int, int)> loadTasbih() async => (await prefs.getInt(_tasbihCount) ?? 0, await prefs.getInt(_tasbihTarget) ?? 33);
   Future<void> saveTasbih(int count, int target) async {
@@ -116,7 +138,21 @@ class StorageService {
   Future<void> saveQuranShowTranslation(bool value) => prefs.setBool(_quranShowTranslation, value);
   Future<bool> loadQuranShowTranslation() async => await prefs.getBool(_quranShowTranslation) ?? false;
   Future<void> saveQuranDarkPage(bool value) => prefs.setBool(_quranDarkPage, value);
-  Future<bool> loadQuranDarkPage() async => await prefs.getBool(_quranDarkPage) ?? false;
+  Future<bool> loadQuranDarkPage() async =>
+      await prefs.getBool(_quranDarkPage) ?? false;
+  Future<double> loadQuranAutoScrollSecondsPerPage() async =>
+      await prefs.getDouble(_quranAutoScrollSecondsPerPage) ?? 30;
+  Future<void> saveQuranAutoScrollSecondsPerPage(double value) =>
+      prefs.setDouble(
+        _quranAutoScrollSecondsPerPage,
+        value.clamp(10, 60).toDouble(),
+      );
+
+  Future<bool> loadQuranAyahToolbarEnabled() async =>
+      await prefs.getBool(_quranAyahToolbarEnabled) ?? true;
+
+  Future<void> saveQuranAyahToolbarEnabled(bool enabled) =>
+      prefs.setBool(_quranAyahToolbarEnabled, enabled);
 
   Future<List<(int, int)>> loadBookmarks() async {
     final values = await prefs.getStringList(_bookmarks) ?? const [];
@@ -148,6 +184,8 @@ class StorageService {
       prefs.setStringList(_bookmarkRecords, records);
 
   Future<bool> loadAthanRemindersEnabled() async => await prefs.getBool(_athanReminders) ?? false;
+  Future<bool> loadTahajjudRemindersEnabled() async => await prefs.getBool(_tahajjudReminders) ?? false;
+  Future<void> saveTahajjudRemindersEnabled(bool enabled) => prefs.setBool(_tahajjudReminders, enabled);
   Future<void> saveAthanRemindersEnabled(bool enabled) => prefs.setBool(_athanReminders, enabled);
 
   Future<String> loadAthanSound() async => await prefs.getString(_athanSound) ?? 'default';

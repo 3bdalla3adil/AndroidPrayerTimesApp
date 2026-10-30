@@ -4,6 +4,7 @@ import '../core/adaptive_page_scaffold.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 import '../models/prayer_entry.dart';
 import '../services/athan_reminder_service.dart';
+import '../services/tahajjud_reminder_service.dart';
 import '../services/prayer_service.dart';
 import '../services/storage_service.dart';
 import '../services/app_routes.dart';
@@ -18,16 +19,20 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final _service = PrayerService(StorageService());
   late final AthanReminderService _athan;
+  late final TahajjudReminderService _tahajjud;
   List<PrayerEntry> _prayers = const [];
   DateTime _now = DateTime.now();
   String _location = LocaleController.isArabic ? 'الموقع الحالي' : 'Current location';
   String? _error;
   bool _reminders = false;
+  bool _tahajjudReminders = false;
+  bool _tahajjudLoading = false;
   Timer? _timer;
 
   @override void initState() {
     super.initState();
     _athan = AthanReminderService(_service, StorageService());
+    _tahajjud = TahajjudReminderService(_service, StorageService());
     _load();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() => _now = DateTime.now());
@@ -40,12 +45,14 @@ class _HomeScreenState extends State<HomeScreen> {
       final prayers = await _service.today(refreshLocation: refresh);
       final location = await StorageService().loadLocation();
       final reminders = await StorageService().loadAthanRemindersEnabled();
+      final tahajjudReminders = await StorageService().loadTahajjudRemindersEnabled();
       if (!mounted) return;
       setState(() {
         _prayers = prayers; _location = location.$3 ?? (LocaleController.isArabic ? 'الموقع الحالي' : 'Current location');
-        _reminders = reminders; _error = null;
+        _reminders = reminders; _tahajjudReminders = tahajjudReminders; _error = null;
       });
       await _athan.sync(refreshLocation: refresh);
+      await _tahajjud.sync();
     } catch (e) {
       if (mounted) setState(() => _error = e.toString().replaceFirst('Bad state: ', ''));
     }
@@ -66,6 +73,27 @@ class _HomeScreenState extends State<HomeScreen> {
         if (mounted) setState(() => _reminders = false);
       }
     } catch (e) { if (mounted) _dialog(LocaleController.isArabic ? 'تعذّر إعداد الأذان' : 'Athan setup failed', e.toString()); }
+  }
+
+  Future<void> _toggleTahajjud(bool enabled) async {
+    if (_tahajjudLoading) return;
+    setState(() => _tahajjudLoading = true);
+    try {
+      if (enabled) {
+        final count = await _tahajjud.enable();
+        if (mounted) {
+          setState(() => _tahajjudReminders = true);
+          _dialog(LocaleController.isArabic ? 'تم تفعيل تذكير التهجّد' : 'Tahajjud reminder enabled', LocaleController.isArabic ? 'تمت جدولة $count من التذكيرات لبداية الثلث الأخير من الليل.' : '$count reminders were scheduled for the start of the last third of the night.');
+        }
+      } else {
+        await _tahajjud.disable();
+        if (mounted) setState(() => _tahajjudReminders = false);
+      }
+    } catch (e) {
+      if (mounted) _dialog(LocaleController.isArabic ? 'تعذّر إعداد تذكير التهجّد' : 'Could not set up Tahajjud reminder', e.toString());
+    } finally {
+      if (mounted) setState(() => _tahajjudLoading = false);
+    }
   }
 
   void _continueQuran() {
@@ -154,6 +182,21 @@ class _HomeScreenState extends State<HomeScreen> {
                         size: 25,
                       ),
                     ),
+                  ),
+                ]),
+                CupertinoListSection.insetGrouped(children: [
+                  CupertinoListTile(
+                    leading: const Icon(CupertinoIcons.moon_stars),
+                    title: Text(LocaleController.isArabic ? 'تذكير التهجّد' : 'Tahajjud reminder'),
+                    subtitle: Text(LocaleController.isArabic ? 'تنبيه عند بداية الثلث الأخير من الليل' : 'A quiet alert at the start of the last third of the night'),
+                    trailing: _tahajjudLoading ? const CupertinoActivityIndicator() : CupertinoSwitch(value: _tahajjudReminders, onChanged: _toggleTahajjud),
+                  ),
+                  CupertinoListTile(
+                    leading: const Icon(CupertinoIcons.music_note_2),
+                    title: Text(LocaleController.isArabic ? 'القرّاء المتاحون' : 'Available Quran reciters'),
+                    subtitle: const Text('Mishary Alafasy • Abdul Basit • Mahmoud Khalil Al-Husary'),
+                    trailing: const CupertinoListTileChevron(),
+                    onTap: _continueQuran,
                   ),
                 ]),
               ])),
