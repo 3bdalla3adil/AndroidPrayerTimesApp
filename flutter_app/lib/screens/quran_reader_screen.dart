@@ -391,10 +391,16 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
       _lastKnownReaderPage = requestedReaderPage;
       // Prime both sides of the opening page before the full background warmup.
       _repository.prefetchAround(requestedReaderPage, radius: 8);
+      // Warm every bundled page in bounded batches. The repository retains
+      // decoded pages for the whole 604-page Mushaf; failures are contained so
+      // a damaged optional page cannot create an unhandled async error or block
+      // reading. Visible pages still render from their own FutureBuilder.
       unawaited(_repository.preloadAllPages(
-        batchSize: 16,
+        batchSize: 12,
         prioritizePage: requestedReaderPage,
-      ));
+      ).catchError((Object error, StackTrace stackTrace) {
+        debugPrint('Quran background cache warm-up failed: $error');
+      }));
 
       // The requested page is ready and provider state is restored. Make the
       // reader interactive now; initial positioning must not keep the loading
@@ -1137,6 +1143,27 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
                   trailing: CupertinoSwitch(
                     value: _darkPage,
                     onChanged: updateDarkPage,
+                  ),
+                ),
+                CupertinoListTile(
+                  title: Text(
+                    LocaleController.isArabic
+                        ? 'أدوات الآية عند الضغط المطوّل'
+                        : 'Ayah toolbar on long press',
+                  ),
+                  subtitle: Text(
+                    LocaleController.isArabic
+                        ? 'إظهار أدوات الترجمة والتلاوة والحفظ عند الضغط المطوّل على آية'
+                        : 'Show translation, recitation and memorization actions when an ayah is long-pressed.',
+                  ),
+                  trailing: CupertinoSwitch(
+                    value: _ayahToolbarEnabled,
+                    onChanged: (value) {
+                      sheetSetState(() {});
+                      setState(() => _ayahToolbarEnabled = value);
+                      unawaited(_settingsService.saveAyahToolbarEnabled(value));
+                      if (!value) _removeAyahToolbar();
+                    },
                   ),
                 ),
                 const SizedBox(height: 12),
