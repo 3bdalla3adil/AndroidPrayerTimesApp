@@ -24,6 +24,12 @@ void main() {
     expect(await storage.loadBookmarks(), [(1, 1)]);
   });
 
+  test('Athan reminders are enabled automatically on a fresh install', () async {
+    expect(await storage.loadAthanRemindersEnabled(), isTrue);
+    await storage.saveAthanRemindersEnabled(false);
+    expect(await storage.loadAthanRemindersEnabled(), isFalse);
+  });
+
   test('prayer preferences persist safely', () async {
     await storage.saveEnabledPrayerNames(const ['Fajr', 'Isha']);
     await storage.savePrayerTimeAdjustments({'Fajr': 5, 'Isha': -10});
