@@ -99,7 +99,10 @@ class StorageService {
     await prefs.setStringList(_bookmarks, unique.toList());
   }
 
-  Future<bool> loadAthanRemindersEnabled() async => await prefs.getBool(_athanReminders) ?? false;
+  // Prayer alerts are enabled by default. Users can explicitly turn them off;
+  // the absent preference on a fresh install must not silently disable alarms.
+  Future<bool> loadAthanRemindersEnabled() async =>
+      await prefs.getBool(_athanReminders) ?? true;
   Future<void> saveAthanRemindersEnabled(bool enabled) => prefs.setBool(_athanReminders, enabled);
 
   Future<String> loadAthanSound() async => await prefs.getString(_athanSound) ?? 'default';
