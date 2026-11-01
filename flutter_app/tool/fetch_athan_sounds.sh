@@ -34,8 +34,9 @@ download "azan.mp3"
 download "azan_madinah.mp3"
 download "azan_dubai.mp3"
 download "azan_fajr_madinah.mp3"
+download "azan_fajr_makkah.mp3"
 
-for f in "$AUDIO_DIR/azan.mp3" "$AUDIO_DIR/azan_madinah.mp3" "$AUDIO_DIR/azan_dubai.mp3" "$AUDIO_DIR/azan_fajr_madinah.mp3"; do
+for f in "$AUDIO_DIR/azan.mp3" "$AUDIO_DIR/azan_madinah.mp3" "$AUDIO_DIR/azan_dubai.mp3" "$AUDIO_DIR/azan_fajr_madinah.mp3" "$AUDIO_DIR/azan_fajr_makkah.mp3"; do
   size="$(wc -c < "$f" | tr -d ' ')"
   [[ "$size" -gt 10000 ]] || {
     echo "Invalid audio file: $f" >&2

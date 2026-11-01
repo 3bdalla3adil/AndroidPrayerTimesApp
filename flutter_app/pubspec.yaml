@@ -50,6 +50,7 @@ flutter:
     - assets/audio/azan_madinah.mp3
     - assets/audio/azan_dubai.mp3
     - assets/audio/azan_fajr_madinah.mp3
+    - assets/audio/azan_fajr_makkah.mp3
     - assets/splash_screen.png
 
 # Launcher icon generation uses platform-specific config files in CI.

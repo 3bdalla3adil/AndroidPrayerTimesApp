@@ -144,10 +144,11 @@ cp -f assets/audio/azan.mp3 android/app/src/main/res/raw/azan.mp3
 cp -f assets/audio/azan_madinah.mp3 android/app/src/main/res/raw/azan_madinah.mp3
 cp -f assets/audio/azan_dubai.mp3 android/app/src/main/res/raw/azan_dubai.mp3
 cp -f assets/audio/azan_fajr_madinah.mp3 android/app/src/main/res/raw/azan_fajr_madinah.mp3
+cp -f assets/audio/azan_fajr_makkah.mp3 android/app/src/main/res/raw/azan_fajr_makkah.mp3
 cat > android/app/src/main/res/raw/keep.xml <<'XML'
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools"
-    tools:keep="@raw/azan,@raw/azan_madinah,@raw/azan_dubai,@raw/azan_fajr_madinah" />
+    tools:keep="@raw/azan,@raw/azan_madinah,@raw/azan_dubai,@raw/azan_fajr_madinah,@raw/azan_fajr_makkah" />
 XML
 
 # 3. Add runtime permissions required by prayer, Qibla, notifications and exact scheduling.

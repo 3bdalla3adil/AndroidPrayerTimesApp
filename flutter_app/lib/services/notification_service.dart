@@ -13,7 +13,7 @@ class NotificationService {
   static final AudioPlayer _testAudioPlayer = AudioPlayer();
 
   static const _defaultSoundId = 'default';
-  static const _fajrSoundId = 'fajr_madinah';
+  static const _fajrSoundId = 'fajr_makkah';
   // Android notification channels are immutable after creation, including their
   // sound. Use a versioned channel namespace so older installs receive fresh
   // sound-enabled channels after upgrading the app.
@@ -33,6 +33,7 @@ class NotificationService {
     'madinah': 'Athan — Madinah',
     'dubai': 'Athan — Dubai',
     'fajr_madinah': 'Fajr Athan — Madinah',
+    'fajr_makkah': 'Fajr Athan — Makkah (Masjid al-Haram)',
   };
 
   static const soundResources = <String, String>{
@@ -40,6 +41,7 @@ class NotificationService {
     'madinah': 'azan_madinah',
     'dubai': 'azan_dubai',
     'fajr_madinah': 'azan_fajr_madinah',
+    'fajr_makkah': 'azan_fajr_makkah',
   };
 
   static String soundForPrayer(String prayerName, String normalSoundId) =>

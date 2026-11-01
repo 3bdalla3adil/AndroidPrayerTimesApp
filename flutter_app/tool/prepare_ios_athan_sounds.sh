@@ -14,7 +14,7 @@ mkdir -p "$IOS_DIR"
 
 # iOS custom notification sounds must be shorter than 30 seconds. Generate
 # 29-second linear-PCM WAV clips so the system can play the Athan at delivery.
-for sound in azan azan_madinah azan_dubai azan_fajr_madinah; do
+for sound in azan azan_madinah azan_dubai azan_fajr_madinah azan_fajr_makkah; do
   input="$AUDIO_DIR/$sound.mp3"
   output="$IOS_DIR/$sound.wav"
   test -s "$input"
@@ -30,7 +30,7 @@ import re
 
 project = Path("ios/Runner.xcodeproj/project.pbxproj")
 text = project.read_text()
-sounds = ("azan.wav", "azan_madinah.wav", "azan_dubai.wav", "azan_fajr_madinah.wav")
+sounds = ("azan.wav", "azan_madinah.wav", "azan_dubai.wav", "azan_fajr_madinah.wav", "azan_fajr_makkah.wav")
 # Find the Resources build phase directly in the complete project text.
 # Do not constrain the phase body to a single brace-free line: Xcode project
 # formatting varies between Flutter/Xcode versions.
