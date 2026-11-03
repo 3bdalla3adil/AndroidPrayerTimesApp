@@ -8,7 +8,6 @@ import '../services/storage_service.dart';
 import '../services/app_routes.dart';
 import '../theme/app_theme.dart';
 import '../services/locale_controller.dart';
-import '../services/root_tab_navigation.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -68,8 +67,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _continueQuran() {
-    // Open the single Quran tab. Never restore or persist the last-read page.
-    RootTabNavigation.maybeOf(context)?.selectTab(1);
+    Navigator.of(context).pushNamed(AppRoutes.quran);
   }
 
   void _dialog(String title, String message) => showCupertinoDialog<void>(
@@ -115,10 +113,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 12),
                 _HomeFeatureGrid(
                   onQuran: _continueQuran,
-                  onPrayer: () => RootTabNavigation.maybeOf(context)?.selectTab(2),
+                  onPrayer: () => Navigator.of(context).pushNamed(AppRoutes.prayer),
                   onTasbih: () => Navigator.of(context).pushNamed(AppRoutes.tasbih),
                   onDuaa: () => Navigator.of(context).pushNamed(AppRoutes.adhkar),
-                  onQibla: () => RootTabNavigation.maybeOf(context)?.selectTab(3),
+                  onQibla: () => Navigator.of(context).pushNamed(AppRoutes.qibla),
                   onCalendar: () => Navigator.of(context).pushNamed(AppRoutes.calendar),
                   onAthan: () => _toggle(!_reminders),
                   onSettings: () => Navigator.of(context).pushNamed(AppRoutes.settings),
