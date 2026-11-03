@@ -4,9 +4,10 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'services/app_routes.dart';
 import 'services/locale_controller.dart';
 import 'services/notification_service.dart';
-import 'services/root_tab_navigation.dart';
 import 'theme/app_theme.dart';
 
+/// The home dashboard is the single navigation hub. Feature screens are
+/// opened as Cupertino routes instead of switching bottom-navigation tabs.
 class RootShell extends StatefulWidget {
   const RootShell({super.key});
 
@@ -15,12 +16,11 @@ class RootShell extends StatefulWidget {
 }
 
 class _RootShellState extends State<RootShell> {
-  late final CupertinoTabController _controller;
+  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
 
   @override
   void initState() {
     super.initState();
-    _controller = CupertinoTabController();
     NotificationService.lastPayload.addListener(_handleNotificationPayload);
     WidgetsBinding.instance.addPostFrameCallback((_) => _handleNotificationPayload());
   }
@@ -28,74 +28,24 @@ class _RootShellState extends State<RootShell> {
   void _handleNotificationPayload() {
     final payload = NotificationService.lastPayload.value;
     if (payload == null || !payload.startsWith('prayer:')) return;
-    if (mounted) _controller.index = 2;
+    _navigatorKey.currentState?.pushNamed(AppRoutes.prayer);
     NotificationService.clearLastPayload();
   }
-
 
   @override
   void dispose() {
     NotificationService.lastPayload.removeListener(_handleNotificationPayload);
-    _controller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // Listen here as well as at the app root so tab labels refresh immediately
-    // when the user changes language from Settings.
     return ValueListenableBuilder<Locale>(
       valueListenable: LocaleController.locale,
-      builder: (context, locale, _) => RootTabNavigation(
-        controller: _controller,
-        child: CupertinoTabScaffold(
-          controller: _controller,
-          tabBar: CupertinoTabBar(
-            items: [
-              BottomNavigationBarItem(
-                icon: const KeyedSubtree(
-                  key: ValueKey('home-tab'),
-                  child: Icon(CupertinoIcons.house),
-                ),
-                label: locale.languageCode == 'ar' ? 'الرئيسية' : 'Home',
-              ),
-              BottomNavigationBarItem(
-                icon: const KeyedSubtree(
-                  key: ValueKey('quran-tab'),
-                  child: Icon(CupertinoIcons.book),
-                ),
-                label: locale.languageCode == 'ar' ? 'القرآن' : 'Quran',
-              ),
-              BottomNavigationBarItem(
-                icon: const KeyedSubtree(
-                  key: ValueKey('prayer-tab'),
-                  child: Icon(CupertinoIcons.time),
-                ),
-                label: locale.languageCode == 'ar' ? 'الصلاة' : 'Prayer',
-              ),
-              BottomNavigationBarItem(
-                icon: const KeyedSubtree(
-                  key: ValueKey('qibla-tab'),
-                  child: Icon(CupertinoIcons.compass),
-                ),
-                label: locale.languageCode == 'ar' ? 'القبلة' : 'Qibla',
-              ),
-              BottomNavigationBarItem(
-                icon: const KeyedSubtree(
-                  key: ValueKey('more-tab'),
-                  child: Icon(CupertinoIcons.ellipsis_circle),
-                ),
-                label: locale.languageCode == 'ar' ? 'المزيد' : 'More',
-              ),
-            ],
-          ),
-          tabBuilder: (context, index) => CupertinoTabView(
-            // Each tab has a named root route, and every secondary screen is
-            // resolved by the same central route table.
-            builder: (_) => AppRoutes.tabScreenForIndex(index),
-            onGenerateRoute: AppRoutes.onGenerateRoute,
-          ),
-        ),
+      builder: (context, locale, _) => Navigator(
+        key: _navigatorKey,
+        initialRoute: AppRoutes.home,
+        onGenerateRoute: AppRoutes.onGenerateRoute,
       ),
     );
   }
@@ -106,8 +56,6 @@ class SalawatQuranApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Keep the test/embedded app entry point visually and behaviorally
-    // identical to the production Cupertino app.
     return ValueListenableBuilder<Locale>(
       valueListenable: LocaleController.locale,
       builder: (context, locale, _) => CupertinoApp(
@@ -122,6 +70,7 @@ class SalawatQuranApp extends StatelessWidget {
         ],
         supportedLocales: const [Locale('ar'), Locale('en')],
         home: const RootShell(),
+        onGenerateRoute: AppRoutes.onGenerateRoute,
       ),
     );
   }
