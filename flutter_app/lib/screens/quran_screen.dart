@@ -13,7 +13,14 @@ class QuranScreen extends StatefulWidget {
 }
 
 class _QuranScreenState extends State<QuranScreen> {
+  final ScrollController _scrollController = ScrollController();
   String _query = '';
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   List<int> get _items {
     final query = _query.trim().toLowerCase();
@@ -186,8 +193,14 @@ class _QuranScreenState extends State<QuranScreen> {
         ),
       ),
       child: SafeArea(
-        child: CustomScrollView(
-          slivers: [
+        child: CupertinoScrollbar(
+          controller: _scrollController,
+          thumbVisibility: true,
+          interactive: true,
+          child: CustomScrollView(
+            controller: _scrollController,
+            physics: const BouncingScrollPhysics(),
+            slivers: [
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(12, 12, 12, 110),
               sliver: SliverList(
@@ -223,7 +236,8 @@ class _QuranScreenState extends State<QuranScreen> {
                 ]),
               ),
             ),
-          ],
+            ],
+          ),
         ),
       ),
     );
