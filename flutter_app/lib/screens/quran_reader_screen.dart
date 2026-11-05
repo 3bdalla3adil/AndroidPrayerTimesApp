@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
-import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
 import 'package:quran/quran.dart' as quran;
 
@@ -47,7 +46,6 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
   double _fontSize = 25;
   double _lineHeight = 1.75;
   bool _showTranslation = false;
-  bool _showToolbar = true;
   bool _darkPage = false;
   bool _pageTrackingScheduled = false;
 
@@ -684,27 +682,17 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
             ),
           ],
         ),
-        trailing: CupertinoButton(
-          padding: EdgeInsets.zero,
-          onPressed: () => setState(() => _showToolbar = !_showToolbar),
-          child: Icon(
-            _showToolbar
-                ? CupertinoIcons.eye_slash
-                : CupertinoIcons.eye,
-          ),
-        ),
+
       ),
       child: SafeArea(
         bottom: false,
         child: Column(
           children: [
-            if (_showToolbar) _ReaderToolbar(
+            _ReaderToolbar(
               onNavigate: _openNavigator,
               onSearch: _searchQuran,
               onSettings: _openReaderSettings,
               onBookmark: _bookmarkCurrentPage,
-              page: _readerPage,
-              totalPages: totalReaderPages,
             ),
             Expanded(
               child: NotificationListener<ScrollNotification>(
@@ -760,7 +748,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
                 child: ListView.builder(
                   key: _listViewportKey,
                   controller: _controller,
-                  physics: const _ControlledReaderScrollPhysics(),
+                  physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
                   padding: const EdgeInsets.only(bottom: 8),
                   itemCount: totalReaderPages,
                   itemBuilder: (context, index) {
@@ -817,16 +805,12 @@ class _ReaderToolbar extends StatelessWidget {
     required this.onSearch,
     required this.onSettings,
     required this.onBookmark,
-    required this.page,
-    required this.totalPages,
   });
 
   final VoidCallback onNavigate;
   final VoidCallback onSearch;
   final VoidCallback onSettings;
   final VoidCallback onBookmark;
-  final int page;
-  final int totalPages;
 
   @override
   Widget build(BuildContext context) {
@@ -862,14 +846,6 @@ class _ReaderToolbar extends StatelessWidget {
             icon: CupertinoIcons.bookmark,
             label: LocaleController.isArabic ? 'حفظ' : 'Bookmark',
             onPressed: onBookmark,
-          ),
-          const Spacer(),
-          Text(
-            '$page / $totalPages',
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-            ),
           ),
         ],
       ),
@@ -1293,16 +1269,3 @@ class _ErrorPage extends StatelessWidget {
   }
 }
 
-
-/// Prevents a fast flick from carrying the reader across dozens of pages.
-/// Direct dragging remains enabled; navigation buttons/search can still jump.
-class _ControlledReaderScrollPhysics extends ClampingScrollPhysics {
-  const _ControlledReaderScrollPhysics({super.parent});
-
-  @override
-  Simulation? createBallisticSimulation(ScrollMetrics position, double velocity) => null;
-
-  @override
-  _ControlledReaderScrollPhysics applyTo(ScrollPhysics? ancestor) =>
-      _ControlledReaderScrollPhysics(parent: buildParent(ancestor));
-}
