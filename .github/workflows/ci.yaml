@@ -96,7 +96,7 @@ jobs:
           set -euo pipefail
           APK="build/app/outputs/flutter-apk/app-release.apk"
           test -s "$APK"
-          unzip -l "$APK" | grep -q 'res/raw/azan_fajr_makkah.mp3'
+          unzip -l "$APK" | grep -Eq 'assets/flutter_assets/assets/audio/azan_fajr_makkah\.mp3|res/raw/azan_fajr_makkah\.mp3'
 
       - name: Verify release APK
         run: |
@@ -166,8 +166,8 @@ jobs:
             APP_PATH="$(find build/ios -type d -path '*/Build/Products/Release-iphoneos/Runner.app' -print -quit)"
           fi
           test -n "$APP_PATH"
-          test -s "$APP_PATH/azan_fajr_makkah.wav"
-          duration="$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$APP_PATH/azan_fajr_makkah.wav")"
+          sound_path="$(find "$APP_PATH" -type f -name azan_fajr_makkah.wav -print -quit)"\ntest -n "$sound_path"\ntest -s "$sound_path"
+          duration="$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$sound_path")"
           python3 -c "d=float('$duration'); assert 0 < d < 30, d"
 
       - name: Package unsigned IPA
