@@ -167,8 +167,8 @@ jobs:
           fi
           test -n "$APP_PATH"
           sound_path="$(find "$APP_PATH" -type f -name azan_fajr_makkah.wav -print -quit)"
-test -n "$sound_path"
-test -s "$sound_path"
+          test -n "$sound_path"
+          test -s "$sound_path"
           duration="$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$sound_path")"
           python3 -c "d=float('$duration'); assert 0 < d < 30, d"
 
