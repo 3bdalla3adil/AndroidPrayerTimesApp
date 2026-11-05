@@ -166,7 +166,9 @@ jobs:
             APP_PATH="$(find build/ios -type d -path '*/Build/Products/Release-iphoneos/Runner.app' -print -quit)"
           fi
           test -n "$APP_PATH"
-          sound_path="$(find "$APP_PATH" -type f -name azan_fajr_makkah.wav -print -quit)"\ntest -n "$sound_path"\ntest -s "$sound_path"
+          sound_path="$(find "$APP_PATH" -type f -name azan_fajr_makkah.wav -print -quit)"
+test -n "$sound_path"
+test -s "$sound_path"
           duration="$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$sound_path")"
           python3 -c "d=float('$duration'); assert 0 < d < 30, d"
 
