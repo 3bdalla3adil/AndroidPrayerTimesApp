@@ -96,9 +96,22 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void _continueQuran() {
-    // Open the single Quran tab. Never restore or persist the last-read page.
-    RootTabNavigation.maybeOf(context)?.selectTab(1);
+  Future<void> _continueQuran() async {
+    final storage = StorageService();
+    final lastPage = await storage.loadLastQuranPage();
+    final markedAyah = await storage.loadLastMarkedAyah();
+    if (!mounted) return;
+
+    final surah = markedAyah.$1 ?? 1;
+    final ayah = markedAyah.$2 ?? 1;
+    await Navigator.of(context).pushNamed(
+      AppRoutes.quranReader,
+      arguments: QuranReaderRouteArgs(
+        surahNumber: surah,
+        startingAyah: ayah,
+        startingPage: lastPage,
+      ),
+    );
   }
 
   void _dialog(String title, String message) => showCupertinoDialog<void>(
