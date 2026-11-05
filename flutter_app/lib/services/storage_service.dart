@@ -16,6 +16,9 @@ class StorageService {
       'quran_auto_scroll_seconds_per_page';
   static const _quranAyahToolbarEnabled = 'quran_ayah_toolbar_enabled';
   static const _quranLastPage = 'quran_last_opened_page';
+  static const _quranLastMarkedSurah = 'quran_last_marked_surah';
+  static const _quranLastMarkedAyah = 'quran_last_marked_ayah';
+  static const _quranLastMarkedPage = 'quran_last_marked_page';
   static const _bookmarks = 'quran_bookmarks';
   static const _bookmarkRecords = 'quran_bookmark_records_v2';
   static const _athanReminders = 'athan_reminders_enabled';
@@ -121,6 +124,24 @@ class StorageService {
 
   Future<void> saveLastQuranPage(int page) =>
       prefs.setInt(_quranLastPage, page.clamp(1, 604).toInt());
+
+  /// Last ayah explicitly marked by the reader's long-press action.
+  Future<(int?, int?, int?)> loadLastMarkedAyah() async => (
+        await prefs.getInt(_quranLastMarkedSurah),
+        await prefs.getInt(_quranLastMarkedAyah),
+        await prefs.getInt(_quranLastMarkedPage),
+      );
+
+  Future<void> saveLastMarkedAyah({
+    required int surah,
+    required int ayah,
+    required int page,
+  }) async {
+    if (surah < 1 || surah > 114 || ayah < 1 || page < 1 || page > 604) return;
+    await prefs.setInt(_quranLastMarkedSurah, surah);
+    await prefs.setInt(_quranLastMarkedAyah, ayah);
+    await prefs.setInt(_quranLastMarkedPage, page);
+  }
 
   Future<(int, int)> loadTasbih() async => (await prefs.getInt(_tasbihCount) ?? 0, await prefs.getInt(_tasbihTarget) ?? 33);
   Future<void> saveTasbih(int count, int target) async {
