@@ -158,6 +158,18 @@ jobs:
       - name: Build iOS app without code signing
         run: flutter build ios --release --no-codesign
 
+      - name: Ensure iOS notification sounds are in the app bundle
+        run: |
+          set -euo pipefail
+          APP_PATH="build/ios/iphoneos/Runner.app"
+          test -d "$APP_PATH"
+          for sound in azan azan_madinah azan_dubai azan_fajr_madinah azan_fajr_makkah; do
+            SOURCE="ios/Runner/$sound.wav"
+            test -s "$SOURCE"
+            install -m 0644 "$SOURCE" "$APP_PATH/$sound.wav"
+            test -s "$APP_PATH/$sound.wav"
+          done
+
       - name: Verify Makkah Fajr notification sound is bundled in iOS app
         run: |
           set -euo pipefail
