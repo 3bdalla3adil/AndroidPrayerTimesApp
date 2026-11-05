@@ -393,8 +393,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
       final markedSurah = lastMarkedAyah.$1;
       final markedAyah = lastMarkedAyah.$2;
       final markedPage = lastMarkedAyah.$3;
-      if (markedSurah != null && markedAyah != null &&
-          markedPage == requestedReaderPage) {
+      if (markedSurah != null && markedAyah != null) {
         _selectedAyahKey = '$markedSurah:$markedAyah';
       }
       // Prime both sides of the opening page before the full background warmup.
