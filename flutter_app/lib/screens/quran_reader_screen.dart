@@ -340,6 +340,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
       final bookmarks = await _bookmarkService.loadAll();
       final memorizedAyahs = await _storage.loadMemorizedAyahs();
       final reviewAyahs = await _storage.loadMemorizationReviewAyahs();
+      final lastMarkedAyah = await _storage.loadLastMarkedAyah();
       final shouldRestoreLastPage = widget.startingPage == null &&
           widget.surahNumber == 1 && widget.startingAyah == 1;
       final lastOpenedPage = shouldRestoreLastPage
@@ -389,6 +390,13 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
       _autoScrollSecondsPerPage = settings.autoScrollSecondsPerPage;
       _ayahToolbarEnabled = settings.ayahToolbarEnabled;
       _lastKnownReaderPage = requestedReaderPage;
+      final markedSurah = lastMarkedAyah.$1;
+      final markedAyah = lastMarkedAyah.$2;
+      final markedPage = lastMarkedAyah.$3;
+      if (markedSurah != null && markedAyah != null &&
+          markedPage == requestedReaderPage) {
+        _selectedAyahKey = '$markedSurah:$markedAyah';
+      }
       // Prime both sides of the opening page before the full background warmup.
       _repository.prefetchAround(requestedReaderPage, radius: 8);
       // Warm every bundled page in bounded batches. The repository retains
@@ -812,6 +820,11 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
     // Long press selects the verse and opens its contextual actions, when enabled.
     if (_autoScrollEnabled) _stopAutoScroll(interruptAnimation: true);
     setState(() => _selectedAyahKey = verse.id);
+    unawaited(_storage.saveLastMarkedAyah(
+      surah: verse.surahNumber,
+      ayah: verse.ayahNumber,
+      page: quran.getPageNumber(verse.surahNumber, verse.ayahNumber),
+    ));
     _removeAyahToolbar();
     if (_ayahToolbarEnabled) _showAyahToolbar(verse, globalPosition);
   }
