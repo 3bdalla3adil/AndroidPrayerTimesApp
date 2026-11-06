@@ -1,4 +1,4 @@
-name: Publish AndroidPrayerTimesApp Prerelease Downloads
+name: Publish Android APK for Public Download
 
 on:
   workflow_run:
@@ -11,19 +11,18 @@ permissions:
   actions: read
 
 concurrency:
-  group: publish-salawat-downloads
+  group: publish-salawat-public-apk
   cancel-in-progress: false
 
 jobs:
-  publish-release:
-    name: Publish verified APK and unsigned IPA
+  publish-android:
+    name: Publish verified public Android APK
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.conclusion == 'success' &&
-       github.event.workflow_run.head_branch == 'refactor/quran-reader-architecture')
+      (github.event.workflow_run.head_branch == 'main')
     runs-on: ubuntu-latest
     steps:
-      - name: Select a successful run containing both release artifacts
+      - name: Verify Flutter analysis, tests, and Android build
         id: source
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -32,44 +31,26 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          required=(salawat-quran-release-apk salawat-quran-release-ipa-unsigned)
-
-          check_artifacts() {
-            local id="$1" names
-            names="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$id/artifacts?per_page=100" --jq '[.artifacts[] | select(.expired == false) | .name] | unique | .[]')"
-            for artifact in "${required[@]}"; do
-              if ! grep -Fxq "$artifact" <<< "$names"; then
-                return 1
-              fi
-            done
-            return 0
-          }
-
-          run_id=""
-          if [ "$EVENT_NAME" = "workflow_run" ]; then
-            candidate="$EVENT_RUN_ID"
-            if check_artifacts "$candidate"; then
-              run_id="$candidate"
-            else
-              echo "::error::Run $candidate does not contain both expected artifacts. Check the Flutter CI build jobs."
-              exit 1
-            fi
-          else
-            while IFS= read -r candidate; do
-              [ -n "$candidate" ] || continue
-              if check_artifacts "$candidate"; then
-                run_id="$candidate"
-                break
-              fi
-            done < <(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yaml/runs?branch=refactor/quran-reader-architecture&per_page=30" --jq '.workflow_runs | map(select(.conclusion == "success" and .head_branch == "refactor/quran-reader-architecture")) | .[].id')
+          run_id="$EVENT_RUN_ID"
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            run_id="$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yaml/runs?branch=main&per_page=30" --jq '.workflow_runs | map(select(.conclusion == "success" and .head_branch == "main")) | .[0].id // empty')"
           fi
+          test -n "$run_id" || { echo "::error::No successful main-branch Flutter CI run found."; exit 1; }
 
-          if [ -z "$run_id" ]; then
-            echo "::error::No successful run with both APK and unsigned IPA artifacts was found on refactor/quran-reader-architecture."
-            exit 1
-          fi
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/jobs?per_page=100" > jobs.json
+          python3 - jobs.json <<'PY'
+          import json, sys
+          jobs = json.load(open(sys.argv[1]))["jobs"]
+          required = ["Analyze and test", "Build Android APK and App Bundle"]
+          for name in required:
+              matches = [job for job in jobs if job["name"] == name]
+              if not matches or matches[-1]["conclusion"] != "success":
+                  raise SystemExit(f"Required CI job did not succeed: {name}")
+          print("Analysis, tests, and Android release build passed.")
+          PY
 
-          echo "Selected run $run_id"
+          names="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/artifacts?per_page=100" --jq '[.artifacts[] | select(.expired == false) | .name] | .[]')"
+          grep -Fxq "salawat-quran-release-apk" <<< "$names" || { echo "::error::Release APK artifact is missing."; exit 1; }
           echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
 
       - name: Download release APK
@@ -81,71 +62,39 @@ jobs:
           run-id: ${{ steps.source.outputs.run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Download unsigned iOS IPA
-        uses: actions/download-artifact@v4
-        with:
-          name: salawat-quran-release-ipa-unsigned
-          path: downloaded/ipa
-          repository: ${{ github.repository }}
-          run-id: ${{ steps.source.outputs.run_id }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Verify and prepare release assets
+      - name: Verify and prepare public APK
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p dist
           apk="$(find downloaded/apk -type f -name '*.apk' -print -quit)"
-          ipa="$(find downloaded/ipa -type f -name '*.ipa' -print -quit)"
           test -n "$apk" && test -s "$apk"
-          test -n "$ipa" && test -s "$ipa"
           unzip -t "$apk"
-          unzip -t "$ipa"
-
-          tmp="$(mktemp -d)"
-          trap 'rm -rf "$tmp"' EXIT
-          unzip -q "$ipa" -d "$tmp"
-          app="$tmp/Payload/Runner.app"
-          test -d "$app"
-          test -s "$app/Info.plist"
-          python3 - "$app/Info.plist" <<'PY'
-          import plistlib, sys
-          with open(sys.argv[1], "rb") as stream:
-              info = plistlib.load(stream)
-          assert info.get("CFBundleIdentifier"), "IPA app bundle is missing its bundle identifier"
-          assert info.get("CFBundleExecutable"), "IPA app bundle is missing its executable name"
-          print("Validated unsigned iOS app bundle:", info["CFBundleIdentifier"])
-          PY
-
+          mkdir -p dist
           cp "$apk" dist/salawat-quran.apk
-          cp "$ipa" dist/salawat-quran-unsigned.ipa
           cat > dist/README.txt <<'EOF'
-          Salawat / AndroidPrayerTimesApp prerelease downloads
+          Salawat — Android public release
 
-          salawat-quran.apk: Android release APK.
-          salawat-quran-unsigned.ipa: iOS release app packaged without Apple code signing. It is not directly installable on a normal iPhone until signed and provisioned.
-
-          Both files are copied from a successful Flutter CI run. The workflow validates the APK and IPA ZIP archives and checks the iOS app bundle metadata.
+          Download salawat-quran.apk and open it on an Android device to install.
+          If prompted, allow installation from the browser or file manager used to open the APK.
+          Only install APKs downloaded from this official repository release.
           EOF
 
-      - name: Publish prerelease assets
+      - name: Publish public prerelease assets
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: portfolio-downloads
-          name: Salawat app downloads
+          tag_name: android-public-download
+          name: Salawat — Android download
           body: |
-            Downloads from a successful Flutter CI run on refactor/quran-reader-architecture.
+            Public Android release of Salawat.
 
-            - Android APK: release installation package for compatible Android devices.
-            - Unsigned iOS IPA: packaged iOS release build. It must be signed and provisioned before installation on a normal iPhone.
+            Download **salawat-quran.apk** below and open it on your Android device to install. Android may ask you to allow installs from the browser or file manager.
 
-            Both archives and the iOS app bundle metadata are validated before publication.
+            This APK is published only after Flutter analysis, tests, and the Android release build pass on the main branch.
           prerelease: true
           make_latest: false
           overwrite_files: true
           files: |
             dist/salawat-quran.apk
-            dist/salawat-quran-unsigned.ipa
             dist/README.txt
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
