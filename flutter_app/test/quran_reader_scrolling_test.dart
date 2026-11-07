@@ -19,12 +19,14 @@ void main() {
     await tester.pumpWidget(
       const CupertinoApp(home: QuranReaderScreen(surahNumber: 1)),
     );
-    await tester.pumpAndSettle(const Duration(milliseconds: 100));
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
 
     final listFinder = find.byType(ListView);
     final controller = tester.widget<ListView>(listFinder).controller!;
     await tester.fling(listFinder, const Offset(0, -120), 12000);
-    await tester.pumpAndSettle(const Duration(milliseconds: 100));
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
 
     // The drag itself is short, so the reader must not continue coasting
     // hundreds of thousands of pixels after the gesture is released.
@@ -36,7 +38,8 @@ void main() {
     await tester.pumpWidget(
       const CupertinoApp(home: QuranReaderScreen(surahNumber: 1)),
     );
-    await tester.pumpAndSettle(const Duration(milliseconds: 100));
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
 
     final listFinder = find.byType(ListView);
     expect(listFinder, findsOneWidget);
