@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 class StorageService {
@@ -20,6 +22,7 @@ class StorageService {
   static const _tasbihCount = 'tasbih_count';
   static const _tasbihTarget = 'tasbih_target';
   static const _tasbihDhikr = 'tasbih_selected_dhikr';
+  static const _tasbihCounts = 'tasbih_counts_by_dhikr';
   static const _madhab = 'prayer_madhab';
 
   static const prayerNames = <String>['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
@@ -60,6 +63,26 @@ class StorageService {
   Future<void> saveQuranFontSize(double size) => prefs.setDouble(_quranFontSize, size);
 
   Future<(int, int)> loadTasbih() async => (await prefs.getInt(_tasbihCount) ?? 0, await prefs.getInt(_tasbihTarget) ?? 33);
+  Future<Map<String, int>> loadTasbihCounts() async {
+    final raw = await prefs.getString(_tasbihCounts);
+    if (raw == null) return {};
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map<String, dynamic>) return {};
+      return decoded.map((key, value) => MapEntry(
+        key,
+        value is int && value >= 0 ? value : 0,
+      ));
+    } on FormatException {
+      return {};
+    }
+  }
+
+  Future<void> saveTasbihCounts(Map<String, int> counts) async {
+    final safe = counts.map((key, value) => MapEntry(key, value < 0 ? 0 : value));
+    await prefs.setString(_tasbihCounts, jsonEncode(safe));
+  }
+
   Future<String> loadTasbihDhikr() async => await prefs.getString(_tasbihDhikr) ?? 'سبحان الله';
   Future<void> saveTasbihDhikr(String dhikr) => prefs.setString(_tasbihDhikr, dhikr);
 
