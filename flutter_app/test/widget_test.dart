@@ -1,10 +1,10 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 
 import 'package:salawat_quran/app.dart';
+import 'package:salawat_quran/screens/quran_screen.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -34,6 +34,6 @@ void main() {
     await tester.tap(find.text('القرآن الكريم').first);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
-    expect(find.text('التنقّل'), findsOneWidget);
+    expect(find.byType(QuranScreen), findsOneWidget);
   });
 }
