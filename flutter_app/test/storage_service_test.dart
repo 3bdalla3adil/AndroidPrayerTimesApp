@@ -53,7 +53,9 @@ void main() {
 
   test('persists Tasbih custom target', () async {
     await storage.saveTasbih(32, 33);
+    await storage.saveTasbihDhikr('الحمد لله');
     expect(await storage.loadTasbih(), (32, 33));
+    expect(await storage.loadTasbihDhikr(), 'الحمد لله');
   });
 
 }
