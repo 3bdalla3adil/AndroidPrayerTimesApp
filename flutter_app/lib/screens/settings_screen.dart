@@ -25,6 +25,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _athanSound = 'default';
   double _quranFontSize = 28;
   bool _quranTranslation = false;
+  bool _quranAyahToolbarEnabled = true;
   int _tasbihTarget = 33;
 
   static const _methods = <int, String>{
@@ -54,6 +55,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final athanSound = await _storage.loadAthanSound();
     final quranFontSize = await _storage.loadQuranFontSize();
     final quranTranslation = await _storage.loadQuranShowTranslation();
+    final quranAyahToolbarEnabled = await _storage.loadQuranAyahToolbarEnabled();
     final tasbih = await _storage.loadTasbih();
     if (!mounted) return;
     setState(() {
@@ -67,6 +69,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _athanSound = NotificationService.soundLabels.containsKey(athanSound) ? athanSound : 'default';
       _quranFontSize = quranFontSize.clamp(20, 38).toDouble();
       _quranTranslation = quranTranslation;
+      _quranAyahToolbarEnabled = quranAyahToolbarEnabled;
       _tasbihTarget = tasbih.$2;
       _loading = false;
     });
@@ -519,6 +522,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           onChanged: _loading ? null : (value) async {
                             await _storage.saveQuranShowTranslation(value);
                             if (mounted) setState(() => _quranTranslation = value);
+                          },
+                        ),
+                      ),
+                      CupertinoListTile(
+                        leading: const Icon(CupertinoIcons.hand_draw),
+                        title: Text(LocaleController.isArabic ? 'أدوات الآية بالضغط المطوّل' : 'Ayah toolbar on long press'),
+                        subtitle: Text(LocaleController.isArabic ? 'إظهار أدوات الآية عند الضغط المستمر فقط' : 'Show ayah actions only after a long press'),
+                        trailing: CupertinoSwitch(
+                          value: _quranAyahToolbarEnabled,
+                          onChanged: _loading ? null : (value) async {
+                            await _storage.saveQuranAyahToolbarEnabled(value);
+                            if (mounted) setState(() => _quranAyahToolbarEnabled = value);
                           },
                         ),
                       ),

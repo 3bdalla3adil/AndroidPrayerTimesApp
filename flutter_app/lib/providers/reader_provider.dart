@@ -92,7 +92,7 @@ final readerProvider =
     NotifierProvider<ReaderController, ReaderState>(ReaderController.new);
 
 final quranRepositoryProvider = Provider<QuranRepository>(
-  (ref) => QuranRepository(const AssetQuranPageDataSource(), maximumCachedPages: 20),
+  (ref) => QuranRepository(const AssetQuranPageDataSource(), maximumCachedPages: 604),
 );
 
 final quranSearchServiceProvider = Provider<QuranSearchService>(

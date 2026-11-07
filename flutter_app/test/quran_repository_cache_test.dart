@@ -55,6 +55,27 @@ void main() {
       expect(source.calls[2], 2);
     });
 
+    test('exposes decoded pages synchronously after the first load', () async {
+      final repository = QuranRepository(_FakeSource(), maximumCachedPages: 2);
+
+      expect(repository.cachedPage(1), isNull);
+      final loaded = await repository.loadPage(1);
+
+      expect(repository.cachedPage(1), same(loaded));
+      expect(repository.cachedPage(1)?.pageNumber, 1);
+    });
+
+    test('prefetches a bounded neighborhood around the current page', () async {
+      final source = _FakeSource();
+      final repository = QuranRepository(source, maximumCachedPages: 10);
+
+      repository.prefetchAround(10, radius: 2);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(source.calls.keys.toSet(), {8, 9, 10, 11, 12});
+      expect(repository.cachedPage(10)?.pageNumber, 10);
+    });
+
     test('rejects page numbers outside the Mushaf range', () async {
       final repository = QuranRepository(_FakeSource());
       await expectLater(repository.loadPage(0), throwsRangeError);

@@ -1,9 +1,11 @@
 name: Flutter CI
 
 on:
+  # PRs run CI for feature branches; push runs are reserved for main to avoid
+  # duplicate builds for every commit on an open pull request.
   push:
     branches:
-      - "**"
+      - main
   pull_request:
   workflow_dispatch:
 
@@ -12,7 +14,7 @@ permissions:
 
 concurrency:
   group: flutter-ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   analyze-and-test:
@@ -28,8 +30,16 @@ jobs:
       - name: Prepare Flutter and offline Quran assets
         uses: ./.github/actions/prepare-flutter-assets
 
-      - name: Prepare Athan assets
+      - name: Prepare Athan source assets
         run: bash tool/fetch_athan_sounds.sh
+
+      - name: Validate bundled Athan MP3 assets
+        run: |
+          set -euo pipefail
+          for sound in azan azan_madinah azan_dubai azan_fajr_madinah azan_fajr_makkah; do
+            test -s "assets/audio/$sound.mp3"
+            file "assets/audio/$sound.mp3"
+          done
 
       - name: Install dependencies
         run: flutter pub get
@@ -51,12 +61,12 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
         with:
-          packages: platform-tools
-
-      - name: Install Android SDK packages
-        run: sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+          packages: >-
+            platform-tools
+            platforms;android-36
+            build-tools;36.0.0
 
       - name: Prepare Flutter and offline Quran assets
         uses: ./.github/actions/prepare-flutter-assets
@@ -67,6 +77,12 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Align geocoding Android plugin compile SDK
+        run: bash tool/patch_android_plugin_compile_sdk.sh
+
+      - name: Install and validate pinned Android NDK
+        run: bash tool/install_android_ndk.sh
+
       - name: Generate launcher icon and splash screen
         run: |
           dart run flutter_launcher_icons -f flutter_launcher_icons_android.yaml
@@ -74,6 +90,13 @@ jobs:
 
       - name: Build release APK
         run: flutter build apk --release
+
+      - name: Verify Fajr Makkah sound is packaged in APK
+        run: |
+          set -euo pipefail
+          APK="build/app/outputs/flutter-apk/app-release.apk"
+          test -s "$APK"
+          unzip -l "$APK" | grep -Eq 'assets/flutter_assets/assets/audio/azan_fajr_makkah\.mp3|res/raw/azan_fajr_makkah\.mp3'
 
       - name: Verify release APK
         run: |
@@ -106,8 +129,22 @@ jobs:
       - name: Generate iOS project
         run: flutter create . --platforms=ios --org com.salawat_quran --project-name salawat_quran
 
-      - name: Prepare Athan assets
-        run: bash tool/fetch_athan_sounds.sh
+      - name: Disable signing for unsigned iOS CI build
+        run: bash tool/disable_ios_signing_for_ci.sh
+
+      - name: Configure foreground location permission
+        run: bash tool/configure_ios_location_permissions.sh
+
+      - name: Prepare iOS Athan notification sounds
+        run: |
+          set -euo pipefail
+          bash tool/fetch_athan_sounds.sh
+          if ! command -v ffmpeg >/dev/null 2>&1; then
+            brew install ffmpeg
+          fi
+          # The iOS project is generated earlier in this job, so the script can
+          # register the converted WAV files in Runner's Copy Bundle Resources.
+          bash tool/prepare_ios_athan_sounds.sh
 
       - name: Install dependencies
         run: flutter pub get
@@ -120,6 +157,32 @@ jobs:
 
       - name: Build iOS app without code signing
         run: flutter build ios --release --no-codesign
+
+      - name: Ensure iOS notification sounds are in the app bundle
+        run: |
+          set -euo pipefail
+          APP_PATH="build/ios/iphoneos/Runner.app"
+          test -d "$APP_PATH"
+          for sound in azan azan_madinah azan_dubai azan_fajr_madinah azan_fajr_makkah; do
+            SOURCE="ios/Runner/$sound.wav"
+            test -s "$SOURCE"
+            install -m 0644 "$SOURCE" "$APP_PATH/$sound.wav"
+            test -s "$APP_PATH/$sound.wav"
+          done
+
+      - name: Verify Makkah Fajr notification sound is bundled in iOS app
+        run: |
+          set -euo pipefail
+          APP_PATH="build/ios/iphoneos/Runner.app"
+          if [ ! -d "$APP_PATH" ]; then
+            APP_PATH="$(find build/ios -type d -path '*/Build/Products/Release-iphoneos/Runner.app' -print -quit)"
+          fi
+          test -n "$APP_PATH"
+          sound_path="$(find "$APP_PATH" -type f -name azan_fajr_makkah.wav -print -quit)"
+          test -n "$sound_path"
+          test -s "$sound_path"
+          duration="$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$sound_path")"
+          python3 -c "d=float('$duration'); assert 0 < d < 30, d"
 
       - name: Package unsigned IPA
         run: |
@@ -144,5 +207,55 @@ jobs:
         with:
           name: salawat-quran-release-ipa-unsigned
           path: flutter_app/salawat-quran-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 1
+
+  publish-artifacts:
+    name: Publish combined mobile artifacts
+    runs-on: ubuntu-latest
+    needs:
+      - analyze-and-test
+      - build-android
+      - build-ios
+    if: ${{ success() }}
+    permissions:
+      contents: read
+    steps:
+      - name: Download release APK
+        uses: actions/download-artifact@v4
+        with:
+          name: salawat-quran-release-apk
+          path: dist/android
+
+      - name: Download unsigned iOS IPA
+        uses: actions/download-artifact@v4
+        with:
+          name: salawat-quran-release-ipa-unsigned
+          path: dist/ios
+
+      - name: Verify and package mobile releases
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s dist/android/app-release.apk
+          test -s dist/ios/salawat-quran-unsigned.ipa
+          unzip -t dist/android/app-release.apk
+          unzip -t dist/ios/salawat-quran-unsigned.ipa
+          mkdir -p dist/package
+          cp dist/android/app-release.apk dist/package/salawat-quran-release.apk
+          cp dist/ios/salawat-quran-unsigned.ipa dist/package/salawat-quran-unsigned.ipa
+          cat > dist/package/README.txt <<'EOF'
+          Salawat Quran mobile build artifacts
+          - salawat-quran-release.apk: Android release APK
+          - salawat-quran-unsigned.ipa: unsigned iOS IPA; signing is required before normal device installation
+          EOF
+          cd dist/package
+          zip -qry ../salawat-quran-mobile-release.zip .
+
+      - name: Publish combined mobile release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: salawat-quran-mobile-release
+          path: dist/salawat-quran-mobile-release.zip
           if-no-files-found: error
           retention-days: 1

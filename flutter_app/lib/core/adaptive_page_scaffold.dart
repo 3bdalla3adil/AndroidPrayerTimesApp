@@ -36,6 +36,7 @@ class AdaptivePageScaffold extends StatelessWidget {
     material.PreferredSizeWidget? appBar;
     if (bar is CupertinoNavigationBar) {
       appBar = material.AppBar(
+        key: bar.key,
         title: bar.middle,
         leading: bar.leading,
         automaticallyImplyLeading: bar.automaticallyImplyLeading,

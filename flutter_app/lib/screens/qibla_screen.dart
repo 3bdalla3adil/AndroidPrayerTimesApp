@@ -4,7 +4,7 @@ import 'package:adhan_dart/adhan_dart.dart';
 import 'package:flutter/cupertino.dart';
 import '../core/adaptive_page_scaffold.dart';
 import 'package:flutter_compass/flutter_compass.dart';
-import 'package:geolocator/geolocator.dart';
+import '../services/location_service.dart';
 
 import '../services/locale_controller.dart';
 import '../theme/app_theme.dart';
@@ -31,31 +31,9 @@ class _QiblaScreenState extends State<QiblaScreen> {
     });
 
     try {
-      if (!await Geolocator.isLocationServiceEnabled()) {
-        throw StateError(_isArabic
-            ? 'فعّل خدمات الموقع لحساب اتجاه القبلة.'
-            : 'Turn on location services to calculate Qibla.');
-      }
-
-      var permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-      }
-
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
-        throw StateError(_isArabic
-            ? 'إذن الموقع مطلوب لحساب اتجاه القبلة. يمكنك تفعيله من إعدادات الجهاز.'
-            : 'Location permission is needed to calculate Qibla. You can enable it in device settings.');
-      }
-
-      final position = await Geolocator.getCurrentPosition(
-        locationSettings:
-            const LocationSettings(accuracy: LocationAccuracy.medium),
-      );
-      final bearing = Qibla.qibla(
-        Coordinates(position.latitude, position.longitude),
-      );
+      final position = await const LocationService().currentPosition();
+      final rawBearing = Qibla.qibla(Coordinates(position.latitude, position.longitude));
+      final bearing = _normalizeDegrees(rawBearing);
 
       if (!mounted) return;
       setState(() => _qiblaBearing = bearing);
@@ -69,15 +47,11 @@ class _QiblaScreenState extends State<QiblaScreen> {
     }
   }
 
+  double _normalizeDegrees(double value) => (value % 360 + 360) % 360;
+
   double _relativeHeading(double deviceHeading) {
-    var value = (_qiblaBearing ?? 0) - deviceHeading;
-    while (value < -180) {
-      value += 360;
-    }
-    while (value > 180) {
-      value -= 360;
-    }
-    return value;
+    final value = _normalizeDegrees((_qiblaBearing ?? 0) - deviceHeading);
+    return value > 180 ? value - 360 : value;
   }
 
   @override
@@ -102,14 +76,16 @@ class _QiblaScreenState extends State<QiblaScreen> {
         child: StreamBuilder<CompassEvent>(
           stream: FlutterCompass.events,
           builder: (context, snapshot) {
-            final heading = snapshot.data?.heading;
+            final rawHeading = snapshot.data?.heading;
+            final heading = rawHeading != null && rawHeading.isFinite
+                ? _normalizeDegrees(rawHeading)
+                : null;
             final compassUnavailable = snapshot.hasError ||
-                (snapshot.connectionState == ConnectionState.active &&
-                    heading == null);
+                (snapshot.connectionState == ConnectionState.active && heading == null);
             final relative = heading == null ? 0.0 : _relativeHeading(heading);
             final aligned = heading != null &&
                 _qiblaBearing != null &&
-                relative.abs() <= 4;
+                relative.abs() <= 5;
 
             return ListView(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 120),
@@ -412,9 +388,9 @@ class _QiblaScreenState extends State<QiblaScreen> {
                                     ? (_isArabic
                                         ? 'أحسنت، أنت تواجه اتجاه القبلة.'
                                         : 'You are facing the Qibla direction.')
-                                    : (_isArabic
-                                        ? 'أدر الهاتف حتى يتجه السهم إلى الأعلى.'
-                                        : 'Rotate your phone until the arrow points up.'),
+                                    : relative > 0
+                                        ? (_isArabic ? 'أدر الهاتف إلى اليمين بمقدار ${relative.abs().round()}° حتى يتجه السهم إلى الأعلى.' : 'Turn right ${relative.abs().round()}° until the arrow points up.')
+                                        : (_isArabic ? 'أدر الهاتف إلى اليسار بمقدار ${relative.abs().round()}° حتى يتجه السهم إلى الأعلى.' : 'Turn left ${relative.abs().round()}° until the arrow points up.'),
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: muted,
