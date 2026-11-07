@@ -32,6 +32,13 @@ class QuranReaderScreen extends StatefulWidget {
   State<QuranReaderScreen> createState() => _QuranReaderScreenState();
 }
 
+class _QuranReaderScrollPhysics extends BouncingScrollPhysics {
+  const _QuranReaderScrollPhysics({super.parent});
+
+  @override
+  double get maxFlingVelocity => 1600;
+}
+
 class _QuranReaderScreenState extends State<QuranReaderScreen> {
   static const totalQuranPages = 604;
   static const totalReaderPages = totalQuranPages;
@@ -748,7 +755,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
                 child: ListView.builder(
                   key: _listViewportKey,
                   controller: _controller,
-                  physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+                  physics: const _QuranReaderScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
                   padding: const EdgeInsets.only(bottom: 8),
                   itemCount: totalReaderPages,
                   itemBuilder: (context, index) {
