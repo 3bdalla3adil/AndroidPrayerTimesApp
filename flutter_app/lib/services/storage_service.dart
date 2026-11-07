@@ -19,6 +19,7 @@ class StorageService {
   static const _prayerAdjustments = 'prayer_time_adjustments';
   static const _tasbihCount = 'tasbih_count';
   static const _tasbihTarget = 'tasbih_target';
+  static const _tasbihDhikr = 'tasbih_selected_dhikr';
   static const _madhab = 'prayer_madhab';
 
   static const prayerNames = <String>['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
@@ -59,6 +60,9 @@ class StorageService {
   Future<void> saveQuranFontSize(double size) => prefs.setDouble(_quranFontSize, size);
 
   Future<(int, int)> loadTasbih() async => (await prefs.getInt(_tasbihCount) ?? 0, await prefs.getInt(_tasbihTarget) ?? 33);
+  Future<String> loadTasbihDhikr() async => await prefs.getString(_tasbihDhikr) ?? 'سبحان الله';
+  Future<void> saveTasbihDhikr(String dhikr) => prefs.setString(_tasbihDhikr, dhikr);
+
   Future<void> saveTasbih(int count, int target) async {
     await prefs.setInt(_tasbihCount, count);
     await prefs.setInt(_tasbihTarget, target);
