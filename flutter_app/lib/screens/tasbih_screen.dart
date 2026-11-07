@@ -12,7 +12,6 @@ class TasbihScreen extends StatefulWidget {
 
 class _TasbihScreenState extends State<TasbihScreen> {
   final _storage = StorageService();
-  int _count = 0;
   int _target = 33;
   String _dhikr = 'سبحان الله';
   Map<String, int> _counts = {};
