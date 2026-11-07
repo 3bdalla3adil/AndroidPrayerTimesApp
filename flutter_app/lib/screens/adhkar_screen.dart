@@ -45,7 +45,7 @@ class _AdhkarScreenState extends State<AdhkarScreen> {
     if (_saving) return;
     final id = index.toString();
     final current = _progress[id] ?? 0;
-    final next = (current + delta).clamp(0, _items[index].$3);
+    final next = (current + delta).clamp(0, _items[index].$3).toInt();
     if (next == current) return;
 
     final updated = Map<String, int>.from(_progress);
@@ -287,7 +287,7 @@ class _ProgressBar extends StatelessWidget {
         color: CupertinoColors.systemGrey5.resolveFrom(context),
         alignment: AlignmentDirectional.centerStart,
         child: FractionallySizedBox(
-          widthFactor: value.clamp(0.0, 1.0),
+          widthFactor: value.clamp(0.0, 1.0).toDouble(),
           child: ColoredBox(color: color),
         ),
       ),
