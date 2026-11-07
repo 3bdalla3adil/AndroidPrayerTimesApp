@@ -146,10 +146,23 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
   int _recitationIndex = 0;
   int _recitationPage = 1;
   int _recitationGeneration = 0;
+  // EveryAyah per-ayah audio folders. Keep the list limited to reciters
+  // with established complete-Hafs ayah file naming on this source.
   static const _reciters = <String, String>{
     'Alafasy_128kbps': 'Mishary Alafasy',
-    'Abdul_Basit_Murattal_192kbps': 'Abdul Basit',
+    'Abdul_Basit_Murattal_192kbps': 'Abdul Basit Abdul Samad',
     'Husary_128kbps': 'Mahmoud Khalil Al-Husary',
+    'Abdurrahmaan_As-Sudais_192kbps': 'Abdurrahman As-Sudais',
+    'Ghamadi_40kbps': 'Saad Al-Ghamdi',
+    'MaherAlMuaiqly128kbps': 'Maher Al-Muaiqly',
+    'Minshawy_Murattal_128kbps': 'Mohamed Siddiq Al-Minshawi',
+    'Abu_Bakr_Ash-Shaatree_128kbps': 'Abu Bakr Ash-Shatri',
+    'Nasser_Alqatami_128kbps': 'Nasser Al-Qatami',
+    'Yasser_Ad-Dussary_128kbps': 'Yasser Al-Dosari',
+    'Hani_Rifai_192kbps': 'Hani Ar-Rifai',
+    'Saood_ash-Shuraym_64kbps': 'Saud Al-Shuraim',
+    'ahmed_ibn_ali_al_ajamy_128kbps': 'Ahmed Al-Ajmy',
+    'Fares_Abbad_64kbps': 'Fares Abbad',
   };
 
   bool get _darkPage => ref.read(readerProvider).darkMode;
