@@ -108,6 +108,37 @@ class _TasbihScreenState extends State<TasbihScreen> {
     if (selected != null) await _setTarget(selected);
   }
 
+  Future<void> _chooseDhikr() async {
+    await showCupertinoModalPopup<void>(
+      context: context,
+      builder: (popupContext) => CupertinoActionSheet(
+        title: const Text('اختر الذكر'),
+        message: const Text('اختيار ذكر جديد يبدأ عدّادًا جديدًا له.'),
+        actions: [
+          for (final item in _dhikrOptions)
+            CupertinoActionSheetAction(
+              isDefaultAction: item.$1 == _dhikr,
+              onPressed: () {
+                Navigator.pop(popupContext);
+                _selectDhikr(item.$1);
+              },
+              child: Column(
+                children: [
+                  Text(item.$1, textDirection: TextDirection.rtl,
+                    style: const TextStyle(fontSize: 19)),
+                  Text(item.$2, style: const TextStyle(fontSize: 12)),
+                ],
+              ),
+            ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          onPressed: () => Navigator.pop(popupContext),
+          child: const Text('إلغاء'),
+        ),
+      ),
+    );
+  }
+
   Future<void> _selectDhikr(String dhikr) async {
     if (dhikr == _dhikr) return;
     setState(() {
@@ -162,20 +193,10 @@ class _TasbihScreenState extends State<TasbihScreen> {
               style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w700, height: 1.6),
             ),
             const SizedBox(height: 12),
-            CupertinoListSection.insetGrouped(
-              header: const Text('اختر الذكر  •  SELECT DHIKR'),
-              children: [
-                for (final item in _dhikrOptions)
-                  CupertinoListTile(
-                    title: Text(item.$1, textDirection: TextDirection.rtl, textAlign: TextAlign.right,
-                      style: const TextStyle(fontSize: 19, height: 1.5)),
-                    subtitle: Text(item.$2),
-                    trailing: _dhikr == item.$1
-                        ? const Icon(CupertinoIcons.check_mark_circled_solid, color: AppTheme.emerald)
-                        : null,
-                    onTap: () => _selectDhikr(item.$1),
-                  ),
-              ],
+            CupertinoButton(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              onPressed: _chooseDhikr,
+              child: const Text('تغيير الذكر  •  CHOOSE DHIKR'),
             ),
             const SizedBox(height: 8),
             const Text(
