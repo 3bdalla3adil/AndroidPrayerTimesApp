@@ -45,6 +45,51 @@ void main() {
     expect(await storage.loadQuranDarkPage(), isTrue);
   });
 
+  test('filters invalid prayer names and clamps reminder settings', () async {
+    await storage.prefs.setStringList('athan_enabled_prayers', const [
+      'Fajr', 'Invalid', 'Isha',
+    ]);
+    expect(await storage.loadEnabledPrayerNames(), {'Fajr', 'Isha'});
+
+    await storage.savePrePrayerReminderMinutes(99);
+    expect(await storage.loadPrePrayerReminderMinutes(), 30);
+    await storage.savePrePrayerReminderMinutes(-5);
+    expect(await storage.loadPrePrayerReminderMinutes(), 0);
+  });
+
+  test('clamps prayer-time adjustments and ignores unknown prayers', () async {
+    await storage.prefs.setStringList('prayer_time_adjustments', const [
+      'Fajr:999', 'Dhuhr:-999', 'Unknown:15', 'Asr:invalid',
+    ]);
+    expect(await storage.loadPrayerTimeAdjustments(), {
+      'Fajr': 120,
+      'Dhuhr': -120,
+    });
+
+    await storage.savePrayerTimeAdjustments({
+      'Fajr': 500,
+      'Unknown': 20,
+      'Isha': -500,
+    });
+    expect(await storage.loadPrayerTimeAdjustments(), {
+      'Fajr': 120,
+      'Isha': -120,
+    });
+  });
+
+  test('persists location and calculation preferences', () async {
+    await storage.savePrayerCity(
+      country: 'Saudi Arabia',
+      city: 'Makkah',
+      lat: 21.3891,
+      lon: 39.8579,
+      method: 4,
+    );
+
+    expect(await storage.loadLocation(), (21.3891, 39.8579, 'Makkah'));
+    expect(await storage.loadPrayerCity(), ('Saudi Arabia', 'Makkah', 4));
+  });
+
   test('persists Tasbih custom target', () async {
     await storage.saveTasbih(32, 33);
     expect(await storage.loadTasbih(), (32, 33));
