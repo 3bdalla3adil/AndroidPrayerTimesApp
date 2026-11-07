@@ -102,7 +102,7 @@ class _AdhkarScreenState extends State<AdhkarScreen> {
     final completed = _items.asMap().entries.fold<int>(
       0,
       (total, entry) => total +
-          ((_progress[entry.key.toString()] ?? 0).clamp(0, entry.value.$3)),
+          ((_progress[entry.key.toString()] ?? 0).clamp(0, entry.value.$3).toInt()),
     );
     final target = _items.fold<int>(0, (total, item) => total + item.$3);
     final finished = _items.where((item) {
@@ -155,14 +155,10 @@ class _AdhkarScreenState extends State<AdhkarScreen> {
                               ],
                             ),
                             const SizedBox(height: 10),
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: LinearProgressIndicator(
-                                value: fraction,
-                                minHeight: 8,
-                                backgroundColor: CupertinoColors.systemGrey5.resolveFrom(context),
-                                valueColor: const AlwaysStoppedAnimation(AppTheme.emerald),
-                              ),
+                            _ProgressBar(
+                              value: fraction,
+                              color: AppTheme.emerald,
+                              height: 8,
                             ),
                             const SizedBox(height: 8),
                             const Text(
@@ -182,7 +178,7 @@ class _AdhkarScreenState extends State<AdhkarScreen> {
                       arabic: _items[index].$1,
                       transliteration: _items[index].$2,
                       target: _items[index].$3,
-                      count: (_progress[index.toString()] ?? 0).clamp(0, _items[index].$3),
+                      count: (_progress[index.toString()] ?? 0).clamp(0, _items[index].$3).toInt(),
                       onIncrement: () => _changeCount(index, 1),
                       onDecrement: () => _changeCount(index, -1),
                     ),
@@ -257,21 +253,44 @@ class _AdhkarCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 4),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(6),
-                child: LinearProgressIndicator(
-                  value: count / target,
-                  minHeight: 6,
-                  backgroundColor: CupertinoColors.systemGrey5.resolveFrom(context),
-                  valueColor: AlwaysStoppedAnimation(
-                    complete ? AppTheme.emerald : CupertinoColors.activeBlue,
-                  ),
-                ),
+              _ProgressBar(
+                value: count / target,
+                color: complete ? AppTheme.emerald : CupertinoColors.activeBlue,
+                height: 6,
               ),
             ],
           ),
         ),
       ],
+    );
+  }
+}
+
+class _ProgressBar extends StatelessWidget {
+  const _ProgressBar({
+    required this.value,
+    required this.color,
+    required this.height,
+  });
+
+  final double value;
+  final Color color;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(height),
+      child: Container(
+        height: height,
+        width: double.infinity,
+        color: CupertinoColors.systemGrey5.resolveFrom(context),
+        alignment: AlignmentDirectional.centerStart,
+        child: FractionallySizedBox(
+          widthFactor: value.clamp(0.0, 1.0),
+          child: ColoredBox(color: color),
+        ),
+      ),
     );
   }
 }
