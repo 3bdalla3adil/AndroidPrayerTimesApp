@@ -196,7 +196,6 @@ class _QuranScreenState extends State<QuranScreen> {
         child: CupertinoScrollbar(
           controller: _scrollController,
           thumbVisibility: true,
-          interactive: true,
           child: CustomScrollView(
             controller: _scrollController,
             physics: const BouncingScrollPhysics(),
