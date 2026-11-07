@@ -15,7 +15,10 @@ class _TasbihScreenState extends State<TasbihScreen> {
   int _count = 0;
   int _target = 33;
   String _dhikr = 'سبحان الله';
+  Map<String, int> _counts = {};
   bool _loading = true;
+
+  int get _count => _counts[_dhikr] ?? 0;
 
   static const _dhikrOptions = <(String, String)>[
     ('سبحان الله', 'SubhanAllah'),
@@ -39,9 +42,11 @@ class _TasbihScreenState extends State<TasbihScreen> {
   Future<void> _load() async {
     final saved = await _storage.loadTasbih();
     final dhikr = await _storage.loadTasbihDhikr();
+    final counts = await _storage.loadTasbihCounts();
+    if (!counts.containsKey(dhikr)) counts[dhikr] = saved.$1;
     if (!mounted) return;
     setState(() {
-      _count = saved.$1;
+      _counts = counts;
       _target = saved.$2;
       _dhikr = _dhikrOptions.any((item) => item.$1 == dhikr) ? dhikr : _dhikrOptions.first.$1;
       _loading = false;
@@ -51,7 +56,8 @@ class _TasbihScreenState extends State<TasbihScreen> {
   Future<void> _increment() async {
     if (_count >= _target) return;
     final next = _count + 1;
-    setState(() => _count = next);
+    setState(() => _counts[_dhikr] = next);
+    await _storage.saveTasbihCounts(_counts);
     await _storage.saveTasbih(next, _target);
     if (next == _target && mounted) {
       await showCupertinoDialog<void>(
@@ -141,24 +147,22 @@ class _TasbihScreenState extends State<TasbihScreen> {
 
   Future<void> _selectDhikr(String dhikr) async {
     if (dhikr == _dhikr) return;
-    setState(() {
-      _dhikr = dhikr;
-      _count = 0;
-    });
+    setState(() => _dhikr = dhikr);
     await _storage.saveTasbihDhikr(dhikr);
-    await _storage.saveTasbih(0, _target);
   }
 
   Future<void> _reset() async {
-    setState(() => _count = 0);
+    setState(() => _counts[_dhikr] = 0);
+    await _storage.saveTasbihCounts(_counts);
     await _storage.saveTasbih(0, _target);
   }
 
   Future<void> _setTarget(int target) async {
     setState(() {
       _target = target;
-      _count = 0;
+      _counts[_dhikr] = 0;
     });
+    await _storage.saveTasbihCounts(_counts);
     await _storage.saveTasbih(0, target);
   }
 
