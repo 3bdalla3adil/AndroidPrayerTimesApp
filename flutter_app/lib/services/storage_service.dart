@@ -253,5 +253,44 @@ class StorageService {
     await prefs.setStringList(_prayerAdjustments, values);
   }
 
+  static const _adhkarProgressPrefix = 'daily_adhkar_progress_';
+
+  String _adhkarProgressKey(DateTime date) =>
+      '$_adhkarProgressPrefix${date.year.toString().padLeft(4, '0')}-'
+      '${date.month.toString().padLeft(2, '0')}-'
+      '${date.day.toString().padLeft(2, '0')}';
+
+  Future<Map<String, int>> loadAdhkarProgress({DateTime? date}) async {
+    final values = await prefs.getStringList(
+          _adhkarProgressKey(date ?? DateTime.now()),
+        ) ??
+        const <String>[];
+    final result = <String, int>{};
+    for (final value in values) {
+      final separator = value.lastIndexOf(':');
+      if (separator <= 0) continue;
+      final id = value.substring(0, separator);
+      final count = int.tryParse(value.substring(separator + 1));
+      if (id.isEmpty || count == null || count < 0) continue;
+      result[id] = count;
+    }
+    return result;
+  }
+
+  Future<void> saveAdhkarProgress(
+    Map<String, int> progress, {
+    DateTime? date,
+  }) async {
+    final values = progress.entries
+        .where((entry) => entry.key.isNotEmpty && entry.value > 0)
+        .map((entry) => '${entry.key}:${entry.value}')
+        .toList()
+      ..sort();
+    await prefs.setStringList(
+      _adhkarProgressKey(date ?? DateTime.now()),
+      values,
+    );
+  }
+
 
 }
