@@ -27,13 +27,13 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    expect(find.text('الرئيسية'), findsOneWidget);
+    expect(find.text('السلام عليكم'), findsOneWidget);
+    expect(find.text('استكشف التطبيق'), findsOneWidget);
 
-    // CupertinoTabBar displays the selected tab's label. Verify that
-    // navigation to Quran works rather than expecting both labels at once.
-    await tester.tap(find.byKey(const ValueKey('quran-tab')));
+    // The current home-led layout opens features as Cupertino routes.
+    await tester.tap(find.text('القرآن الكريم').first);
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 200));
-    expect(find.text('القرآن'), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('التنقّل'), findsOneWidget);
   });
 }
