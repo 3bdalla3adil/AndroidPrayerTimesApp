@@ -14,7 +14,21 @@ class _TasbihScreenState extends State<TasbihScreen> {
   final _storage = StorageService();
   int _count = 0;
   int _target = 33;
+  String _dhikr = 'سبحان الله';
   bool _loading = true;
+
+  static const _dhikrOptions = <(String, String)>[
+    ('سبحان الله', 'SubhanAllah'),
+    ('الحمد لله', 'Alhamdulillah'),
+    ('الله أكبر', 'Allahu Akbar'),
+    ('لا إله إلا الله', 'La ilaha illallah'),
+    ('أستغفر الله', 'Astaghfirullah'),
+    ('سبحان الله وبحمده', 'SubhanAllahi wa bihamdihi'),
+    ('سبحان الله العظيم', 'SubhanAllahil Adheem'),
+    ('لا حول ولا قوة إلا بالله', 'La hawla wa la quwwata illa billah'),
+    ('اللهم صل وسلم على نبينا محمد', 'Allahumma salli wa sallim ala nabiyyina Muhammad'),
+    ('لا إله إلا أنت سبحانك إني كنت من الظالمين', 'La ilaha illa Anta, subhanaka inni kuntu minaz-zalimin'),
+  ];
 
   @override
   void initState() {
@@ -24,10 +38,12 @@ class _TasbihScreenState extends State<TasbihScreen> {
 
   Future<void> _load() async {
     final saved = await _storage.loadTasbih();
+    final dhikr = await _storage.loadTasbihDhikr();
     if (!mounted) return;
     setState(() {
       _count = saved.$1;
       _target = saved.$2;
+      _dhikr = _dhikrOptions.any((item) => item.$1 == dhikr) ? dhikr : _dhikrOptions.first.$1;
       _loading = false;
     });
   }
@@ -92,6 +108,16 @@ class _TasbihScreenState extends State<TasbihScreen> {
     if (selected != null) await _setTarget(selected);
   }
 
+  Future<void> _selectDhikr(String dhikr) async {
+    if (dhikr == _dhikr) return;
+    setState(() {
+      _dhikr = dhikr;
+      _count = 0;
+    });
+    await _storage.saveTasbihDhikr(dhikr);
+    await _storage.saveTasbih(0, _target);
+  }
+
   Future<void> _reset() async {
     setState(() => _count = 0);
     await _storage.saveTasbih(0, _target);
@@ -129,15 +155,31 @@ class _TasbihScreenState extends State<TasbihScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 24, 16, 100),
           children: [
-            const Text(
-              'سبحان الله',
+            Text(
+              _dhikr,
               textDirection: TextDirection.rtl,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 34, fontWeight: FontWeight.w700),
+              style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w700, height: 1.6),
+            ),
+            const SizedBox(height: 12),
+            CupertinoListSection.insetGrouped(
+              header: const Text('اختر الذكر  •  SELECT DHIKR'),
+              children: [
+                for (final item in _dhikrOptions)
+                  CupertinoListTile(
+                    title: Text(item.$1, textDirection: TextDirection.rtl, textAlign: TextAlign.right,
+                      style: const TextStyle(fontSize: 19, height: 1.5)),
+                    subtitle: Text(item.$2),
+                    trailing: _dhikr == item.$1
+                        ? const Icon(CupertinoIcons.check_mark_circled_solid, color: AppTheme.emerald)
+                        : null,
+                    onTap: () => _selectDhikr(item.$1),
+                  ),
+              ],
             ),
             const SizedBox(height: 8),
             const Text(
-              'Offline counter • progress is saved on this device',
+              'عداد أذكار يعمل دون إنترنت • يُحفظ التقدم على جهازك',
               textAlign: TextAlign.center,
               style: TextStyle(color: CupertinoColors.secondaryLabel),
             ),
@@ -170,7 +212,7 @@ class _TasbihScreenState extends State<TasbihScreen> {
                     ),
                     const SizedBox(height: 10),
                     const Text(
-                      'Tap to count',
+                      'اضغط للعدّ',
                       style: TextStyle(color: CupertinoColors.white),
                     ),
                   ],
@@ -199,19 +241,19 @@ class _TasbihScreenState extends State<TasbihScreen> {
               ),
             ),
             CupertinoListSection.insetGrouped(
-              header: const Text('TARGET'),
+              header: const Text('الهدف الشخصي • PERSONAL GOAL'),
               children: [
                 for (final target in const [33, 99, 100])
                   CupertinoListTile(
-                    title: Text('$target repetitions'),
+                    title: Text('$target تكرارًا'),
                     trailing: _target == target
                         ? const Icon(CupertinoIcons.check_mark)
                         : null,
                     onTap: () => _setTarget(target),
                   ),
                 CupertinoListTile(
-                  title: const Text('Custom target'),
-                  subtitle: Text('$_target repetitions selected'),
+                  title: const Text('هدف مخصص'),
+                  subtitle: Text('$_target تكرارًا'),
                   trailing: const CupertinoListTileChevron(),
                   onTap: _chooseCustomTarget,
                 ),
@@ -221,7 +263,7 @@ class _TasbihScreenState extends State<TasbihScreen> {
               children: [
                 CupertinoListTile(
                   leading: const Icon(CupertinoIcons.arrow_counterclockwise),
-                  title: const Text('Reset counter'),
+                  title: const Text('إعادة ضبط العداد'),
                   onTap: _reset,
                 ),
               ],
