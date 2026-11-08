@@ -144,11 +144,25 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
   String _selectedReciter = 'Alafasy_128kbps';
   List<Verse> _recitationQueue = const <Verse>[];
   int _recitationIndex = 0;
+  int _recitationPage = 1;
   int _recitationGeneration = 0;
+  // EveryAyah per-ayah audio folders. Keep the list limited to reciters
+  // with established complete-Hafs ayah file naming on this source.
   static const _reciters = <String, String>{
     'Alafasy_128kbps': 'Mishary Alafasy',
-    'Abdul_Basit_Murattal_192kbps': 'Abdul Basit',
+    'Abdul_Basit_Murattal_192kbps': 'Abdul Basit Abdul Samad',
     'Husary_128kbps': 'Mahmoud Khalil Al-Husary',
+    'Abdurrahmaan_As-Sudais_192kbps': 'Abdurrahman As-Sudais',
+    'Ghamadi_40kbps': 'Saad Al-Ghamdi',
+    'MaherAlMuaiqly128kbps': 'Maher Al-Muaiqly',
+    'Minshawy_Murattal_128kbps': 'Mohamed Siddiq Al-Minshawi',
+    'Abu_Bakr_Ash-Shaatree_128kbps': 'Abu Bakr Ash-Shatri',
+    'Nasser_Alqatami_128kbps': 'Nasser Al-Qatami',
+    'Yasser_Ad-Dussary_128kbps': 'Yasser Al-Dosari',
+    'Hani_Rifai_192kbps': 'Hani Ar-Rifai',
+    'Saood_ash-Shuraym_64kbps': 'Saud Al-Shuraim',
+    'ahmed_ibn_ali_al_ajamy_128kbps': 'Ahmed Al-Ajmy',
+    'Fares_Abbad_64kbps': 'Fares Abbad',
   };
 
   bool get _darkPage => ref.read(readerProvider).darkMode;
@@ -207,6 +221,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
     try {
       final data = await _loadPage(_readerPage, prefetch: false);
       if (!mounted || generation != _recitationGeneration) return;
+      _recitationPage = _readerPage;
       _recitationQueue = data.verses;
       _recitationIndex = 0;
       if (_recitationQueue.isEmpty) return;
@@ -247,18 +262,82 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
     if (!mounted || _recitationQueue.isEmpty) return;
     final generation = _recitationGeneration;
     if (_recitationIndex + 1 >= _recitationQueue.length) {
-      setState(() {
-        _isRecitationPlaying = false;
-        _recitationQueue = const <Verse>[];
-        _recitationIndex = 0;
-      });
+      // Continue with the next Mushaf page instead of stopping at the end of
+      // the page where playback began. Only one page is fetched at a time.
+      await _loadNextRecitationPage(generation);
       return;
     }
     _recitationIndex++;
     try {
       await _playRecitationVerse(generation);
     } catch (_) {
-      if (mounted) setState(() => _isRecitationPlaying = false);
+      if (mounted && generation == _recitationGeneration) {
+        setState(() {
+          _isRecitationPlaying = false;
+          _recitationQueue = const <Verse>[];
+          _recitationIndex = 0;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadNextRecitationPage(int generation) async {
+    final nextPage = _recitationPage + 1;
+    if (nextPage > totalQuranPages) {
+      // The complete Mushaf has finished.
+      if (mounted && generation == _recitationGeneration) {
+        setState(() {
+          _isRecitationPlaying = false;
+          _isRecitationLoading = false;
+          _recitationQueue = const <Verse>[];
+          _recitationIndex = 0;
+        });
+      }
+      return;
+    }
+
+    if (mounted) setState(() => _isRecitationLoading = true);
+    try {
+      final pageData = await _loadPage(nextPage, prefetch: false);
+      if (!mounted || generation != _recitationGeneration) return;
+      if (pageData.verses.isEmpty) {
+        throw StateError('Quran page $nextPage contains no verses');
+      }
+
+      // Replace the completed page's queue only after the next page is ready.
+      // This keeps memory bounded and preserves the exact Mushaf page order.
+      _recitationPage = nextPage;
+      _recitationQueue = pageData.verses;
+      _recitationIndex = 0;
+      await _playRecitationVerse(generation);
+    } catch (error) {
+      if (!mounted || generation != _recitationGeneration) return;
+      setState(() {
+        _isRecitationPlaying = false;
+        _recitationQueue = const <Verse>[];
+        _recitationIndex = 0;
+      });
+      await showCupertinoDialog<void>(
+        context: context,
+        builder: (dialogContext) => CupertinoAlertDialog(
+          title: Text(LocaleController.isArabic
+              ? 'توقفت التلاوة'
+              : 'Recitation stopped'),
+          content: Text(LocaleController.isArabic
+              ? 'تعذّر تحميل الصفحة التالية من المصحف. تحقّق من الاتصال ثم أعد التشغيل.'
+              : 'The next Quran page could not be loaded. Check your connection and restart recitation.'),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(LocaleController.isArabic ? 'حسنًا' : 'OK'),
+            ),
+          ],
+        ),
+      );
+    } finally {
+      if (mounted && generation == _recitationGeneration) {
+        setState(() => _isRecitationLoading = false);
+      }
     }
   }
 
