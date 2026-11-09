@@ -309,6 +309,12 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
       _recitationPage = nextPage;
       _recitationQueue = pageData.verses;
       _recitationIndex = 0;
+
+      // Keep the Mushaf view in sync with the audio: when one page finishes,
+      // automatically move the reader to the next page before its first ayah
+      // starts. This is independent of the optional timed auto-scroll feature.
+      await _scrollToPage(nextPage);
+      if (!mounted || generation != _recitationGeneration) return;
       await _playRecitationVerse(generation);
     } catch (error) {
       if (!mounted || generation != _recitationGeneration) return;
