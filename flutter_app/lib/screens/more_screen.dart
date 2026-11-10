@@ -3,7 +3,6 @@ import '../core/adaptive_page_scaffold.dart';
 
 import '../services/app_routes.dart';
 import '../services/locale_controller.dart';
-import '../services/root_tab_navigation.dart';
 
 
 class MoreScreen extends StatelessWidget {
@@ -15,7 +14,7 @@ class MoreScreen extends StatelessWidget {
       navigationBar: CupertinoNavigationBar(middle: Text(LocaleController.isArabic ? 'المزيد' : 'More')),
       child: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(12, 16, 12, 100),
+          padding: const EdgeInsets.fromLTRB(12, 16, 12, 28),
           children: [
             CupertinoListSection.insetGrouped(
               header: Text(LocaleController.isArabic ? 'مساحتك' : 'YOUR SPACE'),
@@ -73,9 +72,7 @@ class MoreScreen extends StatelessWidget {
                   leading: const Icon(CupertinoIcons.compass),
                   title: Text(LocaleController.isArabic ? 'القبلة' : 'Qibla'),
                   trailing: const CupertinoListTileChevron(),
-                  onTap: () {
-                    RootTabNavigation.maybeOf(context)?.selectTab(3);
-                  },
+                  onTap: () => Navigator.of(context).pushNamed(AppRoutes.qibla),
                 ),
                 CupertinoListTile(
                   leading: const Icon(CupertinoIcons.gear),
