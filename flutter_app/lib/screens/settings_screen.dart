@@ -427,6 +427,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           );
                           if (selected != null) {
                             await LocaleController.setLanguage(selected);
+                            await _nextPrayerWidget.refresh();
                             if (mounted) setState(() {});
                           }
                         },
@@ -486,7 +487,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ],
                   ),
                   CupertinoListSection.insetGrouped(
-                    header: Text(LocaleController.isArabic ? 'ويدجت شاشة القفل' : 'LOCK SCREEN WIDGET'),
+                    header: Text(LocaleController.isArabic ? 'ويدجت الصلاة القادمة' : 'NEXT PRAYER WIDGET'),
                     footer: Text(LocaleController.isArabic
                         ? 'يعرض التاريخ الهجري والصلاة القادمة ووقت الصلاة والعد التنازلي. على iPhone أضفه من تخصيص شاشة القفل. في Android أضفه إلى الشاشة الرئيسية لأن النظام لا يدعم ويدجت شاشة القفل.'
                         : 'Shows today’s Hijri date, next prayer, prayer time and a live countdown. On iPhone, add it from Lock Screen customization. Android supports adding it to the Home screen, not the Lock screen.'),
