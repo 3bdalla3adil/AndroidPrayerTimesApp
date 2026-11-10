@@ -36,6 +36,9 @@ class NextPrayerWidgetService {
     if (enabled) {
       await refresh();
     } else {
+      if (Platform.isIOS) {
+        await _syncWatch(enabled: false, schedule: '[]');
+      }
       await HomeWidget.updateWidget(
         name: androidWidgetProvider,
         androidName: androidWidgetProvider,
