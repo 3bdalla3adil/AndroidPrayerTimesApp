@@ -85,21 +85,23 @@ unless app_delegate.include?('com.salawat_quran/watch_sync')
     GeneratedPluginRegistrant.register(with: self)
 
     WatchPrayerSync.shared.activate()
-    let watchSyncChannel = FlutterMethodChannel(
-      name: "com.salawat_quran/watch_sync",
-      binaryMessenger: controller.binaryMessenger
-    )
-    watchSyncChannel.setMethodCallHandler { call, result in
-      guard call.method == "syncNextPrayer",
-            let arguments = call.arguments as? [String: Any],
-            let enabled = arguments["enabled"] as? Bool,
-            let schedule = arguments["schedule"] as? String,
-            let locale = arguments["locale"] as? String else {
-        result(FlutterMethodNotImplemented)
-        return
+    if let controller = window?.rootViewController as? FlutterViewController {
+      let watchSyncChannel = FlutterMethodChannel(
+        name: "com.salawat_quran/watch_sync",
+        binaryMessenger: controller.binaryMessenger
+      )
+      watchSyncChannel.setMethodCallHandler { call, result in
+        guard call.method == "syncNextPrayer",
+              let arguments = call.arguments as? [String: Any],
+              let enabled = arguments["enabled"] as? Bool,
+              let schedule = arguments["schedule"] as? String,
+              let locale = arguments["locale"] as? String else {
+          result(FlutterMethodNotImplemented)
+          return
+        }
+        WatchPrayerSync.shared.sync(enabled: enabled, schedule: schedule, locale: locale)
+        result(nil)
       }
-      WatchPrayerSync.shared.sync(enabled: enabled, schedule: schedule, locale: locale)
-      result(nil)
     }
   SWIFT
   File.write(app_delegate_path, app_delegate)
