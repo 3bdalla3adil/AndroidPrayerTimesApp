@@ -4,6 +4,8 @@ import WatchConnectivity
 final class WatchPrayerSync: NSObject, WCSessionDelegate {
     static let shared = WatchPrayerSync()
 
+    private var pendingPayload: [String: Any]?
+
     private override init() {
         super.init()
     }
@@ -16,26 +18,35 @@ final class WatchPrayerSync: NSObject, WCSessionDelegate {
 
     func sync(enabled: Bool, schedule: String, locale: String) {
         guard WCSession.isSupported() else { return }
-        let payload: [String: Any] = [
+        pendingPayload = [
             "enabled": enabled,
             "schedule": schedule,
             "locale": locale
         ]
-        let session = WCSession.default
-        if session.activationState == .activated {
-            try? session.updateApplicationContext(payload)
-            session.transferUserInfo(payload)
+        if WCSession.default.activationState == .activated {
+            sendPendingPayload(using: WCSession.default)
         } else {
             activate()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                guard session.activationState == .activated else { return }
-                try? session.updateApplicationContext(payload)
-                session.transferUserInfo(payload)
-            }
         }
+    }
+
+    private func sendPendingPayload(using session: WCSession) {
+        guard let payload = pendingPayload else { return }
+        do {
+            try session.updateApplicationContext(payload)
+            session.transferUserInfo(payload)
+            pendingPayload = nil
+        } catch {
+            print("Unable to sync prayer schedule to Apple Watch: \(error)")
+        }
+    }
+
+    func session(_ session: WCSession, activationDidCompleteWith state: WCSessionActivationState, error: Error?) {
+        if let error { print("Watch connectivity activation failed: \(error)") }
+        guard state == .activated else { return }
+        sendPendingPayload(using: session)
     }
 
     func sessionDidBecomeInactive(_ session: WCSession) {}
     func sessionDidDeactivate(_ session: WCSession) { session.activate() }
-    func session(_ session: WCSession, activationDidCompleteWith state: WCSessionActivationState, error: Error?) {}
 }
