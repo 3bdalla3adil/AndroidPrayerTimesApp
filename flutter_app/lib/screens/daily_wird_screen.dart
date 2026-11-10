@@ -147,7 +147,7 @@ class _DailyWirdScreenState extends State<DailyWirdScreen> {
                   Text(
                     plan.completed
                         ? (_ar ? 'أحسنت! أتممت ورد اليوم.' : 'You have completed today’s wird.')
-                        : (_ar ? 'يُحفظ تقدم القراءة تلقائياً أثناء التنقل بين صفحات المصحف. أكّد الإتمام بعد الفراغ.' : 'Progress is saved as you move through Mushaf pages. Confirm when finished.'),
+                        : (_ar ? 'اضغط مطولاً على آخر آية قرأتها لحفظ تقدمك، ثم أكّد الإتمام بعد الفراغ.' : 'Long-press the last ayah you read to save progress, then confirm when finished.'),
                     style: const TextStyle(color: CupertinoColors.secondaryLabel, height: 1.5),
                   ),
                   const SizedBox(height: 24),

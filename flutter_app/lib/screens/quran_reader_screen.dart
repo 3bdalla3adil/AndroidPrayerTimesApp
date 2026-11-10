@@ -601,14 +601,6 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
           : right;
     });
     final page = nearest.index + 1;
-    final pageData = _repository.cachedPage(page);
-    final lastVerse = pageData?.verses.lastOrNull;
-    if (lastVerse != null) {
-      unawaited(_dailyWirdService.recordReadThrough(
-        lastVerse.surahNumber,
-        lastVerse.ayahNumber,
-      ));
-    }
     if (page != _readerPage) {
       setState(() => _readerPage = page);
       _scheduleSaveLastPage(page);
@@ -912,6 +904,12 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
       surah: verse.surahNumber,
       ayah: verse.ayahNumber,
       page: quran.getPageNumber(verse.surahNumber, verse.ayahNumber),
+    ));
+    // A deliberate long-press marks the last ayah actually read; merely
+    // scrolling through or opening a page never advances daily-wird progress.
+    unawaited(_dailyWirdService.recordReadThrough(
+      verse.surahNumber,
+      verse.ayahNumber,
     ));
     _removeAyahToolbar();
     if (_ayahToolbarEnabled) _showAyahToolbar(verse, globalPosition);
