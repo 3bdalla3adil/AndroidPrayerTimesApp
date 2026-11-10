@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:home_widget/home_widget.dart';
 
 import 'locale_controller.dart';
@@ -43,6 +44,26 @@ class NextPrayerWidgetService {
     }
   }
 
+  static const _watchSyncChannel = MethodChannel('com.salawat_quran/watch_sync');
+
+  Future<void> _syncWatch({
+    required bool enabled,
+    required String schedule,
+    String locale = 'ar',
+  }) async {
+    try {
+      await _watchSyncChannel.invokeMethod<void>('syncNextPrayer', {
+        'enabled': enabled,
+        'schedule': schedule,
+        'locale': locale,
+      });
+    } on MissingPluginException {
+      // The native watch companion is added by the iOS project setup script.
+    } catch (error) {
+      debugPrint('Apple Watch prayer sync failed: $error');
+    }
+  }
+
   Future<void> refresh() async {
     if (kIsWeb || !await _storage.loadNextPrayerWidgetEnabled()) return;
     try {
@@ -61,10 +82,15 @@ class NextPrayerWidgetService {
       }
       await HomeWidget.saveWidgetData<bool>('widget_enabled', true);
       await HomeWidget.saveWidgetData<String>('prayer_schedule', jsonEncode(entries));
-      await HomeWidget.saveWidgetData<String>(
-        'widget_locale',
-        LocaleController.isArabic ? 'ar' : 'en',
-      );
+      final locale = LocaleController.isArabic ? 'ar' : 'en';
+      await HomeWidget.saveWidgetData<String>('widget_locale', locale);
+      if (Platform.isIOS) {
+        await _syncWatch(
+          enabled: true,
+          schedule: jsonEncode(entries),
+          locale: locale,
+        );
+      }
       await HomeWidget.updateWidget(
         name: androidWidgetProvider,
         androidName: androidWidgetProvider,
