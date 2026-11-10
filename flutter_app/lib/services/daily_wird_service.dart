@@ -66,7 +66,7 @@ class DailyWirdService {
   // First ayah of each of the 60 standard Hizbs (Hafs/Madinah Mushaf).
   static const List<List<int>> _hizbStarts = [[1,1],[2,75],[2,142],[2,203],[2,253],[3,15],[3,93],[3,171],[4,24],[4,88],[4,148],[5,27],[5,82],[6,36],[6,111],[7,1],[7,88],[7,171],[8,41],[9,34],[9,93],[10,26],[11,6],[11,84],[12,53],[13,19],[15,1],[16,51],[17,1],[17,99],[18,75],[19,96],[21,1],[22,1],[23,1],[24,21],[25,21],[26,111],[27,82],[28,76],[29,64],[31,22],[33,31],[34,24],[36,28],[37,145],[39,32],[40,41],[41,47],[43,24],[46,1],[48,18],[51,31],[55,1],[57,16],[60,1],[65,1],[68,52],[75,1],[82,1]];
 
-  Future<WirdUnit> loadUnit() async {
+  WirdUnit? _unitFromName(String? name) {\n    for (final unit in WirdUnit.values) {\n      if (unit.name == name) return unit;\n    }\n    return null;\n  }\n\n  Future<WirdUnit> loadUnit() async {
     final value = await _prefs.getString(_unitKey);
     for (final unit in WirdUnit.values) {
       if (unit.name == value) return unit;
@@ -88,7 +88,7 @@ class DailyWirdService {
     final isCompleted = completedDate == date;
     final storedCompletedUnit = await _prefs.getString(_completedUnitKey);
     final unit = isCompleted
-        ? WirdUnit.values.where((item) => item.name == storedCompletedUnit).firstOrNull ?? await loadUnit()
+        ? _unitFromName(storedCompletedUnit) ?? await loadUnit()
         : await loadUnit();
     final amount = isCompleted
         ? (await _prefs.getInt(_completedAmountKey) ?? await loadAmount())
