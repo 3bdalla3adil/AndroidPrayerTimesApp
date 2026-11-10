@@ -30,7 +30,7 @@ abort 'Runner target not found' unless runner
 
 watch_name = 'SalawatWatchApp'
 watch = project.targets.find { |target| target.name == watch_name }
-watch ||= project.new_target(:watchos_app, watch_name, :watchos, '10.0')
+watch ||= project.new_target(:watch2_app, watch_name, :watchos, '10.0')
 watch.product_name = watch_name
 
 watch.build_configurations.each do |config|
