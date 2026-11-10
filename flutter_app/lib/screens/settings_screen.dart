@@ -6,6 +6,7 @@ import '../services/notification_service.dart';
 import '../services/prayer_service.dart';
 import '../services/storage_service.dart';
 import '../services/locale_controller.dart';
+import '../services/daily_wird_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -27,6 +28,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _quranTranslation = false;
   bool _quranAyahToolbarEnabled = true;
   int _tasbihTarget = 33;
+  WirdUnit _wirdUnit = WirdUnit.juz;
+  int _wirdAmount = 1;
+  final _wirdService = DailyWirdService();
 
   static const _methods = <int, String>{
     1: 'Karachi', 2: 'North America (ISNA)', 3: 'Muslim World League',
@@ -57,6 +61,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final quranTranslation = await _storage.loadQuranShowTranslation();
     final quranAyahToolbarEnabled = await _storage.loadQuranAyahToolbarEnabled();
     final tasbih = await _storage.loadTasbih();
+    final wirdUnit = await _wirdService.loadUnit();
+    final wirdAmount = await _wirdService.loadAmount();
     if (!mounted) return;
     setState(() {
       _reminders = enabled;
@@ -71,6 +77,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _quranTranslation = quranTranslation;
       _quranAyahToolbarEnabled = quranAyahToolbarEnabled;
       _tasbihTarget = tasbih.$2;
+      _wirdUnit = wirdUnit;
+      _wirdAmount = wirdAmount;
       _loading = false;
     });
   }
@@ -157,6 +165,80 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (selected == null) return;
     await _storage.saveQuranFontSize(selected);
     if (mounted) setState(() => _quranFontSize = selected);
+  }
+
+  Future<void> _chooseDailyWird() async {
+    final selectedUnit = await showCupertinoModalPopup<WirdUnit>(
+      context: context,
+      builder: (popupContext) => CupertinoActionSheet(
+        title: Text(LocaleController.isArabic ? 'نوع الورد اليومي' : 'Daily wird unit'),
+        actions: [
+          CupertinoActionSheetAction(
+            onPressed: () => Navigator.pop(popupContext, WirdUnit.juz),
+            child: const Text('جزء'),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () => Navigator.pop(popupContext, WirdUnit.hizb),
+            child: const Text('حزب'),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () => Navigator.pop(popupContext, WirdUnit.ayah),
+            child: const Text('عدد الآيات'),
+          ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          onPressed: () => Navigator.pop(popupContext),
+          child: Text(LocaleController.isArabic ? 'إلغاء' : 'Cancel'),
+        ),
+      ),
+    );
+    if (selectedUnit == null) return;
+    final maximum = selectedUnit == WirdUnit.juz
+        ? 30
+        : selectedUnit == WirdUnit.hizb
+            ? 60
+            : 6236;
+    final controller = TextEditingController(
+      text: selectedUnit == _wirdUnit ? _wirdAmount.toString() : '1',
+    );
+    final amount = await showCupertinoDialog<int>(
+      context: context,
+      builder: (dialogContext) => CupertinoAlertDialog(
+        title: Text(LocaleController.isArabic ? 'كم تريد أن تقرأ يومياً؟' : 'Daily reading target'),
+        content: Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: CupertinoTextField(
+            controller: controller,
+            keyboardType: TextInputType.number,
+            textAlign: TextAlign.center,
+            placeholder: '1 - $maximum',
+          ),
+        ),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(LocaleController.isArabic ? 'إلغاء' : 'Cancel'),
+          ),
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            onPressed: () {
+              final value = int.tryParse(controller.text.trim());
+              if (value != null && value >= 1 && value <= maximum) {
+                Navigator.pop(dialogContext, value);
+              }
+            },
+            child: Text(LocaleController.isArabic ? 'حفظ' : 'Save'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (amount == null) return;
+    await _wirdService.saveSettings(selectedUnit, amount);
+    if (mounted) setState(() {
+      _wirdUnit = selectedUnit;
+      _wirdAmount = amount;
+    });
   }
 
   Future<void> _chooseTasbihTarget() async {
@@ -500,6 +582,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         title: Text(LocaleController.isArabic ? 'تجربة صوت الأذان' : 'Test Athan'),
                         subtitle: Text(LocaleController.isArabic ? 'تشغيل الصوت المختار للتحقق منه' : 'Play the selected sound'),
                         onTap: _loading ? null : _testAthan,
+                      ),
+                    ],
+                  ),
+                  CupertinoListSection.insetGrouped(
+                    header: Text(LocaleController.isArabic ? 'الورد اليومي' : 'DAILY QURAN WIRD'),
+                    children: [
+                      CupertinoListTile(
+                        leading: const Icon(CupertinoIcons.book_fill),
+                        title: Text(LocaleController.isArabic ? 'هدف الورد اليومي' : 'Daily reading goal'),
+                        subtitle: Text('$_wirdAmount ${_wirdUnit == WirdUnit.juz ? 'جزء' : _wirdUnit == WirdUnit.hizb ? 'حزب' : 'آية'}'),
+                        trailing: const CupertinoListTileChevron(),
+                        onTap: _loading ? null : _chooseDailyWird,
                       ),
                     ],
                   ),

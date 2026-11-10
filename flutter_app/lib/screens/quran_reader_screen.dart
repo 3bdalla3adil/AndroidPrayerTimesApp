@@ -21,6 +21,7 @@ import '../services/bookmark_service.dart';
 import '../services/settings_service.dart';
 import '../providers/reader_provider.dart';
 import '../services/locale_controller.dart';
+import '../services/daily_wird_service.dart';
 
 const kQuranFont = 'KFGQPC HAFS Uthmanic Script';
 
@@ -84,6 +85,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
   int _navigationGeneration = 0;
   final _storage = StorageService();
   late final _bookmarkService = BookmarkService(_storage);
+  late final _dailyWirdService = DailyWirdService();
   late final _settingsService = SettingsService(_storage);
   late final QuranRepository _repository;
   final LinkedHashMap<int, Future<QuranPage>> _pageFutures = LinkedHashMap();
@@ -599,6 +601,14 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
           : right;
     });
     final page = nearest.index + 1;
+    final pageData = _repository.cachedPage(page);
+    final lastVerse = pageData?.verses.lastOrNull;
+    if (lastVerse != null) {
+      unawaited(_dailyWirdService.recordReadThrough(
+        lastVerse.surahNumber,
+        lastVerse.ayahNumber,
+      ));
+    }
     if (page != _readerPage) {
       setState(() => _readerPage = page);
       _scheduleSaveLastPage(page);
