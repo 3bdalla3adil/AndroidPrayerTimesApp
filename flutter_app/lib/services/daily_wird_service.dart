@@ -87,12 +87,14 @@ class DailyWirdService {
     final completedDate = await _prefs.getString(_completedDateKey);
     final isCompleted = completedDate == date;
     final storedCompletedUnit = await _prefs.getString(_completedUnitKey);
+    final configuredUnit = await loadUnit();
+    final configuredAmount = await loadAmount();
     final unit = isCompleted
-        ? _unitFromName(storedCompletedUnit) ?? await loadUnit()
-        : await loadUnit();
+        ? (_unitFromName(storedCompletedUnit) ?? configuredUnit)
+        : configuredUnit;
     final amount = isCompleted
-        ? (await _prefs.getInt(_completedAmountKey) ?? await loadAmount())
-        : await loadAmount();
+        ? (await _prefs.getInt(_completedAmountKey) ?? configuredAmount)
+        : configuredAmount;
     final savedDate = await _prefs.getString('daily_wird_plan_date');
     final savedStart = await _prefs.getString('daily_wird_plan_start');
     WirdPosition start;
