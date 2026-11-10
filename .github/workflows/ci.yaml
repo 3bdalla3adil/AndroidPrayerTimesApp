@@ -135,6 +135,9 @@ jobs:
       - name: Configure WidgetKit Lock Screen widget
         run: bash tool/configure_ios_next_prayer_widget.sh
 
+      - name: Configure Apple Watch companion app
+        run: bash tool/configure_ios_watch_app.sh
+
       - name: Disable signing for unsigned iOS CI build
         run: bash tool/disable_ios_signing_for_ci.sh
 
