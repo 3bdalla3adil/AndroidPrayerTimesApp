@@ -191,6 +191,8 @@ target.source_build_phase.add_file_reference(source) unless target.source_build_
   target.frameworks_build_phase.add_file_reference(ref) unless target.frameworks_build_phase.files_references.include?(ref)
 end
 
+runner.add_dependency(target) unless runner.dependencies.any? { |dependency| dependency.target == target }
+
 runner.build_configurations.each do |config|
   config.build_settings['CODE_SIGN_ENTITLEMENTS'] = 'Runner/Runner.entitlements'
 end
