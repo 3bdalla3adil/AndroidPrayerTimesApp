@@ -20,7 +20,7 @@ class _RootShellState extends State<RootShell> {
   @override
   void initState() {
     super.initState();
-NotificationService.lastPayload.addListener(_handleNotificationPayload);
+    NotificationService.lastPayload.addListener(_handleNotificationPayload);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _showOpeningDedication();
       _handleNotificationPayload();
@@ -222,7 +222,7 @@ NotificationService.lastPayload.addListener(_handleNotificationPayload);
   @override
   void dispose() {
     NotificationService.lastPayload.removeListener(_handleNotificationPayload);
-super.dispose();
+    super.dispose();
   }
 
   @override
