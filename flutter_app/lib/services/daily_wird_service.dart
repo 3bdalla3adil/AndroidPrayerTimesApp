@@ -58,6 +58,10 @@ class DailyWirdService {
   static const _completedDateKey = 'daily_wird_completed_date';
   static const _progressKey = 'daily_wird_progress';
   static const _historyKey = 'daily_wird_history';
+  static const _completedEndSurahKey = 'daily_wird_completed_end_surah';
+  static const _completedEndAyahKey = 'daily_wird_completed_end_ayah';
+  static const _completedUnitKey = 'daily_wird_completed_unit';
+  static const _completedAmountKey = 'daily_wird_completed_amount';
 
   // First ayah of each of the 60 standard Hizbs (Hafs/Madinah Mushaf).
   static const List<List<int>> _hizbStarts = [[1,1],[2,75],[2,142],[2,203],[2,253],[3,15],[3,93],[3,171],[4,24],[4,88],[4,148],[5,27],[5,82],[6,36],[6,111],[7,1],[7,88],[7,171],[8,41],[9,34],[9,93],[10,26],[11,6],[11,84],[12,53],[13,19],[15,1],[16,51],[17,1],[17,99],[18,75],[19,96],[21,1],[22,1],[23,1],[24,21],[25,21],[26,111],[27,82],[28,76],[29,64],[31,22],[33,31],[34,24],[36,28],[37,145],[39,32],[40,41],[41,47],[43,24],[46,1],[48,18],[51,31],[55,1],[57,16],[60,1],[65,1],[68,52],[75,1],[82,1]];
@@ -80,9 +84,15 @@ class DailyWirdService {
 
   Future<DailyWirdPlan> loadToday() async {
     final date = _dateKey(DateTime.now());
-    final unit = await loadUnit();
-    final amount = await loadAmount();
     final completedDate = await _prefs.getString(_completedDateKey);
+    final isCompleted = completedDate == date;
+    final storedCompletedUnit = await _prefs.getString(_completedUnitKey);
+    final unit = isCompleted
+        ? WirdUnit.values.where((item) => item.name == storedCompletedUnit).firstOrNull ?? await loadUnit()
+        : await loadUnit();
+    final amount = isCompleted
+        ? (await _prefs.getInt(_completedAmountKey) ?? await loadAmount())
+        : await loadAmount();
     final savedDate = await _prefs.getString('daily_wird_plan_date');
     final savedStart = await _prefs.getString('daily_wird_plan_start');
     WirdPosition start;
@@ -100,7 +110,21 @@ class DailyWirdService {
       await _prefs.setInt(_progressKey + '_surah', start.surah);
       await _prefs.setInt(_progressKey + '_ayah', start.ayah);
     }
-    final end = _calculateEnd(start, unit, amount);
+    final end = isCompleted
+        ? WirdPosition(
+            (await _prefs.getInt(_completedEndSurahKey) ?? 114).clamp(1, 114).toInt(),
+            1,
+          )
+        : _calculateEnd(start, unit, amount);
+    final actualEnd = isCompleted
+        ? WirdPosition(
+            end.surah,
+            (await _prefs.getInt(_completedEndAyahKey) ??
+                    quran.getVerseCount(end.surah))
+                .clamp(1, quran.getVerseCount(end.surah))
+                .toInt(),
+          )
+        : end;
     final progressSurah = (await _prefs.getInt(_progressKey + '_surah') ?? start.surah)
         .clamp(1, 114).toInt();
     final progressAyah = (await _prefs.getInt(_progressKey + '_ayah') ?? start.ayah)
@@ -109,9 +133,9 @@ class DailyWirdService {
       unit: unit,
       amount: amount,
       start: start,
-      end: end,
+      end: actualEnd,
       progress: WirdPosition(progressSurah, progressAyah),
-      completed: completedDate == date,
+      completed: isCompleted,
       dateKey: date,
     );
   }
@@ -142,6 +166,10 @@ class DailyWirdService {
         ? const WirdPosition(1, 1)
         : _fromGlobal(_global(plan.end) + 1);
     await _prefs.setString(_completedDateKey, plan.dateKey);
+    await _prefs.setInt(_completedEndSurahKey, plan.end.surah);
+    await _prefs.setInt(_completedEndAyahKey, plan.end.ayah);
+    await _prefs.setString(_completedUnitKey, plan.unit.name);
+    await _prefs.setInt(_completedAmountKey, plan.amount);
     await _prefs.setInt(_nextSurahKey, next.surah);
     await _prefs.setInt(_nextAyahKey, next.ayah);
     await _prefs.setInt(_progressKey + '_surah', plan.end.surah);
