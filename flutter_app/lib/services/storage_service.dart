@@ -30,6 +30,7 @@ class StorageService {
   static const _tasbihCount = 'tasbih_count';
   static const _tasbihTarget = 'tasbih_target';
   static const _madhab = 'prayer_madhab';
+  static const _nextPrayerWidgetEnabled = 'next_prayer_widget_enabled';
 
   static const _memorizedAyahs = 'quran_memorized_ayahs';
   static const _reviewAyahs = 'quran_memorization_review_ayahs';
@@ -152,6 +153,10 @@ class StorageService {
   Future<void> savePrayerCalculationMethod(int method) => prefs.setInt(_method, method);
   Future<int?> loadPrayerCalculationMethod() => prefs.getInt(_method);
   Future<int> loadPrayerMadhab() async => await prefs.getInt(_madhab) ?? 0;
+  Future<bool> loadNextPrayerWidgetEnabled() async =>
+      await prefs.getBool(_nextPrayerWidgetEnabled) ?? false;
+  Future<void> saveNextPrayerWidgetEnabled(bool enabled) =>
+      prefs.setBool(_nextPrayerWidgetEnabled, enabled);
   Future<void> savePrayerMadhab(int madhab) => prefs.setInt(_madhab, madhab);
   Future<double> loadQuranFontSize() async => await prefs.getDouble(_quranFontSize) ?? 28;
   Future<void> saveQuranLineHeight(double value) => prefs.setDouble(_quranLineHeight, value);
