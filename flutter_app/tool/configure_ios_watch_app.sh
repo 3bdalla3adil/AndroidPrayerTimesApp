@@ -13,7 +13,7 @@ cat > ios/WatchApp/Info.plist <<'PLIST'
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>WKApplication</key>
+    <key>WKWatchKitApp</key>
     <true/>
     <key>WKCompanionAppBundleIdentifier</key>
     <string>com.salawat_quran.salawat_quran</string>
@@ -81,7 +81,7 @@ project.save
 app_delegate_path = 'ios/Runner/AppDelegate.swift'
 app_delegate = File.read(app_delegate_path)
 unless app_delegate.include?('com.salawat_quran/watch_sync')
-  app_delegate.sub!('GeneratedPluginRegistrant.register(with: self)', <<~SWIFT.strip)
+  unless app_delegate.sub!('GeneratedPluginRegistrant.register(with: self)', <<~SWIFT.strip)
     GeneratedPluginRegistrant.register(with: self)
 
     WatchPrayerSync.shared.activate()
@@ -104,7 +104,9 @@ unless app_delegate.include?('com.salawat_quran/watch_sync')
       }
     }
   SWIFT
-  File.write(app_delegate_path, app_delegate)
+    abort 'Could not find Flutter plugin registration in AppDelegate.swift' unless app_delegate.include?('com.salawat_quran/watch_sync')
+    File.write(app_delegate_path, app_delegate)
+  end
 end
 
 puts 'Configured the minimal Apple Watch companion app and WatchConnectivity bridge.'
