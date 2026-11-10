@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 import WatchConnectivity
 
 private struct PrayerRecord: Codable {
@@ -32,14 +33,14 @@ final class WatchPrayerStore: NSObject, ObservableObject, WCSessionDelegate {
 
     func session(_ session: WCSession, activationDidCompleteWith state: WCSessionActivationState, error: Error?) {
         if let error { print("Watch connectivity activation failed: \(error)") }
-        apply(session.receivedApplicationContext)
+        DispatchQueue.main.async { self.apply(session.receivedApplicationContext) }
     }
 
     func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String: Any]) {
         DispatchQueue.main.async { self.apply(applicationContext) }
     }
 
-    func session(_ session: WCSession, didReceiveUserInfo userInfo: [String: Any] = [:]) {
+    func session(_ session: WCSession, didReceiveUserInfo userInfo: [String: Any]) {
         DispatchQueue.main.async { self.apply(userInfo) }
     }
 
