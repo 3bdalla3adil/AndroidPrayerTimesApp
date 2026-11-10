@@ -6,6 +6,20 @@ test -f ios/Runner.xcodeproj/project.pbxproj
 gem install xcodeproj --no-document
 
 mkdir -p ios/NextPrayerWidgetExtension
+cat > ios/NextPrayerWidgetExtension/Info.plist <<'PLIST'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>NSExtension</key>
+    <dict>
+        <key>NSExtensionPointIdentifier</key>
+        <string>com.apple.widgetkit-extension</string>
+    </dict>
+</dict>
+</plist>
+PLIST
+
 cat > ios/NextPrayerWidgetExtension/NextPrayerWidget.swift <<'SWIFT'
 import WidgetKit
 import SwiftUI
@@ -175,8 +189,9 @@ target.build_configurations.each do |config|
   settings['SWIFT_VERSION'] = '5.0'
   settings['SKIP_INSTALL'] = 'YES'
   settings['CODE_SIGN_ENTITLEMENTS'] = 'NextPrayerWidgetExtension/NextPrayerWidgetExtension.entitlements'
-  settings['GENERATE_INFOPLIST_FILE'] = 'YES'
-  settings['INFOPLIST_KEY_NSExtension_NSExtensionPointIdentifier'] = 'com.apple.widgetkit-extension'
+  settings['GENERATE_INFOPLIST_FILE'] = 'NO'
+  settings['INFOPLIST_FILE'] = 'NextPrayerWidgetExtension/Info.plist'
+  settings['APPLICATION_EXTENSION_API_ONLY'] = 'YES'
   settings['INFOPLIST_KEY_NSHumanReadableCopyright'] = ''
 end
 
