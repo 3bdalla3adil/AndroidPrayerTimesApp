@@ -92,11 +92,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _refreshSchedules() async {
-    if (!_reminders) return;
     try {
-      await _athan.sync();
-      final count = await NotificationService.pendingCount();
-      if (mounted) setState(() => _scheduled = count);
+      if (_reminders) {
+        await _athan.sync();
+        final count = await NotificationService.pendingCount();
+        if (mounted) setState(() => _scheduled = count);
+      }
+      await _nextPrayerWidget.refresh();
     } catch (e) {
       if (mounted) await _showError('Reminder update failed', e);
     }
@@ -326,6 +328,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final count = await NotificationService.pendingCount();
       if (mounted) setState(() => _scheduled = count);
     }
+    await _nextPrayerWidget.refresh();
   }
 
   Future<void> _chooseMadhab() async {
@@ -357,6 +360,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final count = await NotificationService.pendingCount();
       if (mounted) setState(() => _scheduled = count);
     }
+    await _nextPrayerWidget.refresh();
   }
 
   Future<void> _toggle(bool enabled) async {
@@ -488,7 +492,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         : 'Shows today’s Hijri date, next prayer, prayer time and a live countdown. On iPhone, add it from Lock Screen customization after enabling it here.'),
                     children: [
                       CupertinoListTile(
-                        leading: const Icon(CupertinoIcons.lock_screen),
+                        leading: const Icon(CupertinoIcons.lock_fill),
                         title: Text(LocaleController.isArabic ? 'ويدجت الصلاة القادمة' : 'Next Prayer Widget'),
                         subtitle: Text(_nextPrayerWidgetEnabled
                             ? (LocaleController.isArabic ? 'مفعّل' : 'Enabled')
