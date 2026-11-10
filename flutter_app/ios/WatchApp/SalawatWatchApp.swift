@@ -2,7 +2,7 @@ import SwiftUI
 import Combine
 import WatchConnectivity
 
-private struct PrayerRecord: Codable {
+struct PrayerRecord: Codable {
     let name: String
     let arabicName: String
     let timestamp: String
@@ -54,9 +54,6 @@ final class WatchPrayerStore: NSObject, ObservableObject, WCSessionDelegate {
         }
     }
 
-    var nextPrayer: PrayerRecord? {
-        prayers.first { ($0.date ?? .distantPast) > Date() }
-    }
 }
 
 @main
