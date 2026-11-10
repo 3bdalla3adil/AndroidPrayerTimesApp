@@ -15,7 +15,6 @@ struct PrayerRecord: Codable {
     }
 }
 
-@MainActor
 final class WatchPrayerStore: NSObject, ObservableObject, WCSessionDelegate {
     static let shared = WatchPrayerStore()
 
