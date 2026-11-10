@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart' show LinearProgressIndicator;
 import 'package:quran/quran.dart' as quran;
 
 import '../core/adaptive_page_scaffold.dart';
