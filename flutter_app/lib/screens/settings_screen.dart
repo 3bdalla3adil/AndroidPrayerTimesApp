@@ -489,8 +489,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   CupertinoListSection.insetGrouped(
                     header: Text(LocaleController.isArabic ? 'ويدجت الصلاة القادمة' : 'NEXT PRAYER WIDGET'),
                     footer: Text(LocaleController.isArabic
-                        ? 'يعرض التاريخ الهجري والصلاة القادمة ووقت الصلاة والعد التنازلي. على iPhone أضفه من تخصيص شاشة القفل. في Android أضفه إلى الشاشة الرئيسية لأن النظام لا يدعم ويدجت شاشة القفل.'
-                        : 'Shows today’s Hijri date, next prayer, prayer time and a live countdown. On iPhone, add it from Lock Screen customization. Android supports adding it to the Home screen, not the Lock screen.'),
+                        ? 'يعرض التاريخ الهجري والصلاة القادمة ووقتها والعد التنازلي. على iPhone أضفه من تخصيص شاشة القفل، وعلى Android أضفه إلى الشاشة الرئيسية. تتم مزامنة تطبيق Apple Watch تلقائياً عند فتح تطبيق iPhone.'
+                        : 'Shows today’s Hijri date, next prayer, prayer time and countdown. Add it to the iPhone Lock Screen or Android Home Screen. The Apple Watch companion syncs automatically when you open the iPhone app.'),
                     children: [
                       CupertinoListTile(
                         leading: const Icon(CupertinoIcons.lock_fill),
