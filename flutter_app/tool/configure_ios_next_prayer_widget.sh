@@ -176,6 +176,7 @@ target.build_configurations.each do |config|
   settings['SKIP_INSTALL'] = 'YES'
   settings['CODE_SIGN_ENTITLEMENTS'] = 'NextPrayerWidgetExtension/NextPrayerWidgetExtension.entitlements'
   settings['GENERATE_INFOPLIST_FILE'] = 'YES'
+  settings['INFOPLIST_KEY_NSExtension_NSExtensionPointIdentifier'] = 'com.apple.widgetkit-extension'
   settings['INFOPLIST_KEY_NSHumanReadableCopyright'] = ''
 end
 
