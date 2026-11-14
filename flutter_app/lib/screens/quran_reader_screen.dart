@@ -165,6 +165,30 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
     'Saood_ash-Shuraym_64kbps': 'Saud Al-Shuraim',
     'ahmed_ibn_ali_al_ajamy_128kbps': 'Ahmed Al-Ajmy',
     'Fares_Abbad_64kbps': 'Fares Abbad',
+
+    // Additional complete Hafs recitations with EveryAyah per-ayah files.
+    'Abdullah_Basfar_192kbps': 'Abdullah Basfar',
+    'Abdullah_Matroud_128kbps': 'Abdullah Al-Matroud',
+    'Abdullaah_3awwaad_Al-Juhaynee_128kbps': 'Abdullah Awad Al-Juhani',
+    'Hudhaify_128kbps': 'Ali Al-Hudhaify',
+    'Ali_Jaber_64kbps': 'Ali Jaber',
+    'Ibrahim_Akhdar_32kbps': 'Ibrahim Al-Akhdar',
+    'Khaalid_Abdullaah_al-Qahtaanee_192kbps': 'Khalid Al-Qahtani',
+    'khalefa_al_tunaiji_64kbps': 'Khalifa Al-Tunaiji',
+    'mahmoud_ali_al_banna_32kbps': 'Mahmoud Ali Al-Banna',
+    'Mohammad_al_Tablaway_128kbps': 'Mohammad Al-Tablaway',
+    'Muhammad_Ayyoub_128kbps': 'Muhammad Ayyoub',
+    'Muhammad_Jibreel_128kbps': 'Muhammad Jibreel',
+    'Salah_Al_Budair_128kbps': 'Salah Al-Budair',
+    'Salaah_AbdulRahman_Bukhatir_128kbps': 'Salah Bukhatir',
+    'Sahl_Yassin_128kbps': 'Sahl Yassin',
+    'Mustafa_Ismail_48kbps': 'Mustafa Ismail',
+    'Ayman_Sowaid_64kbps': 'Ayman Sowaid',
+    'Karim_Mansoori_40kbps': 'Karim Mansoori',
+    'Ahmed_Neana_128kbps': 'Ahmed Neana',
+    'Akram_AlAlaqimy_128kbps': 'Akram Al-Alaqimy',
+    'Muhsin_Al_Qasim_192kbps': 'Muhsin Al-Qasim',
+    'Yaser_Salamah_128kbps': 'Yaser Salamah',
   };
 
   bool get _darkPage => ref.read(readerProvider).darkMode;
