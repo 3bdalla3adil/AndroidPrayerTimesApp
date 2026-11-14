@@ -191,7 +191,7 @@ target.build_configurations.each do |config|
   settings['SWIFT_VERSION'] = '5.0'
   settings['SKIP_INSTALL'] = 'YES'
   settings['CODE_SIGN_ENTITLEMENTS'] = 'NextPrayerWidgetExtension/NextPrayerWidgetExtension.entitlements'
-  settings['GENERATE_INFOPLIST_FILE'] = 'NO'
+  settings['GENERATE_INFOPLIST_FILE'] = 'YES'
   settings['INFOPLIST_FILE'] = 'NextPrayerWidgetExtension/Info.plist'
   settings['APPLICATION_EXTENSION_API_ONLY'] = 'YES'
   settings['INFOPLIST_KEY_NSHumanReadableCopyright'] = ''
