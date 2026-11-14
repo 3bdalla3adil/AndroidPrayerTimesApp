@@ -21,6 +21,7 @@ import '../services/bookmark_service.dart';
 import '../services/settings_service.dart';
 import '../providers/reader_provider.dart';
 import '../services/locale_controller.dart';
+import '../services/daily_wird_service.dart';
 
 const kQuranFont = 'KFGQPC HAFS Uthmanic Script';
 
@@ -84,6 +85,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
   int _navigationGeneration = 0;
   final _storage = StorageService();
   late final _bookmarkService = BookmarkService(_storage);
+  late final _dailyWirdService = DailyWirdService();
   late final _settingsService = SettingsService(_storage);
   late final QuranRepository _repository;
   final LinkedHashMap<int, Future<QuranPage>> _pageFutures = LinkedHashMap();
@@ -908,6 +910,12 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
       surah: verse.surahNumber,
       ayah: verse.ayahNumber,
       page: quran.getPageNumber(verse.surahNumber, verse.ayahNumber),
+    ));
+    // A deliberate long-press marks the last ayah actually read; merely
+    // scrolling through or opening a page never advances daily-wird progress.
+    unawaited(_dailyWirdService.recordReadThrough(
+      verse.surahNumber,
+      verse.ayahNumber,
     ));
     _removeAyahToolbar();
     if (_ayahToolbarEnabled) _showAyahToolbar(verse, globalPosition);
