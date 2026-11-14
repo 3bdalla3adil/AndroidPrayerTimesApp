@@ -89,7 +89,7 @@ jobs:
       - name: Generate launcher icon and splash screen
         run: |
           dart run flutter_launcher_icons -f flutter_launcher_icons_android.yaml
-          dart run flutter_native_splash:create
+          dart run flutter_native_splash:create --path=flutter_native_splash_android.yaml
 
       - name: Build release APK
         run: flutter build apk --release
