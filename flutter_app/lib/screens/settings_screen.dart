@@ -6,6 +6,8 @@ import '../services/notification_service.dart';
 import '../services/prayer_service.dart';
 import '../services/storage_service.dart';
 import '../services/locale_controller.dart';
+import '../services/next_prayer_widget_service.dart';
+import '../services/daily_wird_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -15,6 +17,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _storage = StorageService();
   late final AthanReminderService _athan;
   bool _reminders = false;
+  bool _nextPrayerWidgetEnabled = false;
+  late final NextPrayerWidgetService _nextPrayerWidget;
   bool _loading = true;
   int _scheduled = 0;
   int _method = 3;
@@ -27,6 +31,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _quranTranslation = false;
   bool _quranAyahToolbarEnabled = true;
   int _tasbihTarget = 33;
+  WirdUnit _wirdUnit = WirdUnit.juz;
+  int _wirdAmount = 1;
+  final _wirdService = DailyWirdService();
 
   static const _methods = <int, String>{
     1: 'Karachi', 2: 'North America (ISNA)', 3: 'Muslim World League',
@@ -40,11 +47,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override void initState() {
     super.initState();
     _athan = AthanReminderService(PrayerService(_storage), _storage);
+    _nextPrayerWidget = NextPrayerWidgetService(PrayerService(_storage), _storage);
     _load();
   }
 
   Future<void> _load() async {
     final enabled = await _storage.loadAthanRemindersEnabled();
+    final nextPrayerWidgetEnabled = await _storage.loadNextPrayerWidgetEnabled();
     final count = await NotificationService.pendingCount();
     final city = await _storage.loadPrayerCity();
     final savedMethod = await _storage.loadPrayerCalculationMethod();
@@ -57,9 +66,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final quranTranslation = await _storage.loadQuranShowTranslation();
     final quranAyahToolbarEnabled = await _storage.loadQuranAyahToolbarEnabled();
     final tasbih = await _storage.loadTasbih();
+    final wirdUnit = await _wirdService.loadUnit();
+    final wirdAmount = await _wirdService.loadAmount();
     if (!mounted) return;
     setState(() {
       _reminders = enabled;
+      _nextPrayerWidgetEnabled = nextPrayerWidgetEnabled;
       _scheduled = count;
       _method = savedMethod ?? city.$3 ?? 3;
       _madhab = madhab;
@@ -71,17 +83,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _quranTranslation = quranTranslation;
       _quranAyahToolbarEnabled = quranAyahToolbarEnabled;
       _tasbihTarget = tasbih.$2;
+      _wirdUnit = wirdUnit;
+      _wirdAmount = wirdAmount;
       _loading = false;
     });
   }
 
 
-  Future<void> _refreshSchedules() async {
-    if (!_reminders) return;
+  Future<void> _toggleNextPrayerWidget(bool enabled) async {
     try {
-      await _athan.sync();
-      final count = await NotificationService.pendingCount();
-      if (mounted) setState(() => _scheduled = count);
+      await _nextPrayerWidget.setEnabled(enabled);
+      if (mounted) setState(() => _nextPrayerWidgetEnabled = enabled);
+    } catch (error) {
+      await _showError('Widget update failed', error);
+    }
+  }
+
+  Future<void> _refreshSchedules() async {
+    try {
+      if (_reminders) {
+        await _athan.sync();
+        final count = await NotificationService.pendingCount();
+        if (mounted) setState(() => _scheduled = count);
+      }
+      await _nextPrayerWidget.refresh();
     } catch (e) {
       if (mounted) await _showError('Reminder update failed', e);
     }
@@ -157,6 +182,80 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (selected == null) return;
     await _storage.saveQuranFontSize(selected);
     if (mounted) setState(() => _quranFontSize = selected);
+  }
+
+  Future<void> _chooseDailyWird() async {
+    final selectedUnit = await showCupertinoModalPopup<WirdUnit>(
+      context: context,
+      builder: (popupContext) => CupertinoActionSheet(
+        title: Text(LocaleController.isArabic ? 'نوع الورد اليومي' : 'Daily wird unit'),
+        actions: [
+          CupertinoActionSheetAction(
+            onPressed: () => Navigator.pop(popupContext, WirdUnit.juz),
+            child: const Text('جزء'),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () => Navigator.pop(popupContext, WirdUnit.hizb),
+            child: const Text('حزب'),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () => Navigator.pop(popupContext, WirdUnit.ayah),
+            child: const Text('عدد الآيات'),
+          ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          onPressed: () => Navigator.pop(popupContext),
+          child: Text(LocaleController.isArabic ? 'إلغاء' : 'Cancel'),
+        ),
+      ),
+    );
+    if (selectedUnit == null) return;
+    final maximum = selectedUnit == WirdUnit.juz
+        ? 30
+        : selectedUnit == WirdUnit.hizb
+            ? 60
+            : 6236;
+    final controller = TextEditingController(
+      text: selectedUnit == _wirdUnit ? _wirdAmount.toString() : '1',
+    );
+    final amount = await showCupertinoDialog<int>(
+      context: context,
+      builder: (dialogContext) => CupertinoAlertDialog(
+        title: Text(LocaleController.isArabic ? 'كم تريد أن تقرأ يومياً؟' : 'Daily reading target'),
+        content: Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: CupertinoTextField(
+            controller: controller,
+            keyboardType: TextInputType.number,
+            textAlign: TextAlign.center,
+            placeholder: '1 - $maximum',
+          ),
+        ),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(LocaleController.isArabic ? 'إلغاء' : 'Cancel'),
+          ),
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            onPressed: () {
+              final value = int.tryParse(controller.text.trim());
+              if (value != null && value >= 1 && value <= maximum) {
+                Navigator.pop(dialogContext, value);
+              }
+            },
+            child: Text(LocaleController.isArabic ? 'حفظ' : 'Save'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (amount == null) return;
+    await _wirdService.saveSettings(selectedUnit, amount);
+    if (mounted) setState(() {
+      _wirdUnit = selectedUnit;
+      _wirdAmount = amount;
+    });
   }
 
   Future<void> _chooseTasbihTarget() async {
@@ -306,6 +405,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (selected == null) return;
     await _storage.savePrayerCalculationMethod(selected);
     if (mounted) setState(() => _method = selected);
+    await _nextPrayerWidget.refresh();
     if (_reminders) {
       await _athan.sync();
       final count = await NotificationService.pendingCount();
@@ -337,6 +437,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (selected == null) return;
     await _storage.savePrayerMadhab(selected);
     if (mounted) setState(() => _madhab = selected);
+    await _nextPrayerWidget.refresh();
     if (_reminders) {
       await _athan.sync();
       final count = await NotificationService.pendingCount();
@@ -408,6 +509,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           );
                           if (selected != null) {
                             await LocaleController.setLanguage(selected);
+                            await _nextPrayerWidget.refresh();
                             if (mounted) setState(() {});
                           }
                         },
@@ -467,6 +569,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ],
                   ),
                   CupertinoListSection.insetGrouped(
+                    header: Text(LocaleController.isArabic ? 'ويدجت الصلاة القادمة' : 'NEXT PRAYER WIDGET'),
+                    footer: Text(LocaleController.isArabic
+                        ? 'يعرض التاريخ الهجري والصلاة القادمة ووقت الصلاة والعد التنازلي. على iPhone أضفه من تخصيص شاشة القفل. في Android أضفه إلى الشاشة الرئيسية لأن النظام لا يدعم ويدجت شاشة القفل.'
+                        : 'Shows today’s Hijri date, next prayer, prayer time and a live countdown. On iPhone, add it from Lock Screen customization. Android supports adding it to the Home screen, not the Lock screen.'),
+                    children: [
+                      CupertinoListTile(
+                        leading: const Icon(CupertinoIcons.lock_fill),
+                        title: Text(LocaleController.isArabic ? 'ويدجت الصلاة القادمة' : 'Next Prayer Widget'),
+                        subtitle: Text(_nextPrayerWidgetEnabled
+                            ? (LocaleController.isArabic ? 'مفعّل' : 'Enabled')
+                            : (LocaleController.isArabic ? 'غير مفعّل' : 'Disabled')),
+                        trailing: CupertinoSwitch(
+                          value: _nextPrayerWidgetEnabled,
+                          onChanged: _loading ? null : _toggleNextPrayerWidget,
+                        ),
+                      ),
+                    ],
+                  ),
+                  CupertinoListSection.insetGrouped(
                     header: const Text('PRAYER CALCULATION'),
                     children: [
                       CupertinoListTile(
@@ -500,6 +621,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         title: Text(LocaleController.isArabic ? 'تجربة صوت الأذان' : 'Test Athan'),
                         subtitle: Text(LocaleController.isArabic ? 'تشغيل الصوت المختار للتحقق منه' : 'Play the selected sound'),
                         onTap: _loading ? null : _testAthan,
+                      ),
+                    ],
+                  ),
+                  CupertinoListSection.insetGrouped(
+                    header: Text(LocaleController.isArabic ? 'الورد اليومي' : 'DAILY QURAN WIRD'),
+                    children: [
+                      CupertinoListTile(
+                        leading: const Icon(CupertinoIcons.book_fill),
+                        title: Text(LocaleController.isArabic ? 'هدف الورد اليومي' : 'Daily reading goal'),
+                        subtitle: Text('$_wirdAmount ${_wirdUnit == WirdUnit.juz ? 'جزء' : _wirdUnit == WirdUnit.hizb ? 'حزب' : 'آية'}'),
+                        trailing: const CupertinoListTileChevron(),
+                        onTap: _loading ? null : _chooseDailyWird,
                       ),
                     ],
                   ),

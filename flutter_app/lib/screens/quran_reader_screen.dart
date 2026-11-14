@@ -21,6 +21,7 @@ import '../services/bookmark_service.dart';
 import '../services/settings_service.dart';
 import '../providers/reader_provider.dart';
 import '../services/locale_controller.dart';
+import '../services/daily_wird_service.dart';
 
 const kQuranFont = 'KFGQPC HAFS Uthmanic Script';
 
@@ -84,6 +85,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
   int _navigationGeneration = 0;
   final _storage = StorageService();
   late final _bookmarkService = BookmarkService(_storage);
+  late final _dailyWirdService = DailyWirdService();
   late final _settingsService = SettingsService(_storage);
   late final QuranRepository _repository;
   final LinkedHashMap<int, Future<QuranPage>> _pageFutures = LinkedHashMap();
@@ -163,6 +165,30 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
     'Saood_ash-Shuraym_64kbps': 'Saud Al-Shuraim',
     'ahmed_ibn_ali_al_ajamy_128kbps': 'Ahmed Al-Ajmy',
     'Fares_Abbad_64kbps': 'Fares Abbad',
+
+    // Additional complete Hafs recitations with EveryAyah per-ayah files.
+    'Abdullah_Basfar_192kbps': 'Abdullah Basfar',
+    'Abdullah_Matroud_128kbps': 'Abdullah Al-Matroud',
+    'Abdullaah_3awwaad_Al-Juhaynee_128kbps': 'Abdullah Awad Al-Juhani',
+    'Hudhaify_128kbps': 'Ali Al-Hudhaify',
+    'Ali_Jaber_64kbps': 'Ali Jaber',
+    'Ibrahim_Akhdar_32kbps': 'Ibrahim Al-Akhdar',
+    'Khaalid_Abdullaah_al-Qahtaanee_192kbps': 'Khalid Al-Qahtani',
+    'khalefa_al_tunaiji_64kbps': 'Khalifa Al-Tunaiji',
+    'mahmoud_ali_al_banna_32kbps': 'Mahmoud Ali Al-Banna',
+    'Mohammad_al_Tablaway_128kbps': 'Mohammad Al-Tablaway',
+    'Muhammad_Ayyoub_128kbps': 'Muhammad Ayyoub',
+    'Muhammad_Jibreel_128kbps': 'Muhammad Jibreel',
+    'Salah_Al_Budair_128kbps': 'Salah Al-Budair',
+    'Salaah_AbdulRahman_Bukhatir_128kbps': 'Salah Bukhatir',
+    'Sahl_Yassin_128kbps': 'Sahl Yassin',
+    'Mustafa_Ismail_48kbps': 'Mustafa Ismail',
+    'Ayman_Sowaid_64kbps': 'Ayman Sowaid',
+    'Karim_Mansoori_40kbps': 'Karim Mansoori',
+    'Ahmed_Neana_128kbps': 'Ahmed Neana',
+    'Akram_AlAlaqimy_128kbps': 'Akram Al-Alaqimy',
+    'Muhsin_Al_Qasim_192kbps': 'Muhsin Al-Qasim',
+    'Yaser_Salamah_128kbps': 'Yaser Salamah',
   };
 
   bool get _darkPage => ref.read(readerProvider).darkMode;
@@ -309,6 +335,12 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
       _recitationPage = nextPage;
       _recitationQueue = pageData.verses;
       _recitationIndex = 0;
+
+      // Keep the Mushaf view in sync with the audio: when one page finishes,
+      // automatically move the reader to the next page before its first ayah
+      // starts. This is independent of the optional timed auto-scroll feature.
+      await _scrollToPage(nextPage);
+      if (!mounted || generation != _recitationGeneration) return;
       await _playRecitationVerse(generation);
     } catch (error) {
       if (!mounted || generation != _recitationGeneration) return;
@@ -902,6 +934,12 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
       surah: verse.surahNumber,
       ayah: verse.ayahNumber,
       page: quran.getPageNumber(verse.surahNumber, verse.ayahNumber),
+    ));
+    // A deliberate long-press marks the last ayah actually read; merely
+    // scrolling through or opening a page never advances daily-wird progress.
+    unawaited(_dailyWirdService.recordReadThrough(
+      verse.surahNumber,
+      verse.ayahNumber,
     ));
     _removeAyahToolbar();
     if (_ayahToolbarEnabled) _showAyahToolbar(verse, globalPosition);
