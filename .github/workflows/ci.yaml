@@ -162,7 +162,7 @@ jobs:
         run: |
           test -f ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-20x20@1x.png
           dart run flutter_launcher_icons -f flutter_launcher_icons_ios.yaml
-          dart run flutter_native_splash:create
+          dart run flutter_native_splash:create --path=flutter_native_splash_ios.yaml
 
       - name: Build iOS app without code signing
         run: flutter build ios --release --no-codesign
