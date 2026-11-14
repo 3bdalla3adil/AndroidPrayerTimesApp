@@ -52,6 +52,7 @@ watch.build_configurations.each do |config|
 end
 
 watch_group = project.main_group.find_subpath('WatchApp', true)
+watch_group.path = 'WatchApp'
 source = watch_group.files.find { |file| file.path == 'SalawatWatchApp.swift' } ||
          watch_group.new_file('SalawatWatchApp.swift')
 watch.source_build_phase.add_file_reference(source) unless watch.source_build_phase.files_references.include?(source)
@@ -72,6 +73,7 @@ unless embed.files_references.include?(watch.product_reference)
 end
 
 runner_group = project.main_group.find_subpath('Runner', true)
+runner_group.path = 'Runner'
 bridge = runner_group.files.find { |file| file.path == 'WatchPrayerSync.swift' } ||
          runner_group.new_file('WatchPrayerSync.swift')
 runner.source_build_phase.add_file_reference(bridge) unless runner.source_build_phase.files_references.include?(bridge)
