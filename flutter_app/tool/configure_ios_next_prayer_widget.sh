@@ -233,6 +233,14 @@ unless embed.files_references.include?(target.product_reference)
   build_file.settings = { 'ATTRIBUTES' => ['CodeSignOnCopy', 'RemoveHeadersOnCopy'] }
 end
 
+# Embed the extension before Flutter's Thin Binary phase. Leaving the copy phase
+# after Thin Binary creates an Xcode dependency cycle through Runner.app/Info.plist.
+thin_binary = runner.shell_script_build_phases.find { |phase| phase.name == 'Thin Binary' }
+if thin_binary
+  runner.build_phases.delete(embed)
+  runner.build_phases.insert(runner.build_phases.index(thin_binary), embed)
+end
+
 project.save
 puts 'Configured WidgetKit Lock Screen extension and App Group entitlements.'
 RUBY
