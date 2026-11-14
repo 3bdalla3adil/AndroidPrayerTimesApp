@@ -200,6 +200,7 @@ target.build_configurations.each do |config|
 end
 
 group = project.main_group.find_subpath('NextPrayerWidgetExtension', true)
+group.path = 'NextPrayerWidgetExtension'
 source = group.files.find { |file| file.path == 'NextPrayerWidget.swift' } ||
          group.new_file('NextPrayerWidget.swift')
 target.source_build_phase.add_file_reference(source) unless target.source_build_phase.files_references.include?(source)
