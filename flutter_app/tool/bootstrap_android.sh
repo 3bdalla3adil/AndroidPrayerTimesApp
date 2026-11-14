@@ -41,17 +41,44 @@ PY
 # generated R class resolves from Kotlin regardless of Flutter's default org.
 python3 - <<'PY'
 from pathlib import Path
-import re
 
 namespace = "com.salawat_quran.salawat_quran"
 for name in ("android/app/build.gradle.kts", "android/app/build.gradle"):
     path = Path(name)
     if not path.exists():
         continue
-    source = path.read_text()
-    if name.endswith(".kts"):
-        if re.search(r"(?m)^\\s*namespace\\s*=", source):
-            source = re.sub(r'(?m)^\\s*namespace\\s*=.*# Gradle hooks here: newer Android Gradle Plugin versions changed the legacy
+    lines = path.read_text().splitlines()
+    is_kts = name.endswith('.kts')
+    namespace_line = f'    namespace = "{namespace}"' if is_kts else f'    namespace "{namespace}"'
+    application_id_line = f'        applicationId = "{namespace}"' if is_kts else f'        applicationId "{namespace}"'
+    has_namespace = False
+    has_application_id = False
+    for index, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped.startswith('namespace ') or stripped.startswith('namespace ='):
+            lines[index] = namespace_line
+            has_namespace = True
+        if stripped.startswith('applicationId ') or stripped.startswith('applicationId ='):
+            lines[index] = application_id_line
+            has_application_id = True
+    if not has_namespace:
+        android_index = next((i for i, line in enumerate(lines) if line.strip() == 'android {'), None)
+        if android_index is None:
+            raise SystemExit(f'No android block found in {name}')
+        lines.insert(android_index + 1, namespace_line)
+    if not has_application_id:
+        config_index = next((i for i, line in enumerate(lines) if line.strip() == 'defaultConfig {'), None)
+        if config_index is None:
+            raise SystemExit(f'No defaultConfig block found in {name}')
+        lines.insert(config_index + 1, application_id_line)
+    path.write_text('\n'.join(lines) + '\n')
+    print(f'Configured Android namespace and applicationId: {namespace}')
+    break
+else:
+    raise SystemExit('No Android app Gradle file found')
+PY
+
+# Gradle hooks here: newer Android Gradle Plugin versions changed the legacy
 # compileSdkVersion API and can fail during plugin evaluation.
 # 2. Enable core library desugaring required by flutter_local_notifications
 GRADLE_FILE="android/app/build.gradle"
