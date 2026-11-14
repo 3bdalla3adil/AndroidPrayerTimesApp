@@ -287,11 +287,7 @@ grep -n "coreLibraryDesugaringEnabled\|coreLibraryDesugaring" android/app/build.
 }
 
 echo "Bootstrap complete."
-, f'    namespace = "{namespace}"', source, count=1)
-        else:
-            source = re.sub(r"(?m)^(\\s*android\\s*\\{)", rf'\\1\\n    namespace = "{namespace}"', source, count=1)
-        if re.search(r"(?m)^\\s*applicationId\\s*=", source):
-            source = re.sub(r'(?m)^\\s*applicationId\\s*=.*# Gradle hooks here: newer Android Gradle Plugin versions changed the legacy
+# Gradle hooks here: newer Android Gradle Plugin versions changed the legacy
 # compileSdkVersion API and can fail during plugin evaluation.
 # 2. Enable core library desugaring required by flutter_local_notifications
 GRADLE_FILE="android/app/build.gradle"
