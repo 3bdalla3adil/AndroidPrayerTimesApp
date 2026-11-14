@@ -182,9 +182,13 @@ unless target
 end
 
 target.product_name = target_name
+target.product_reference.path = "#{target_name}.appex"
+target.product_reference.name = "#{target_name}.appex"
 target.build_configurations.each do |config|
   settings = config.build_settings
   settings['PRODUCT_BUNDLE_IDENTIFIER'] = 'com.salawat_quran.salawat_quran.NextPrayerWidgetExtension'
+  settings['PRODUCT_NAME'] = target_name
+  settings['EXECUTABLE_NAME'] = target_name
   settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
   settings['SWIFT_VERSION'] = '5.0'
   settings['SKIP_INSTALL'] = 'YES'
