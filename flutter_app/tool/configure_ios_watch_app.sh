@@ -72,6 +72,16 @@ unless embed.files_references.include?(watch.product_reference)
   build_file.settings = { 'ATTRIBUTES' => ['CodeSignOnCopy', 'RemoveHeadersOnCopy'] }
 end
 
+
+# Embed the Watch companion before Flutter's Thin Binary phase. Xcode otherwise
+# creates a cycle: Watch app copy -> Thin Binary -> Runner Info.plist -> Watch copy.
+thin_binary = runner.shell_script_build_phases.find { |phase| phase.name == 'Thin Binary' }
+if thin_binary
+  runner.build_phases.delete(embed)
+  runner.build_phases.insert(runner.build_phases.index(thin_binary), embed)
+end
+
+
 runner_group = project.main_group.find_subpath('Runner', true)
 runner_group.path = 'Runner'
 bridge = runner_group.files.find { |file| file.path == 'WatchPrayerSync.swift' } ||
