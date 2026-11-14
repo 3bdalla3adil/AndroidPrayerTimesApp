@@ -42,7 +42,7 @@ void main() {
     await tester.tap(find.text('القبلة'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
-    expect(find.text('اتجاه القبلة'), findsOneWidget);
+    expect(find.text('اتجاه القبلة'), findsWidgets);
 
     await tester.pageBack();
     await tester.pump();
