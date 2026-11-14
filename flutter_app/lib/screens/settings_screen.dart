@@ -6,6 +6,7 @@ import '../services/notification_service.dart';
 import '../services/prayer_service.dart';
 import '../services/storage_service.dart';
 import '../services/locale_controller.dart';
+import '../services/next_prayer_widget_service.dart';
 import '../services/daily_wird_service.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -16,6 +17,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _storage = StorageService();
   late final AthanReminderService _athan;
   bool _reminders = false;
+  bool _nextPrayerWidgetEnabled = false;
+  late final NextPrayerWidgetService _nextPrayerWidget;
   bool _loading = true;
   int _scheduled = 0;
   int _method = 3;
@@ -44,11 +47,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override void initState() {
     super.initState();
     _athan = AthanReminderService(PrayerService(_storage), _storage);
+    _nextPrayerWidget = NextPrayerWidgetService(PrayerService(_storage), _storage);
     _load();
   }
 
   Future<void> _load() async {
     final enabled = await _storage.loadAthanRemindersEnabled();
+    final nextPrayerWidgetEnabled = await _storage.loadNextPrayerWidgetEnabled();
     final count = await NotificationService.pendingCount();
     final city = await _storage.loadPrayerCity();
     final savedMethod = await _storage.loadPrayerCalculationMethod();
@@ -66,6 +71,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (!mounted) return;
     setState(() {
       _reminders = enabled;
+      _nextPrayerWidgetEnabled = nextPrayerWidgetEnabled;
       _scheduled = count;
       _method = savedMethod ?? city.$3 ?? 3;
       _madhab = madhab;
@@ -84,12 +90,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
 
-  Future<void> _refreshSchedules() async {
-    if (!_reminders) return;
+  Future<void> _toggleNextPrayerWidget(bool enabled) async {
     try {
-      await _athan.sync();
-      final count = await NotificationService.pendingCount();
-      if (mounted) setState(() => _scheduled = count);
+      await _nextPrayerWidget.setEnabled(enabled);
+      if (mounted) setState(() => _nextPrayerWidgetEnabled = enabled);
+    } catch (error) {
+      await _showError('Widget update failed', error);
+    }
+  }
+
+  Future<void> _refreshSchedules() async {
+    try {
+      if (_reminders) {
+        await _athan.sync();
+        final count = await NotificationService.pendingCount();
+        if (mounted) setState(() => _scheduled = count);
+      }
+      await _nextPrayerWidget.refresh();
     } catch (e) {
       if (mounted) await _showError('Reminder update failed', e);
     }
@@ -388,6 +405,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (selected == null) return;
     await _storage.savePrayerCalculationMethod(selected);
     if (mounted) setState(() => _method = selected);
+    await _nextPrayerWidget.refresh();
     if (_reminders) {
       await _athan.sync();
       final count = await NotificationService.pendingCount();
@@ -419,6 +437,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (selected == null) return;
     await _storage.savePrayerMadhab(selected);
     if (mounted) setState(() => _madhab = selected);
+    await _nextPrayerWidget.refresh();
     if (_reminders) {
       await _athan.sync();
       final count = await NotificationService.pendingCount();
@@ -490,6 +509,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           );
                           if (selected != null) {
                             await LocaleController.setLanguage(selected);
+                            await _nextPrayerWidget.refresh();
                             if (mounted) setState(() {});
                           }
                         },
@@ -545,6 +565,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         subtitle: Text(_preReminderMinutes == 0 ? 'Off' : '$_preReminderMinutes minutes before each enabled prayer'),
                         trailing: const CupertinoListTileChevron(),
                         onTap: _loading ? null : _choosePreReminder,
+                      ),
+                    ],
+                  ),
+                  CupertinoListSection.insetGrouped(
+                    header: Text(LocaleController.isArabic ? 'ويدجت الصلاة القادمة' : 'NEXT PRAYER WIDGET'),
+                    footer: Text(LocaleController.isArabic
+                        ? 'يعرض التاريخ الهجري والصلاة القادمة ووقت الصلاة والعد التنازلي. على iPhone أضفه من تخصيص شاشة القفل. في Android أضفه إلى الشاشة الرئيسية لأن النظام لا يدعم ويدجت شاشة القفل.'
+                        : 'Shows today’s Hijri date, next prayer, prayer time and a live countdown. On iPhone, add it from Lock Screen customization. Android supports adding it to the Home screen, not the Lock screen.'),
+                    children: [
+                      CupertinoListTile(
+                        leading: const Icon(CupertinoIcons.lock_fill),
+                        title: Text(LocaleController.isArabic ? 'ويدجت الصلاة القادمة' : 'Next Prayer Widget'),
+                        subtitle: Text(_nextPrayerWidgetEnabled
+                            ? (LocaleController.isArabic ? 'مفعّل' : 'Enabled')
+                            : (LocaleController.isArabic ? 'غير مفعّل' : 'Disabled')),
+                        trailing: CupertinoSwitch(
+                          value: _nextPrayerWidgetEnabled,
+                          onChanged: _loading ? null : _toggleNextPrayerWidget,
+                        ),
                       ),
                     ],
                   ),
