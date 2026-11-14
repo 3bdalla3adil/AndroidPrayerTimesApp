@@ -32,10 +32,14 @@ watch_name = 'SalawatWatchApp'
 watch = project.targets.find { |target| target.name == watch_name }
 watch ||= project.new_target(:application, watch_name, :watchos, '10.0')
 watch.product_name = watch_name
+watch.product_reference.path = "#{watch_name}.app"
+watch.product_reference.name = "#{watch_name}.app"
 
 watch.build_configurations.each do |config|
   settings = config.build_settings
   settings['PRODUCT_BUNDLE_IDENTIFIER'] = 'com.salawat_quran.salawat_quran.watchkitapp'
+  settings['PRODUCT_NAME'] = watch_name
+  settings['EXECUTABLE_NAME'] = watch_name
   settings['WATCHOS_DEPLOYMENT_TARGET'] = '10.0'
   settings['TARGETED_DEVICE_FAMILY'] = '4'
   settings['SUPPORTED_PLATFORMS'] = 'watchos watchsimulator'
