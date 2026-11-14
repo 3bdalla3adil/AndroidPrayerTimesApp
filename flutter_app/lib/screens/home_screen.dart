@@ -10,7 +10,6 @@ import '../services/storage_service.dart';
 import '../services/app_routes.dart';
 import '../theme/app_theme.dart';
 import '../services/locale_controller.dart';
-import '../services/root_tab_navigation.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -127,9 +126,23 @@ class _HomeScreenState extends State<HomeScreen> {
     return AdaptivePageScaffold(
       navigationBar: CupertinoNavigationBar(
         middle: const Text('Salawat'),
-        trailing: CupertinoButton(
-          padding: EdgeInsets.zero, onPressed: () => _load(refresh: true),
-          child: const Icon(CupertinoIcons.refresh),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CupertinoButton(
+              key: const ValueKey('open-more'),
+              padding: EdgeInsets.zero,
+              onPressed: () => Navigator.of(context).pushNamed(AppRoutes.more),
+              child: const Icon(CupertinoIcons.ellipsis_circle),
+            ),
+            const SizedBox(width: 8),
+            CupertinoButton(
+              key: const ValueKey('refresh-home'),
+              padding: EdgeInsets.zero,
+              onPressed: () => _load(refresh: true),
+              child: const Icon(CupertinoIcons.refresh),
+            ),
+          ],
         ),
       ),
       child: SafeArea(
@@ -137,7 +150,7 @@ class _HomeScreenState extends State<HomeScreen> {
           slivers: [
             CupertinoSliverRefreshControl(onRefresh: () => _load(refresh: true)),
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 18, 16, 110),
+              padding: const EdgeInsets.fromLTRB(16, 18, 16, 28),
               sliver: SliverList(delegate: SliverChildListDelegate([
                 const Text('السلام عليكم', textDirection: TextDirection.rtl,
                   style: TextStyle(fontSize: 29, fontWeight: FontWeight.w700)),
@@ -157,10 +170,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 12),
                 _HomeFeatureGrid(
                   onQuran: _continueQuran,
-                  onPrayer: () => RootTabNavigation.maybeOf(context)?.selectTab(2),
+                  onPrayer: () => Navigator.of(context).pushNamed(AppRoutes.prayer),
                   onTasbih: () => Navigator.of(context).pushNamed(AppRoutes.tasbih),
                   onDuaa: () => Navigator.of(context).pushNamed(AppRoutes.adhkar),
-                  onQibla: () => RootTabNavigation.maybeOf(context)?.selectTab(3),
+                  onQibla: () => Navigator.of(context).pushNamed(AppRoutes.qibla),
                   onCalendar: () => Navigator.of(context).pushNamed(AppRoutes.calendar),
                   onAthan: () => _toggle(!_reminders),
                   onSettings: () => Navigator.of(context).pushNamed(AppRoutes.settings),
