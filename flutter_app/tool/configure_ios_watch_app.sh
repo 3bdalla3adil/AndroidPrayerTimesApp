@@ -81,7 +81,7 @@ project.save
 app_delegate_path = 'ios/Runner/AppDelegate.swift'
 app_delegate = File.read(app_delegate_path)
 unless app_delegate.include?('com.salawat_quran/watch_sync')
-  app_delegate.sub!(/\\A/, "import Flutter\\n") unless app_delegate.include?('import Flutter')
+  app_delegate.sub!(/\A/, "import Flutter\n") unless app_delegate.include?('import Flutter')
   bridge = <<~SWIFT
     WatchPrayerSync.shared.activate()
     if let controller = window?.rootViewController as? FlutterViewController {
@@ -106,11 +106,11 @@ unless app_delegate.include?('com.salawat_quran/watch_sync')
 
   registration = 'GeneratedPluginRegistrant.register(with: self)'
   if app_delegate.include?(registration)
-    app_delegate.sub!(registration, registration + "\\n\\n" + bridge)
+    app_delegate.sub!(registration, registration + "\n\n" + bridge)
   else
     return_marker = 'return super.application(application, didFinishLaunchingWithOptions: launchOptions)'
     abort 'Could not locate a safe AppDelegate launch hook for WatchConnectivity' unless app_delegate.include?(return_marker)
-    app_delegate.sub!(return_marker, bridge + "\\n" + return_marker)
+    app_delegate.sub!(return_marker, bridge + "\n" + return_marker)
   end
   File.write(app_delegate_path, app_delegate)
 end
