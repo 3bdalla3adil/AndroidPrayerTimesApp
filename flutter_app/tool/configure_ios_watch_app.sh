@@ -45,7 +45,7 @@ watch.build_configurations.each do |config|
   settings['SUPPORTED_PLATFORMS'] = 'watchos watchsimulator'
   settings['SDKROOT'] = 'watchos'
   settings['SWIFT_VERSION'] = '5.0'
-  settings['GENERATE_INFOPLIST_FILE'] = 'NO'
+  settings['GENERATE_INFOPLIST_FILE'] = 'YES'
   settings['INFOPLIST_FILE'] = 'WatchApp/Info.plist'
   settings['SKIP_INSTALL'] = 'YES'
   settings['WKWatchKitApp'] = 'YES'
