@@ -44,12 +44,12 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('اتجاه القبلة'), findsWidgets);
 
-    await tester.pageBack();
+    await tester.binding.handlePopRoute();
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('العلامات المرجعية'), findsOneWidget);
 
-    await tester.pageBack();
+    await tester.binding.handlePopRoute();
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('السلام عليكم'), findsOneWidget);
