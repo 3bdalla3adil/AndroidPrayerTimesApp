@@ -10,6 +10,7 @@ import '../services/athan_reminder_service.dart';
 import '../services/prayer_service.dart';
 import '../services/storage_service.dart';
 import '../services/locale_controller.dart';
+import '../services/next_prayer_widget_service.dart';
 import '../theme/app_theme.dart';
 
 class PrayerScreen extends StatefulWidget {
@@ -58,6 +59,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
         _message = null;
       });
       await _athan.sync(refreshLocation: refresh);
+      await NextPrayerWidgetService(_service, StorageService()).refresh();
     } catch (e) {
       if (mounted) {
         setState(() => _message = e.toString().replaceFirst('Bad state: ', ''));
