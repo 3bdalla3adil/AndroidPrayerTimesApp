@@ -146,9 +146,7 @@ private struct NextPrayerWidgetView: View {
         .foregroundStyle(family == .accessoryRectangular ? .white : Color.primary)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .padding(family == .accessoryRectangular ? 2 : 12)
-        .containerBackground(for: .widget) {
-            family == .accessoryRectangular ? Color.clear : Color(red: 0.04, green: 0.16, blue: 0.13)
-        }
+        .background(family == .accessoryRectangular ? Color.clear : Color(red: 0.04, green: 0.16, blue: 0.13))
         .widgetURL(URL(string: "salawatquran://prayer"))
     }
 }
