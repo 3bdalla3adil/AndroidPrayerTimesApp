@@ -7,6 +7,7 @@ test -f ios/Runner/AppDelegate.swift
 
 gem install xcodeproj --no-document
 mkdir -p ios/WatchApp ios/WatchExtension ios/Runner
+cp ios/WatchApp/SalawatWatchApp.swift ios/WatchExtension/SalawatWatchApp.swift
 
 cat > ios/WatchApp/Info.plist <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>
@@ -105,7 +106,7 @@ extension_group.path = 'WatchExtension'
 # containing WatchKit app. This distinction is required by Xcode's watchOS
 # app validation.
 source = extension_group.files.find { |file| file.path == 'SalawatWatchApp.swift' } ||
-         extension_group.new_file('WatchApp/SalawatWatchApp.swift')
+         extension_group.new_file('SalawatWatchApp.swift')
 extension.source_build_phase.add_file_reference(source) unless extension.source_build_phase.files_references.include?(source)
 
 %w[SwiftUI.framework Combine.framework WatchConnectivity.framework].each do |framework|
