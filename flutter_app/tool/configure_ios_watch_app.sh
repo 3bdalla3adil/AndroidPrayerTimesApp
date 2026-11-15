@@ -51,16 +51,19 @@ abort 'Runner target not found' unless runner
 watch_name = 'SalawatWatchApp'
 extension_name = 'SalawatWatchExtension'
 
+# Use Xcodeproj's native watchOS target types from creation time. Creating
+# generic iOS application/extension targets and mutating product_type later
+# leaves Xcode's target platform metadata inconsistent.
 watch = project.targets.find { |target| target.name == watch_name }
-watch ||= project.new_target(:application, watch_name, :watchos, '10.0')
-watch.product_type = 'com.apple.product-type.application.watchapp2'
+watch ||= project.new_target(:watch2_app, watch_name, :watchos, '10.0')
+watch.product_type = Xcodeproj::Constants::PRODUCT_TYPE_UTI[:watch2_app]
 watch.product_name = watch_name
 watch.product_reference.path = "#{watch_name}.app"
 watch.product_reference.name = "#{watch_name}.app"
 
 extension = project.targets.find { |target| target.name == extension_name }
-extension ||= project.new_target(:app_extension, extension_name, :watchos, '10.0')
-extension.product_type = 'com.apple.product-type.watchkit2-extension'
+extension ||= project.new_target(:watch2_extension, extension_name, :watchos, '10.0')
+extension.product_type = Xcodeproj::Constants::PRODUCT_TYPE_UTI[:watch2_extension]
 extension.product_name = extension_name
 extension.product_reference.path = "#{extension_name}.appex"
 extension.product_reference.name = "#{extension_name}.appex"
