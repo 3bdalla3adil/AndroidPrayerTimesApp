@@ -30,6 +30,7 @@ class StorageService {
   static const _tasbihCount = 'tasbih_count';
   static const _tasbihTarget = 'tasbih_target';
   static const _madhab = 'prayer_madhab';
+  static const _nextPrayerWidgetEnabled = 'next_prayer_widget_enabled';
 
   static const _memorizedAyahs = 'quran_memorized_ayahs';
   static const _reviewAyahs = 'quran_memorization_review_ayahs';
@@ -152,6 +153,10 @@ class StorageService {
   Future<void> savePrayerCalculationMethod(int method) => prefs.setInt(_method, method);
   Future<int?> loadPrayerCalculationMethod() => prefs.getInt(_method);
   Future<int> loadPrayerMadhab() async => await prefs.getInt(_madhab) ?? 0;
+  Future<bool> loadNextPrayerWidgetEnabled() async =>
+      await prefs.getBool(_nextPrayerWidgetEnabled) ?? false;
+  Future<void> saveNextPrayerWidgetEnabled(bool enabled) =>
+      prefs.setBool(_nextPrayerWidgetEnabled, enabled);
   Future<void> savePrayerMadhab(int madhab) => prefs.setInt(_madhab, madhab);
   Future<double> loadQuranFontSize() async => await prefs.getDouble(_quranFontSize) ?? 28;
   Future<void> saveQuranLineHeight(double value) => prefs.setDouble(_quranLineHeight, value);
@@ -251,6 +256,45 @@ class StorageService {
       values.add('$name:${minutes.clamp(-120, 120)}');
     }
     await prefs.setStringList(_prayerAdjustments, values);
+  }
+
+  static const _adhkarProgressPrefix = 'daily_adhkar_progress_';
+
+  String _adhkarProgressKey(DateTime date) =>
+      '$_adhkarProgressPrefix${date.year.toString().padLeft(4, '0')}-'
+      '${date.month.toString().padLeft(2, '0')}-'
+      '${date.day.toString().padLeft(2, '0')}';
+
+  Future<Map<String, int>> loadAdhkarProgress({DateTime? date}) async {
+    final values = await prefs.getStringList(
+          _adhkarProgressKey(date ?? DateTime.now()),
+        ) ??
+        const <String>[];
+    final result = <String, int>{};
+    for (final value in values) {
+      final separator = value.lastIndexOf(':');
+      if (separator <= 0) continue;
+      final id = value.substring(0, separator);
+      final count = int.tryParse(value.substring(separator + 1));
+      if (id.isEmpty || count == null || count < 0) continue;
+      result[id] = count;
+    }
+    return result;
+  }
+
+  Future<void> saveAdhkarProgress(
+    Map<String, int> progress, {
+    DateTime? date,
+  }) async {
+    final values = progress.entries
+        .where((entry) => entry.key.isNotEmpty && entry.value > 0)
+        .map((entry) => '${entry.key}:${entry.value}')
+        .toList()
+      ..sort();
+    await prefs.setStringList(
+      _adhkarProgressKey(date ?? DateTime.now()),
+      values,
+    );
   }
 
 

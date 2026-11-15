@@ -74,6 +74,9 @@ jobs:
       - name: Prepare Android project
         run: bash tool/bootstrap_android.sh
 
+      - name: Configure Android next-prayer home-screen widget
+        run: bash tool/configure_android_next_prayer_widget.sh
+
       - name: Install dependencies
         run: flutter pub get
 
@@ -86,7 +89,7 @@ jobs:
       - name: Generate launcher icon and splash screen
         run: |
           dart run flutter_launcher_icons -f flutter_launcher_icons_android.yaml
-          dart run flutter_native_splash:create
+          dart run flutter_native_splash:create --path=flutter_native_splash_android.yaml
 
       - name: Build release APK
         run: flutter build apk --release
@@ -129,6 +132,12 @@ jobs:
       - name: Generate iOS project
         run: flutter create . --platforms=ios --org com.salawat_quran --project-name salawat_quran
 
+      - name: Configure WidgetKit Lock Screen widget
+        run: bash tool/configure_ios_next_prayer_widget.sh
+
+      - name: Configure Apple Watch companion app
+        run: bash tool/configure_ios_watch_app.sh
+
       - name: Disable signing for unsigned iOS CI build
         run: bash tool/disable_ios_signing_for_ci.sh
 
@@ -153,7 +162,7 @@ jobs:
         run: |
           test -f ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-20x20@1x.png
           dart run flutter_launcher_icons -f flutter_launcher_icons_ios.yaml
-          dart run flutter_native_splash:create
+          dart run flutter_native_splash:create --path=flutter_native_splash_ios.yaml
 
       - name: Build iOS app without code signing
         run: flutter build ios --release --no-codesign
