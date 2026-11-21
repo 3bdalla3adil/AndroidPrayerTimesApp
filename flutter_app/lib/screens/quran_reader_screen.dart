@@ -454,6 +454,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
       final memorizedAyahs = await _storage.loadMemorizedAyahs();
       final reviewAyahs = await _storage.loadMemorizationReviewAyahs();
       final lastMarkedAyah = await _storage.loadLastMarkedAyah();
+      final lastReadAyah = await _storage.loadLastReadAyah();
       final shouldRestoreLastPage = widget.startingPage == null &&
           widget.surahNumber == 1 && widget.startingAyah == 1;
       final lastOpenedPage = shouldRestoreLastPage
@@ -506,7 +507,11 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
       final markedSurah = lastMarkedAyah.$1;
       final markedAyah = lastMarkedAyah.$2;
       final markedPage = lastMarkedAyah.$3;
-      if (markedSurah != null && markedAyah != null) {
+      final readSurah = lastReadAyah.$1;
+      final readAyah = lastReadAyah.$2;
+      if (readSurah != null && readAyah != null) {
+        _selectedAyahKey = '$readSurah:$readAyah';
+      } else if (markedSurah != null && markedAyah != null) {
         _selectedAyahKey = '$markedSurah:$markedAyah';
       }
       // Prime both sides of the opening page before the full background warmup.
