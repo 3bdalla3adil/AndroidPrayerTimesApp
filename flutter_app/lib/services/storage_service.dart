@@ -16,6 +16,9 @@ class StorageService {
       'quran_auto_scroll_seconds_per_page';
   static const _quranAyahToolbarEnabled = 'quran_ayah_toolbar_enabled';
   static const _quranLastPage = 'quran_last_opened_page';
+  static const _quranLastReadSurah = 'quran_last_read_surah';
+  static const _quranLastReadAyah = 'quran_last_read_ayah';
+  static const _quranLastReadPage = 'quran_last_read_page';
   static const _quranLastMarkedSurah = 'quran_last_marked_surah';
   static const _quranLastMarkedAyah = 'quran_last_marked_ayah';
   static const _quranLastMarkedPage = 'quran_last_marked_page';
@@ -125,6 +128,20 @@ class StorageService {
 
   Future<void> saveLastQuranPage(int page) =>
       prefs.setInt(_quranLastPage, page.clamp(1, 604).toInt());
+
+  /// Last ayah the reader explicitly interacted with, used by Continue Reading.
+  Future<(int?, int?, int?)> loadLastReadAyah() async => (
+        await prefs.getInt(_quranLastReadSurah),
+        await prefs.getInt(_quranLastReadAyah),
+        await prefs.getInt(_quranLastReadPage),
+      );
+
+  Future<void> saveLastReadAyah({required int surah, required int ayah, required int page}) async {
+    if (surah < 1 || surah > 114 || ayah < 1 || page < 1 || page > 604) return;
+    await prefs.setInt(_quranLastReadSurah, surah);
+    await prefs.setInt(_quranLastReadAyah, ayah);
+    await prefs.setInt(_quranLastReadPage, page);
+  }
 
   /// Last ayah explicitly marked by the reader's long-press action.
   Future<(int?, int?, int?)> loadLastMarkedAyah() async => (

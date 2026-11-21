@@ -43,6 +43,12 @@ PLIST
 
 ruby <<'RUBY'
 require 'xcodeproj'
+require 'yaml'
+
+# Keep the embedded WatchKit bundle versions in lockstep with the Flutter app.
+app_version = YAML.load_file('pubspec.yaml')['version'].to_s
+marketing_version, build_number = app_version.split('+', 2)
+abort "Invalid pubspec version: #{app_version}" if marketing_version.to_s.empty? || build_number.to_s.empty?
 
 project = Xcodeproj::Project.open('ios/Runner.xcodeproj')
 runner = project.targets.find { |target| target.name == 'Runner' }
@@ -80,6 +86,10 @@ watch.build_configurations.each do |config|
   settings['SWIFT_VERSION'] = '5.0'
   settings['GENERATE_INFOPLIST_FILE'] = 'YES'
   settings['INFOPLIST_FILE'] = 'WatchApp/Info.plist'
+  settings['MARKETING_VERSION'] = marketing_version
+  settings['CURRENT_PROJECT_VERSION'] = build_number
+  settings['INFOPLIST_KEY_CFBundleShortVersionString'] = marketing_version
+  settings['INFOPLIST_KEY_CFBundleVersion'] = build_number
   settings['SKIP_INSTALL'] = 'YES'
   settings['WKWatchKitApp'] = 'YES'
 end
@@ -96,6 +106,10 @@ extension.build_configurations.each do |config|
   settings['SWIFT_VERSION'] = '5.0'
   settings['GENERATE_INFOPLIST_FILE'] = 'YES'
   settings['INFOPLIST_FILE'] = 'WatchExtension/Info.plist'
+  settings['MARKETING_VERSION'] = marketing_version
+  settings['CURRENT_PROJECT_VERSION'] = build_number
+  settings['INFOPLIST_KEY_CFBundleShortVersionString'] = marketing_version
+  settings['INFOPLIST_KEY_CFBundleVersion'] = build_number
   settings['SKIP_INSTALL'] = 'YES'
   settings['APPLICATION_EXTENSION_API_ONLY'] = 'YES'
 end

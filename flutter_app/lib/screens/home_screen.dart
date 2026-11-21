@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart' show LinearProgressIndicator;
 import '../core/adaptive_page_scaffold.dart';
 import 'package:intl/intl.dart' hide TextDirection;
+import 'package:quran/quran.dart' as quran;
 import '../models/prayer_entry.dart';
 import '../services/athan_reminder_service.dart';
 import '../services/tahajjud_reminder_service.dart';
@@ -10,6 +12,7 @@ import '../services/storage_service.dart';
 import '../services/app_routes.dart';
 import '../theme/app_theme.dart';
 import '../services/locale_controller.dart';
+import '../services/daily_wird_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -26,6 +29,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _reminders = false;
   bool _tahajjudReminders = false;
   bool _tahajjudLoading = false;
+  DailyWirdPlan? _wirdPlan;
   Timer? _timer;
 
   @override void initState() {
@@ -33,6 +37,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _athan = AthanReminderService(_service, StorageService());
     _tahajjud = TahajjudReminderService(_service, StorageService());
     _load();
+    _loadWirdPlan();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() => _now = DateTime.now());
     });
@@ -55,6 +60,16 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (e) {
       if (mounted) setState(() => _error = e.toString().replaceFirst('Bad state: ', ''));
     }
+  }
+
+  Future<void> _loadWirdPlan() async {
+    final plan = await DailyWirdService().loadToday();
+    if (mounted) setState(() => _wirdPlan = plan);
+  }
+
+  Future<void> _confirmWirdCompletion() async {
+    await DailyWirdService().confirmCompletion();
+    await _loadWirdPlan();
   }
 
   PrayerEntry? get _next {
@@ -98,19 +113,21 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _continueQuran() async {
     final storage = StorageService();
     final lastPage = await storage.loadLastQuranPage();
+    final lastRead = await storage.loadLastReadAyah();
     final markedAyah = await storage.loadLastMarkedAyah();
     if (!mounted) return;
-
-    final surah = markedAyah.$1 ?? 1;
-    final ayah = markedAyah.$2 ?? 1;
+    final surah = lastRead.$1 ?? markedAyah.$1 ?? 1;
+    final ayah = lastRead.$2 ?? markedAyah.$2 ?? 1;
+    final page = lastRead.$3 ?? markedAyah.$3 ?? lastPage;
     await Navigator.of(context).pushNamed(
       AppRoutes.quranReader,
       arguments: QuranReaderRouteArgs(
         surahNumber: surah,
         startingAyah: ayah,
-        startingPage: lastPage,
+        startingPage: page,
       ),
     );
+    await _loadWirdPlan();
   }
 
   void _dialog(String title, String message) => showCupertinoDialog<void>(
@@ -162,7 +179,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     title: Text(LocaleController.isArabic ? 'مواقيت الصلاة غير متاحة' : 'Prayer times unavailable'), subtitle: Text(_error!)),
                 ]),
                 if (next != null) _NextPrayer(prayer: next, now: _now),
-                const SizedBox(height: 22),
+                if (_wirdPlan != null) ...[
+                  _DailyWirdCard(plan: _wirdPlan!, onConfirm: _confirmWirdCompletion),
+                  const SizedBox(height: 22),
+                ],
                 Text(
                   LocaleController.isArabic ? 'استكشف التطبيق' : 'Explore',
                   style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w700),
@@ -382,6 +402,52 @@ class _HomeFeatureGrid extends StatelessWidget {
         row(arabic ? 'الصلاة والقبلة' : 'Prayer & direction', prayer),
         row(arabic ? 'التنبيهات والتخصيص' : 'Alerts & preferences', tools),
       ],
+    );
+  }
+}
+
+
+class _DailyWirdCard extends StatelessWidget {
+  const _DailyWirdCard({required this.plan, required this.onConfirm});
+  final DailyWirdPlan plan;
+  final VoidCallback onConfirm;
+  @override
+  Widget build(BuildContext context) {
+    final arabic = LocaleController.isArabic;
+    final percent = (plan.fraction * 100).round();
+    final unit = switch (plan.unit) {
+      WirdUnit.juz => arabic ? 'جزء' : 'Juz',
+      WirdUnit.hizb => arabic ? 'حزب' : 'Hizb',
+      WirdUnit.ayah => arabic ? 'آية' : 'Ayahs',
+    };
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(color: AppTheme.deepEmerald, borderRadius: BorderRadius.circular(20), border: Border.all(color: AppTheme.antiqueGold.withValues(alpha: .55))),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [const Icon(CupertinoIcons.book_fill, color: AppTheme.antiqueGold), const SizedBox(width: 9),
+          Expanded(child: Text(arabic ? 'وِردك اليومي' : 'Your daily Quran goal', style: const TextStyle(color: CupertinoColors.white, fontSize: 17, fontWeight: FontWeight.w700))),
+          Text(plan.completed ? (arabic ? 'مكتمل' : 'Completed') : '${percent}%', style: const TextStyle(color: AppTheme.antiqueGold, fontWeight: FontWeight.w700)),
+        ]),
+        const SizedBox(height: 12),
+        ClipRRect(borderRadius: BorderRadius.circular(8), child: LinearProgressIndicator(value: plan.fraction.clamp(0.0, 1.0), minHeight: 8, backgroundColor: CupertinoColors.white.withValues(alpha: .18), valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.antiqueGold))),
+        const SizedBox(height: 9),
+        Text('$unit ${plan.amount}  •  ${plan.start.surah}:${plan.start.ayah} – ${plan.end.surah}:${plan.end.ayah}', style: const TextStyle(color: CupertinoColors.white, fontSize: 12)),
+        const SizedBox(height: 5),
+        Text(!plan.hasProgress
+          ? (arabic ? 'اضغط على آخر آية قرأتها لحفظ موضعك' : 'Tap the last ayah you read to save your place')
+          : (arabic ? 'آخر موضع محفوظ: ${quran.getSurahNameArabic(plan.progress.surah)} • ${plan.progress.surah}:${plan.progress.ayah}' : 'Saved at ${quran.getSurahName(plan.progress.surah)} ${plan.progress.surah}:${plan.progress.ayah}'),
+          style: TextStyle(color: CupertinoColors.white.withValues(alpha: .8), fontSize: 12)),
+        if (!plan.completed && plan.fraction >= 1) ...[
+          const SizedBox(height: 8),
+          Align(alignment: AlignmentDirectional.centerEnd, child: CupertinoButton(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            minimumSize: Size.zero,
+            onPressed: onConfirm,
+            child: Text(arabic ? 'تأكيد إكمال الورد' : 'Complete today’s goal',
+              style: const TextStyle(color: AppTheme.antiqueGold, fontWeight: FontWeight.w700)),
+          )),
+        ],
+      ]),
     );
   }
 }
