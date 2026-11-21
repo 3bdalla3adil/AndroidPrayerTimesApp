@@ -249,7 +249,10 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
       if (!mounted || generation != _recitationGeneration) return;
       _recitationPage = _readerPage;
       _recitationQueue = data.verses;
-      _recitationIndex = 0;
+      final lastRead = await _storage.loadLastReadAyah();
+      final savedIndex = _recitationQueue.indexWhere((verse) =>
+          verse.surahNumber == lastRead.$1 && verse.ayahNumber == lastRead.$2);
+      _recitationIndex = savedIndex < 0 ? 0 : savedIndex;
       if (_recitationQueue.isEmpty) return;
       await _playRecitationVerse(generation);
     } catch (_) {
@@ -929,6 +932,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
   void _saveReadingPosition(Verse verse) {
     final page = quran.getPageNumber(verse.surahNumber, verse.ayahNumber);
     unawaited(_storage.saveLastReadAyah(surah: verse.surahNumber, ayah: verse.ayahNumber, page: page));
+    unawaited(_storage.saveLastQuranPage(page));
     unawaited(_dailyWirdService.recordReadThrough(verse.surahNumber, verse.ayahNumber));
   }
 
