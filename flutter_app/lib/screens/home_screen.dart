@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart' show LinearProgressIndicator;
 import '../core/adaptive_page_scaffold.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 import 'package:quran/quran.dart' as quran;
