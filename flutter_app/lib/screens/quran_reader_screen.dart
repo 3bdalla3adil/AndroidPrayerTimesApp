@@ -286,6 +286,8 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
 
   Future<void> _playNextRecitationVerse() async {
     if (!mounted || _recitationQueue.isEmpty) return;
+    // A completed audio clip is a reliable signal that this ayah was heard.
+    _saveReadingPosition(_recitationQueue[_recitationIndex]);
     final generation = _recitationGeneration;
     if (_recitationIndex + 1 >= _recitationQueue.length) {
       // Continue with the next Mushaf page instead of stopping at the end of
@@ -919,9 +921,15 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
     );
   }
 
+  void _saveReadingPosition(Verse verse) {
+    final page = quran.getPageNumber(verse.surahNumber, verse.ayahNumber);
+    unawaited(_storage.saveLastReadAyah(surah: verse.surahNumber, ayah: verse.ayahNumber, page: page));
+    unawaited(_dailyWirdService.recordReadThrough(verse.surahNumber, verse.ayahNumber));
+  }
+
   void _handleAyahTap(Verse verse) {
-    // A normal tap never changes the ayah color or opens the toolbar.
-    // It pauses auto-scroll so the reader can resume from the current position.
+    // Save the exact ayah without changing its appearance or opening the toolbar.
+    _saveReadingPosition(verse);
     if (_autoScrollEnabled) _stopAutoScroll(interruptAnimation: true);
     _removeAyahToolbar();
   }
@@ -935,12 +943,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
       ayah: verse.ayahNumber,
       page: quran.getPageNumber(verse.surahNumber, verse.ayahNumber),
     ));
-    // A deliberate long-press marks the last ayah actually read; merely
-    // scrolling through or opening a page never advances daily-wird progress.
-    unawaited(_dailyWirdService.recordReadThrough(
-      verse.surahNumber,
-      verse.ayahNumber,
-    ));
+    _saveReadingPosition(verse);
     _removeAyahToolbar();
     if (_ayahToolbarEnabled) _showAyahToolbar(verse, globalPosition);
   }
