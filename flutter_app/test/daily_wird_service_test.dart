@@ -21,6 +21,8 @@ void main() {
     expect(plan.end.surah, 2);
     expect(plan.end.ayah, 141);
     expect(plan.totalAyahs, greaterThan(140));
+    expect(plan.completedAyahs, 0);
+    expect(plan.fraction, 0);
   });
 
   test('one hizb uses the canonical boundary and continues at the next hizb', () async {
@@ -56,6 +58,7 @@ void main() {
     await service.recordReadThrough(2, 2);
     plan = await service.loadToday();
     expect(plan.completedAyahs, 9);
+    expect(plan.fraction, closeTo(0.9, 0.0001));
     expect(plan.completed, isFalse);
 
     await service.confirmCompletion();
