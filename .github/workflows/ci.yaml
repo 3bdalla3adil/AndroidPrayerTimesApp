@@ -164,8 +164,27 @@ jobs:
           dart run flutter_launcher_icons -f flutter_launcher_icons_ios.yaml
           dart run flutter_native_splash:create --path=flutter_native_splash_ios.yaml
 
-      - name: Build iOS app without code signing
-        run: flutter build ios --release --no-codesign
+      - name: Generate Flutter iOS build configuration
+        run: flutter build ios --release --no-codesign --config-only
+
+      - name: Build iOS app and Watch companion without code signing
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Do not pass -sdk iphoneos here. Flutter's normal build command
+          # forces that SDK on every target, including the embedded watchOS
+          # app and extension. A generic iOS destination lets Xcode select
+          # iphoneos for Runner and watchos for the WatchKit dependencies.
+          xcodebuild \
+            -workspace ios/Runner.xcworkspace \
+            -scheme Runner \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build/ios/DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build
 
       - name: Ensure iOS notification sounds are in the app bundle
         run: |
