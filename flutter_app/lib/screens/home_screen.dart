@@ -67,6 +67,11 @@ class _HomeScreenState extends State<HomeScreen> {
     if (mounted) setState(() => _wirdPlan = plan);
   }
 
+  Future<void> _confirmWirdCompletion() async {
+    await DailyWirdService().confirmCompletion();
+    await _loadWirdPlan();
+  }
+
   PrayerEntry? get _next {
     for (final p in _prayers) { if (p.time.isAfter(_now)) return p; }
     return null;
@@ -175,7 +180,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ]),
                 if (next != null) _NextPrayer(prayer: next, now: _now),
                 if (_wirdPlan != null) ...[
-                  _DailyWirdCard(plan: _wirdPlan!),
+                  _DailyWirdCard(plan: _wirdPlan!, onConfirm: _confirmWirdCompletion),
                   const SizedBox(height: 22),
                 ],
                 Text(
@@ -403,8 +408,9 @@ class _HomeFeatureGrid extends StatelessWidget {
 
 
 class _DailyWirdCard extends StatelessWidget {
-  const _DailyWirdCard({required this.plan});
+  const _DailyWirdCard({required this.plan, required this.onConfirm});
   final DailyWirdPlan plan;
+  final VoidCallback onConfirm;
   @override
   Widget build(BuildContext context) {
     final arabic = LocaleController.isArabic;
@@ -431,6 +437,16 @@ class _DailyWirdCard extends StatelessWidget {
           ? (arabic ? 'اضغط على آخر آية قرأتها لحفظ موضعك' : 'Tap the last ayah you read to save your place')
           : (arabic ? 'آخر موضع محفوظ: ${quran.getSurahNameArabic(plan.progress.surah)} • ${plan.progress.surah}:${plan.progress.ayah}' : 'Saved at ${quran.getSurahName(plan.progress.surah)} ${plan.progress.surah}:${plan.progress.ayah}'),
           style: TextStyle(color: CupertinoColors.white.withValues(alpha: .8), fontSize: 12)),
+        if (!plan.completed && plan.fraction >= 1) ...[
+          const SizedBox(height: 8),
+          Align(alignment: AlignmentDirectional.centerEnd, child: CupertinoButton(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            minimumSize: Size.zero,
+            onPressed: onConfirm,
+            child: Text(arabic ? 'تأكيد إكمال الورد' : 'Complete today’s goal',
+              style: const TextStyle(color: AppTheme.antiqueGold, fontWeight: FontWeight.w700)),
+          )),
+        ],
       ]),
     );
   }
