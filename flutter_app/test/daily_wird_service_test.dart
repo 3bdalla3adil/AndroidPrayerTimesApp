@@ -25,6 +25,17 @@ void main() {
     expect(plan.fraction, 0);
   });
 
+  test('the first ayah read is counted as progress', () async {
+    final service = DailyWirdService();
+    final before = await service.loadToday();
+    expect(before.completedAyahs, 0);
+
+    await service.recordReadThrough(1, 1);
+    final after = await service.loadToday();
+    expect(after.completedAyahs, 1);
+    expect(after.fraction, greaterThan(0));
+  });
+
   test('one hizb uses the canonical boundary and continues at the next hizb', () async {
     final service = DailyWirdService();
     await service.saveSettings(WirdUnit.hizb, 1);
