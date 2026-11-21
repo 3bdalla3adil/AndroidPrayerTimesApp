@@ -190,6 +190,10 @@ jobs:
         run: |
           set -euo pipefail
           APP_PATH="build/ios/iphoneos/Runner.app"
+          if [ ! -d "$APP_PATH" ]; then
+            APP_PATH="$(find build/ios -type d -path '*/Build/Products/Release-iphoneos/Runner.app' -print -quit)"
+          fi
+          test -n "$APP_PATH"
           test -d "$APP_PATH"
           for sound in azan azan_madinah azan_dubai azan_fajr_madinah azan_fajr_makkah; do
             SOURCE="ios/Runner/$sound.wav"
