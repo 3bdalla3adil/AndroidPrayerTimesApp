@@ -427,7 +427,10 @@ class _DailyWirdCard extends StatelessWidget {
         const SizedBox(height: 9),
         Text('$unit ${plan.amount}  •  ${plan.start.surah}:${plan.start.ayah} – ${plan.end.surah}:${plan.end.ayah}', style: const TextStyle(color: CupertinoColors.white, fontSize: 12)),
         const SizedBox(height: 5),
-        Text(arabic ? 'آخر موضع محفوظ: ${quran.getSurahNameArabic(plan.progress.surah)} • ${plan.progress.surah}:${plan.progress.ayah}' : 'Progress saved at ${quran.getSurahName(plan.progress.surah)} ${plan.progress.surah}:${plan.progress.ayah}', style: TextStyle(color: CupertinoColors.white.withValues(alpha: .8), fontSize: 12)),
+        Text(!plan.hasProgress
+          ? (arabic ? 'اضغط على آخر آية قرأتها لحفظ موضعك' : 'Tap the last ayah you read to save your place')
+          : (arabic ? 'آخر موضع محفوظ: ${quran.getSurahNameArabic(plan.progress.surah)} • ${plan.progress.surah}:${plan.progress.ayah}' : 'Saved at ${quran.getSurahName(plan.progress.surah)} ${plan.progress.surah}:${plan.progress.ayah}'),
+          style: TextStyle(color: CupertinoColors.white.withValues(alpha: .8), fontSize: 12)),
       ]),
     );
   }
