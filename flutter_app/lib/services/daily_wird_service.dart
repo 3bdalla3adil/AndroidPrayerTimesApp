@@ -21,6 +21,7 @@ class DailyWirdPlan {
     required this.start,
     required this.end,
     required this.progress,
+    required this.hasProgress,
     required this.completed,
     required this.dateKey,
   });
@@ -29,12 +30,14 @@ class DailyWirdPlan {
   final WirdPosition start;
   final WirdPosition end;
   final WirdPosition progress;
+  final bool hasProgress;
   final bool completed;
   final String dateKey;
 
   int get totalAyahs => _global(end) - _global(start) + 1;
-  int get completedAyahs =>
-      (_global(progress) - _global(start) + 1).clamp(0, totalAyahs).toInt();
+  int get completedAyahs => !hasProgress
+      ? 0
+      : (_global(progress) - _global(start) + 1).clamp(0, totalAyahs).toInt();
   double get fraction => totalAyahs == 0 ? 0 : completedAyahs / totalAyahs;
 
   static int _global(WirdPosition p) {
@@ -57,6 +60,7 @@ class DailyWirdService {
   static const _nextAyahKey = 'daily_wird_next_ayah';
   static const _completedDateKey = 'daily_wird_completed_date';
   static const _progressKey = 'daily_wird_progress';
+  static const _hasProgressKey = 'daily_wird_has_progress';
   static const _historyKey = 'daily_wird_history';
   static const _completedEndSurahKey = 'daily_wird_completed_end_surah';
   static const _completedEndAyahKey = 'daily_wird_completed_end_ayah';
@@ -118,6 +122,7 @@ class DailyWirdService {
       await _prefs.setString('daily_wird_plan_start', jsonEncode(start.toJson()));
       await _prefs.setInt(_progressKey + '_surah', start.surah);
       await _prefs.setInt(_progressKey + '_ayah', start.ayah);
+      await _prefs.setBool(_hasProgressKey, false);
     }
     final end = isCompleted
         ? WirdPosition(
@@ -138,12 +143,14 @@ class DailyWirdService {
         .clamp(1, 114).toInt();
     final progressAyah = (await _prefs.getInt(_progressKey + '_ayah') ?? start.ayah)
         .clamp(1, quran.getVerseCount(progressSurah)).toInt();
+    final hasProgress = isCompleted || (await _prefs.getBool(_hasProgressKey) ?? false);
     return DailyWirdPlan(
       unit: unit,
       amount: amount,
       start: start,
       end: actualEnd,
       progress: WirdPosition(progressSurah, progressAyah),
+      hasProgress: hasProgress,
       completed: isCompleted,
       dateKey: date,
     );
@@ -162,10 +169,11 @@ class DailyWirdService {
         .clamp(1, 114).toInt();
     final oldAyah = (await _prefs.getInt(_progressKey + '_ayah') ?? plan.start.ayah)
         .clamp(1, quran.getVerseCount(oldSurah)).toInt();
-    if (effective <= _global(WirdPosition(oldSurah, oldAyah))) return;
+    if (plan.hasProgress && effective <= _global(WirdPosition(oldSurah, oldAyah))) return;
     final position = _fromGlobal(effective);
     await _prefs.setInt(_progressKey + '_surah', position.surah);
     await _prefs.setInt(_progressKey + '_ayah', position.ayah);
+    await _prefs.setBool(_hasProgressKey, true);
   }
 
   Future<void> confirmCompletion() async {
@@ -183,6 +191,7 @@ class DailyWirdService {
     await _prefs.setInt(_nextAyahKey, next.ayah);
     await _prefs.setInt(_progressKey + '_surah', plan.end.surah);
     await _prefs.setInt(_progressKey + '_ayah', plan.end.ayah);
+    await _prefs.setBool(_hasProgressKey, true);
     final history = await _prefs.getStringList(_historyKey) ?? <String>[];
     if (!history.contains(plan.dateKey)) {
       history.add(plan.dateKey);
