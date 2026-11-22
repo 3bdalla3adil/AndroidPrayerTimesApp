@@ -2,8 +2,12 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' as material;
 
+import '../theme/app_theme.dart';
+import '../theme/islamic_page_background.dart';
+
 /// Platform-aware page shell. iOS keeps native Cupertino navigation; Android
-/// gets a Material Scaffold and AppBar while preserving each screen's content.
+/// gets a Material Scaffold. Both share the same page surface and subtle
+/// Islamic geometric background treatment.
 class AdaptivePageScaffold extends StatelessWidget {
   const AdaptivePageScaffold({
     super.key,
@@ -22,13 +26,16 @@ class AdaptivePageScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final pageBackground = backgroundColor ?? AppTheme.groupedBackground;
+    final pageContent = IslamicPageBackground(child: child);
+
     if (_isIOS) {
       return CupertinoPageScaffold(
         navigationBar: navigationBar is ObstructingPreferredSizeWidget
             ? navigationBar as ObstructingPreferredSizeWidget
             : null,
-        backgroundColor: backgroundColor,
-        child: child,
+        backgroundColor: pageBackground,
+        child: pageContent,
       );
     }
 
@@ -49,9 +56,9 @@ class AdaptivePageScaffold extends StatelessWidget {
 
     return material.Scaffold(
       appBar: appBar,
-      backgroundColor: backgroundColor ?? const Color(0xFFF5F3EA),
+      backgroundColor: pageBackground,
       resizeToAvoidBottomInset: resizeToAvoidBottomInset,
-      body: child,
+      body: pageContent,
     );
   }
 }
