@@ -243,6 +243,13 @@ class SalawatQuranApp extends StatelessWidget {
             title: locale.languageCode == 'ar' ? 'صلوات' : 'Salawat',
             debugShowCheckedModeBanner: false,
             theme: AppTheme.data,
+            builder: (context, child) => IconTheme(
+              data: IconThemeData(
+                color: AppTheme.iconTint.resolveFrom(context),
+                size: 22,
+              ),
+              child: child ?? const SizedBox.shrink(),
+            ),
             locale: locale,
             localizationsDelegates: const [
               GlobalCupertinoLocalizations.delegate,
