@@ -120,10 +120,10 @@ private struct NextPrayerWidgetView: View {
                 }
             }
         }
-        .foregroundStyle(family == .accessoryRectangular ? .white : Color.primary)
+        .foregroundStyle(family == .accessoryRectangular ? Color(red: 0.96, green: 0.94, blue: 0.88) : Color.primary)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .padding(family == .accessoryRectangular ? 2 : 12)
-        .background(family == .accessoryRectangular ? Color.clear : Color(red: 0.04, green: 0.16, blue: 0.13))
+        .background(family == .accessoryRectangular ? Color.clear : Color(red: 0.027, green: 0.122, blue: 0.102))
     }
 }
 
