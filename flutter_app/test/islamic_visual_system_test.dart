@@ -10,7 +10,7 @@ void main() {
       final theme = AppTheme.materialData;
       expect(theme.colorScheme.primary, AppTheme.deepEmerald);
       expect(theme.colorScheme.secondary, AppTheme.antiqueGold);
-      expect(theme.scaffoldBackgroundColor, AppTheme.groupedBackground);
+      expect(theme.iconTheme.color, AppTheme.deepEmerald);
     });
 
     testWidgets('page background paints a decorative layer behind content',
