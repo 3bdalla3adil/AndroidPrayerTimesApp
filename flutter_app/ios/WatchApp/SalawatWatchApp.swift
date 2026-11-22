@@ -95,7 +95,7 @@ private struct NextPrayerView: View {
                 } else {
                     Image(systemName: "moon.stars.fill")
                         .font(.title2)
-                        .foregroundStyle(.green)
+                        .foregroundStyle(Color(red: 0.78, green: 0.64, blue: 0.35))
                     Text(store.isArabic ? "افتح التطبيق للمزامنة" : "Open iPhone app to sync")
                         .font(.caption)
                         .multilineTextAlignment(.center)
