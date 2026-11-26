@@ -19,6 +19,42 @@ class AppTheme {
   static const darkCard = Color(0xFF15372E);
   static const darkText = Color(0xFFF4F0E5);
 
+  // Shared layout scale. Screens should use these values instead of inventing
+  // local spacing and corner radii.
+  static const space1 = 4.0;
+  static const space2 = 8.0;
+  static const space3 = 12.0;
+  static const space4 = 16.0;
+  static const space5 = 20.0;
+  static const space6 = 24.0;
+  static const space7 = 32.0;
+
+  static const radiusSmall = 12.0;
+  static const radiusControl = 14.0;
+  static const radiusCard = 20.0;
+  static const radiusHero = 28.0;
+
+  static const screenPadding = EdgeInsets.all(space4);
+  static const sectionSpacing = SizedBox(height: space6);
+  static const cardPadding = EdgeInsets.all(space4);
+
+  static const headingStyle = TextStyle(
+    fontSize: 22,
+    height: 1.25,
+    fontWeight: FontWeight.w700,
+    color: midnightGreen,
+  );
+  static const bodyStyle = TextStyle(
+    fontSize: 16,
+    height: 1.5,
+    color: midnightGreen,
+  );
+  static const supportingStyle = TextStyle(
+    fontSize: 13,
+    height: 1.4,
+    color: Color(0xFF68756E),
+  );
+
   static const groupedBackground = CupertinoDynamicColor.withBrightness(
     color: Color(0xFFF5F2E9),
     darkColor: midnightGreen,
@@ -57,6 +93,29 @@ class AppTheme {
           surface: warmIvory,
           onSurface: midnightGreen,
         ),
+        visualDensity: material.VisualDensity.standard,
+        textTheme: const material.TextTheme(
+          headlineSmall: headingStyle,
+          titleLarge: TextStyle(
+            fontSize: 20,
+            height: 1.3,
+            fontWeight: FontWeight.w700,
+            color: midnightGreen,
+          ),
+          titleMedium: TextStyle(
+            fontSize: 16,
+            height: 1.35,
+            fontWeight: FontWeight.w600,
+            color: midnightGreen,
+          ),
+          bodyLarge: bodyStyle,
+          bodyMedium: TextStyle(
+            fontSize: 14,
+            height: 1.45,
+            color: midnightGreen,
+          ),
+          bodySmall: supportingStyle,
+        ),
         iconTheme: const material.IconThemeData(color: deepEmerald, size: 22),
         primaryIconTheme: const material.IconThemeData(color: warmIvory, size: 22),
         appBarTheme: const material.AppBarTheme(
@@ -91,6 +150,45 @@ class AppTheme {
           thickness: 0.7,
           space: 1,
         ),
+        inputDecorationTheme: material.InputDecorationTheme(
+          filled: true,
+          fillColor: cardBackground,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: space4,
+            vertical: space3,
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(radiusControl),
+            borderSide: const BorderSide(color: Color(0x33176B52)),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(radiusControl),
+            borderSide: const BorderSide(color: Color(0x33176B52)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(radiusControl),
+            borderSide: const BorderSide(color: deepEmerald, width: 1.5),
+          ),
+        ),
+        outlinedButtonTheme: material.OutlinedButtonThemeData(
+          style: material.OutlinedButton.styleFrom(
+            foregroundColor: deepEmerald,
+            minimumSize: const Size(48, 48),
+            side: const BorderSide(color: Color(0x55176B52)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(radiusControl),
+            ),
+          ),
+        ),
+        textButtonTheme: material.TextButtonThemeData(
+          style: material.TextButton.styleFrom(
+            foregroundColor: deepEmerald,
+            minimumSize: const Size(44, 44),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(radiusControl),
+            ),
+          ),
+        ),
         filledButtonTheme: material.FilledButtonThemeData(
           style: material.FilledButton.styleFrom(
             backgroundColor: deepEmerald,
@@ -114,6 +212,33 @@ class AppTheme {
           onSecondary: midnightGreen,
           surface: darkSurface,
           onSurface: darkText,
+        ),
+        textTheme: const material.TextTheme(
+          headlineSmall: TextStyle(
+            fontSize: 22,
+            height: 1.25,
+            fontWeight: FontWeight.w700,
+            color: darkText,
+          ),
+          titleLarge: TextStyle(
+            fontSize: 20,
+            height: 1.3,
+            fontWeight: FontWeight.w700,
+            color: darkText,
+          ),
+          titleMedium: TextStyle(
+            fontSize: 16,
+            height: 1.35,
+            fontWeight: FontWeight.w600,
+            color: darkText,
+          ),
+          bodyLarge: TextStyle(fontSize: 16, height: 1.5, color: darkText),
+          bodyMedium: TextStyle(fontSize: 14, height: 1.45, color: darkText),
+          bodySmall: TextStyle(
+            fontSize: 13,
+            height: 1.4,
+            color: Color(0xFFB8C6BE),
+          ),
         ),
         iconTheme: const material.IconThemeData(
           color: Color(0xFFD8C18A),
@@ -151,10 +276,50 @@ class AppTheme {
           thickness: 0.7,
           space: 1,
         ),
+        inputDecorationTheme: material.InputDecorationTheme(
+          filled: true,
+          fillColor: darkCard,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: space4,
+            vertical: space3,
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(radiusControl),
+            borderSide: const BorderSide(color: Color(0x55D8C18A)),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(radiusControl),
+            borderSide: const BorderSide(color: Color(0x55D8C18A)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(radiusControl),
+            borderSide: const BorderSide(color: Color(0xFFD8C18A), width: 1.5),
+          ),
+        ),
+        outlinedButtonTheme: material.OutlinedButtonThemeData(
+          style: material.OutlinedButton.styleFrom(
+            foregroundColor: Color(0xFFD8C18A),
+            minimumSize: const Size(48, 48),
+            side: const BorderSide(color: Color(0x55D8C18A)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(radiusControl),
+            ),
+          ),
+        ),
+        textButtonTheme: material.TextButtonThemeData(
+          style: material.TextButton.styleFrom(
+            foregroundColor: Color(0xFFD8C18A),
+            minimumSize: const Size(44, 44),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(radiusControl),
+            ),
+          ),
+        ),
       );
 
   static CupertinoThemeData get data => const CupertinoThemeData(
         primaryColor: emerald,
+        primaryContrastingColor: warmIvory,
         scaffoldBackgroundColor: groupedBackground,
         barBackgroundColor: barBackground,
         textTheme: CupertinoTextThemeData(
