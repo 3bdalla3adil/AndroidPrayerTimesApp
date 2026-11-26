@@ -3,6 +3,7 @@ import '../core/adaptive_page_scaffold.dart';
 
 import '../services/app_routes.dart';
 import '../services/locale_controller.dart';
+import '../theme/app_theme.dart';
 
 
 class MoreScreen extends StatelessWidget {
@@ -93,7 +94,7 @@ class MoreScreen extends StatelessWidget {
               header: Text(LocaleController.isArabic ? 'كلمة امتنان' : 'A NOTE OF GRATITUDE'),
               children: [
                 CupertinoListTile(
-                  leading: const Icon(CupertinoIcons.gift, color: Color(0xFFC7A45A)),
+                  leading: const Icon(CupertinoIcons.gift, color: AppTheme.antiqueGold),
                   title: Text(LocaleController.isArabic ? 'إهداء وتقدير' : 'A Gift of Gratitude'),
                   subtitle: Text(LocaleController.isArabic ? 'كلمات تقدير واحترام لوالد زوجتي العزيز' : 'A heartfelt dedication to my dear father-in-law'),
                   trailing: const CupertinoListTileChevron(),
