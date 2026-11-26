@@ -268,6 +268,27 @@ class SalawatQuranApp extends StatelessWidget {
           theme: AppTheme.materialData,
           darkTheme: AppTheme.materialDarkData,
           themeMode: material.ThemeMode.system,
+          // The screens intentionally use Cupertino controls on both
+          // platforms. Bridge the active Material brightness and Salawat
+          // palette into Cupertino so Android never falls back to iOS blue.
+          builder: (context, child) {
+            final isDark =
+                material.Theme.of(context).brightness == material.Brightness.dark;
+            return CupertinoTheme(
+              data: AppTheme.data.copyWith(
+                brightness: isDark ? Brightness.dark : Brightness.light,
+              ),
+              child: IconTheme(
+                data: IconThemeData(
+                  color: isDark
+                      ? const Color(0xFFD8C18A)
+                      : AppTheme.deepEmerald,
+                  size: 22,
+                ),
+                child: child ?? const SizedBox.shrink(),
+              ),
+            );
+          },
           locale: locale,
           localizationsDelegates: const [
             GlobalMaterialLocalizations.delegate,
