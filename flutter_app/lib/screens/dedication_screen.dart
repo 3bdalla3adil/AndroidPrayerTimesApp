@@ -29,13 +29,13 @@ class _DedicationScreenState extends State<DedicationScreen>
   Widget build(BuildContext context) {
     final isArabic = LocaleController.isArabic;
     return AdaptivePageScaffold(
-      backgroundColor: const Color(0xFF071F1A),
+      backgroundColor: AppTheme.midnightGreen,
       navigationBar: CupertinoNavigationBar(
-        backgroundColor: const Color(0xEE071F1A),
+        backgroundColor: AppTheme.midnightGreen.withValues(alpha: 0.93),
         border: null,
         middle: Text(
           isArabic ? 'إهداء وتقدير' : 'A Gift of Gratitude',
-          style: const TextStyle(color: Color(0xFFF7E8BD)),
+          style: const TextStyle(color: AppTheme.goldHighlight),
         ),
         previousPageTitle: isArabic ? 'المزيد' : 'More',
       ),
@@ -55,7 +55,7 @@ class _DedicationScreenState extends State<DedicationScreen>
               isArabic ? 'كلمات من القلب' : 'A Note from the Heart',
               textAlign: TextAlign.center,
               style: const TextStyle(
-                color: Color(0xFFF7E8BD),
+                color: AppTheme.goldHighlight,
                 fontSize: 25,
                 fontWeight: FontWeight.w700,
                 height: 1.3,
@@ -68,7 +68,7 @@ class _DedicationScreenState extends State<DedicationScreen>
                   : 'A humble dedication, offered with sincere respect and gratitude',
               textAlign: TextAlign.center,
               style: const TextStyle(
-                color: Color(0xFFD2C8AF),
+                color: AppTheme.warmMuted,
                 fontSize: 14,
                 height: 1.6,
               ),
@@ -100,9 +100,9 @@ class _DedicationScreenState extends State<DedicationScreen>
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      Color(0xFF1C5948),
-                      Color(0xFF103C32),
-                      Color(0xFF0C2C25),
+                      AppTheme.emeraldLight,
+                      AppTheme.deepEmerald,
+                      AppTheme.darkSurface,
                     ],
                   ),
                   borderRadius: BorderRadius.circular(28),
@@ -121,7 +121,7 @@ class _DedicationScreenState extends State<DedicationScreen>
                           : 'To my dear father-in-law, and the cherished father of my beloved,',
                       textAlign: TextAlign.center,
                       style: const TextStyle(
-                        color: Color(0xFFFFE7A3),
+                        color: AppTheme.goldHighlight,
                         fontSize: 21,
                         fontWeight: FontWeight.w700,
                         height: 1.7,
@@ -136,7 +136,7 @@ class _DedicationScreenState extends State<DedicationScreen>
                       textDirection:
                           isArabic ? TextDirection.rtl : TextDirection.ltr,
                       style: const TextStyle(
-                        color: Color(0xFFF5F0E4),
+                        color: AppTheme.warmIvory,
                         fontSize: 17,
                         height: 2.0,
                         letterSpacing: 0.05,
@@ -155,7 +155,7 @@ class _DedicationScreenState extends State<DedicationScreen>
                       isArabic ? 'بكل احترام وامتنان' : 'With respect and gratitude',
                       textAlign: TextAlign.center,
                       style: const TextStyle(
-                        color: Color(0xFFFFE7A3),
+                        color: AppTheme.goldHighlight,
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
                         letterSpacing: 0.3,
@@ -172,7 +172,7 @@ class _DedicationScreenState extends State<DedicationScreen>
                   : 'May Allah protect him, bless him, and reward him with goodness.',
               textAlign: TextAlign.center,
               style: const TextStyle(
-                color: Color(0xFFD2C8AF),
+                color: AppTheme.warmMuted,
                 fontSize: 14,
                 height: 1.8,
                 fontStyle: FontStyle.italic,
