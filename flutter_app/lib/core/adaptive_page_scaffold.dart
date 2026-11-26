@@ -26,7 +26,9 @@ class AdaptivePageScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final pageBackground = backgroundColor ?? AppTheme.groupedBackground;
+    final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
+    final pageBackground = backgroundColor ??
+        (isDark ? AppTheme.midnightGreen : const Color(0xFFF5F2E9));
     final pageContent = IslamicPageBackground(child: child);
 
     if (_isIOS) {
