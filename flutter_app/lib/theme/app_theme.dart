@@ -13,6 +13,8 @@ class AppTheme {
   static const emeraldLight = Color(0xFF2E8065);
   static const softMint = Color(0xFFE8F3ED);
   static const antiqueGold = Color(0xFFC7A45A);
+  static const goldHighlight = Color(0xFFF7E8BD);
+  static const warmMuted = Color(0xFFD2C8AF);
   static const warmIvory = Color(0xFFFAF8F1);
   static const parchment = Color(0xFFF2EBDD);
   static const darkSurface = Color(0xFF102B24);
