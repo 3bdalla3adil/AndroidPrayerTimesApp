@@ -110,7 +110,7 @@ class _DailyWirdScreenState extends State<DailyWirdScreen> {
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: const AppTheme.deepEmerald,
+                      color: AppTheme.deepEmerald,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Column(
