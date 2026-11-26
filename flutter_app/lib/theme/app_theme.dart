@@ -159,15 +159,15 @@ class AppTheme {
             horizontal: space4,
             vertical: space3,
           ),
-          border: OutlineInputBorder(
+          border: material.OutlineInputBorder(
             borderRadius: BorderRadius.circular(radiusControl),
             borderSide: const BorderSide(color: Color(0x33176B52)),
           ),
-          enabledBorder: OutlineInputBorder(
+          enabledBorder: material.OutlineInputBorder(
             borderRadius: BorderRadius.circular(radiusControl),
             borderSide: const BorderSide(color: Color(0x33176B52)),
           ),
-          focusedBorder: OutlineInputBorder(
+          focusedBorder: material.OutlineInputBorder(
             borderRadius: BorderRadius.circular(radiusControl),
             borderSide: const BorderSide(color: deepEmerald, width: 1.5),
           ),
@@ -285,15 +285,15 @@ class AppTheme {
             horizontal: space4,
             vertical: space3,
           ),
-          border: OutlineInputBorder(
+          border: material.OutlineInputBorder(
             borderRadius: BorderRadius.circular(radiusControl),
             borderSide: const BorderSide(color: Color(0x55D8C18A)),
           ),
-          enabledBorder: OutlineInputBorder(
+          enabledBorder: material.OutlineInputBorder(
             borderRadius: BorderRadius.circular(radiusControl),
             borderSide: const BorderSide(color: Color(0x55D8C18A)),
           ),
-          focusedBorder: OutlineInputBorder(
+          focusedBorder: material.OutlineInputBorder(
             borderRadius: BorderRadius.circular(radiusControl),
             borderSide: const BorderSide(color: Color(0xFFD8C18A), width: 1.5),
           ),
