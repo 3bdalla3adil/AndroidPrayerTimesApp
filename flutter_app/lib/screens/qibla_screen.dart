@@ -99,7 +99,7 @@ class _QiblaScreenState extends State<QiblaScreen> {
                       end: Alignment.bottomRight,
                       colors: [
                         accent,
-                        Color.lerp(accent, const Color(0xFF073D35), .58)!,
+                        Color.lerp(accent, AppTheme.deepEmerald, .58)!,
                       ],
                     ),
                     boxShadow: [
@@ -326,7 +326,7 @@ class _QiblaScreenState extends State<QiblaScreen> {
                                           outline: isDark
                                               ? CupertinoColors.white
                                                   .withValues(alpha: .9)
-                                              : const Color(0xFF164A3A),
+                                              : AppTheme.deepEmerald,
                                         ),
                                       ),
                                     ),
