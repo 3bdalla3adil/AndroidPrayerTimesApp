@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import '../theme/app_theme.dart';
 import 'package:flutter/material.dart' as material;
 import 'package:quran/quran.dart' as quran;
 
@@ -242,9 +243,9 @@ class _QuranMemorizationScreenState extends State<QuranMemorizationScreen> {
     final rangeCount = _endAyah - _startAyah + 1;
     final verseText = quran.getVerse(_surah, _currentAyah);
     final statusColor = _isMemorized
-        ? const Color(0xFF18794E)
+        ? AppTheme.emerald
         : _needsReview
-            ? const Color(0xFFB7791F)
+            ? AppTheme.antiqueGold
             : CupertinoColors.secondaryLabel.resolveFrom(context);
 
     return AdaptivePageScaffold(
@@ -261,7 +262,7 @@ class _QuranMemorizationScreenState extends State<QuranMemorizationScreen> {
                     padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [Color(0xFF104B3D), Color(0xFF071F1A)],
+                        colors: [AppTheme.deepEmerald, AppTheme.midnightGreen],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
@@ -272,7 +273,7 @@ class _QuranMemorizationScreenState extends State<QuranMemorizationScreen> {
                       children: [
                         Text(
                           _arabic ? 'خطوة صغيرة كل يوم' : 'A little every day',
-                          style: const TextStyle(color: Color(0xFFFFE7A3), fontSize: 22, fontWeight: FontWeight.w700),
+                          style: const TextStyle(color: AppTheme.goldHighlight, fontSize: 22, fontWeight: FontWeight.w700),
                         ),
                         const SizedBox(height: 8),
                         Text(
@@ -287,14 +288,14 @@ class _QuranMemorizationScreenState extends State<QuranMemorizationScreen> {
                           child: material.LinearProgressIndicator(
                             value: (_memorized.length / 6236).clamp(0.0, 1.0),
                             minHeight: 7,
-                            backgroundColor: const Color(0xFF47675C),
-                            valueColor: const material.AlwaysStoppedAnimation<Color>(Color(0xFFFFE7A3)),
+                            backgroundColor: AppTheme.mutedText,
+                            valueColor: const material.AlwaysStoppedAnimation<Color>(AppTheme.goldHighlight),
                           ),
                         ),
                         const SizedBox(height: 5),
                         Text(
                           '${((_memorized.length / 6236) * 100).toStringAsFixed(1)}% ${_arabic ? 'من آيات القرآن' : 'of Quran ayahs'}',
-                          style: const TextStyle(color: Color(0xFFD6E3DB), fontSize: 12),
+                          style: const TextStyle(color: AppTheme.softMint, fontSize: 12),
                         ),
                       ],
                     ),
@@ -351,7 +352,7 @@ class _QuranMemorizationScreenState extends State<QuranMemorizationScreen> {
                             verseText,
                             textDirection: TextDirection.rtl,
                             textAlign: TextAlign.center,
-                            style: const TextStyle(fontFamily: 'KFGQPC HAFS Uthmanic Script', fontSize: 28, height: 2, color: Color(0xFF176B52)),
+                            style: const TextStyle(fontFamily: 'KFGQPC HAFS Uthmanic Script', fontSize: 28, height: 2, color: AppTheme.emerald),
                           )
                         else
                           Column(
