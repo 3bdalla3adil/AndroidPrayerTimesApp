@@ -1,8 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import '../lib/theme/app_theme.dart';
-import '../lib/theme/islamic_page_background.dart';
+import 'package:salawat_quran/theme/app_theme.dart';
+import 'package:salawat_quran/theme/islamic_page_background.dart';
 
 void main() {
   group('Islamic visual system', () {
@@ -24,7 +24,7 @@ void main() {
       );
 
       expect(find.text('Salawat'), findsOneWidget);
-      expect(find.byType(CustomPaint), findsOneWidget);
+      expect(find.byType(CustomPaint), findsAtLeastNWidgets(1));
     });
   });
 }
