@@ -18,6 +18,7 @@ class MoreScreen extends StatelessWidget {
       final groups = <(String, List<(IconData, String, String, String)>)>[
         (arabic ? 'مساحتك' : 'Your space', [
           (material.Icons.bookmark_outline, arabic ? 'العلامات المرجعية' : 'Bookmarks', arabic ? 'الآيات المحفوظة' : 'Saved Quran ayahs', AppRoutes.bookmarks),
+          (material.Icons.explore_outlined, arabic ? 'القبلة' : 'Qibla', arabic ? 'اتجاه مكة' : 'Direction to Makkah', AppRoutes.qibla),
           (material.Icons.menu_book_rounded, arabic ? 'الورد اليومي' : 'Daily Quran wird', arabic ? 'هدف قراءة متتابع وختمة منظمة' : 'A continuous daily Quran reading plan', AppRoutes.dailyWird),
           (material.Icons.school_outlined, arabic ? 'حفظ القرآن' : 'Quran memorization', arabic ? 'حفظ الآيات وتتبع المراجعة دون إنترنت' : 'Practice ayahs and track revision offline', AppRoutes.quranMemorization),
           (material.Icons.auto_awesome, arabic ? 'التسبيح' : 'Tasbih', arabic ? 'عداد ذكر يعمل دون إنترنت' : 'Offline dhikr counter', AppRoutes.tasbih),
@@ -26,7 +27,6 @@ class MoreScreen extends StatelessWidget {
           (material.Icons.calendar_month_outlined, arabic ? 'التقويم' : 'Calendar', arabic ? 'التاريخ الميلادي والهجري التقريبي' : 'Gregorian and approximate Hijri date', AppRoutes.calendar),
         ]),
         (arabic ? 'الأدوات' : 'Tools', [
-          (material.Icons.explore_outlined, arabic ? 'القبلة' : 'Qibla', arabic ? 'اتجاه مكة' : 'Direction to Makkah', AppRoutes.qibla),
           (material.Icons.schedule_outlined, arabic ? 'مواقيت الصلاة' : 'Prayer times', arabic ? 'المواقيت والإعدادات' : 'Prayer schedule and settings', AppRoutes.prayer),
           (material.Icons.settings_outlined, arabic ? 'الإعدادات' : 'Settings', arabic ? 'اللغة والتنبيهات والمظهر' : 'Language, reminders and appearance', AppRoutes.settings),
         ]),
