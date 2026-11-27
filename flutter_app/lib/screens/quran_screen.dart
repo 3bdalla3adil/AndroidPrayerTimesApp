@@ -1,4 +1,6 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart' as material;
 import '../core/adaptive_page_scaffold.dart';
 import 'package:quran/quran.dart' as quran;
 
@@ -174,8 +176,88 @@ class _QuranScreenState extends State<QuranScreen> {
     );
   }
 
+  Widget _buildMaterialQuran(BuildContext context) {
+    final items = _items;
+    final arabic = LocaleController.isArabic;
+    return AdaptivePageScaffold(
+      navigationBar: material.AppBar(
+        title: Text(arabic ? 'القرآن الكريم' : 'The Holy Quran'),
+        actions: [
+          material.IconButton(
+            tooltip: arabic ? 'تنقّل' : 'Navigate',
+            onPressed: _openNavigator,
+            icon: const Icon(material.Icons.tune_rounded),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+          children: [
+            material.FilledButton.icon(
+              onPressed: () => Navigator.of(context).pushNamed(AppRoutes.quranMemorization),
+              icon: const Icon(material.Icons.school_outlined),
+              label: Text(arabic ? 'حفظ القرآن ومراجعة الآيات' : 'Memorize and review Quran'),
+            ),
+            const SizedBox(height: 12),
+            material.TextField(
+              decoration: InputDecoration(
+                hintText: arabic ? 'ابحث عن سورة' : 'Search surah',
+                prefixIcon: const Icon(material.Icons.search_rounded),
+                suffixIcon: _query.isEmpty
+                    ? null
+                    : material.IconButton(
+                        tooltip: arabic ? 'مسح' : 'Clear',
+                        onPressed: () => setState(() => _query = ''),
+                        icon: const Icon(material.Icons.close_rounded),
+                      ),
+              ),
+              onChanged: (value) => setState(() => _query = value),
+            ),
+            const SizedBox(height: 10),
+            material.OutlinedButton.icon(
+              onPressed: _openNavigator,
+              icon: const Icon(material.Icons.swap_horiz_rounded),
+              label: Text(arabic ? 'تنقّل: سورة • آية • صفحة • جزء' : 'Navigate by surah, ayah, page or juz'),
+            ),
+            const SizedBox(height: 16),
+            Text(arabic ? 'السور' : 'Surahs',
+              style: material.Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 8),
+            material.Card(
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                children: [
+                  for (var i = 0; i < items.length; i++) ...[
+                    if (i > 0) const material.Divider(height: 1),
+                    material.ListTile(
+                      leading: _NumberBadge(number: items[i]),
+                      title: Text(quran.getSurahName(items[i])),
+                      subtitle: Text(
+                        '${quran.getPlaceOfRevelation(items[i])} • ${quran.getVerseCount(items[i])} verses',
+                      ),
+                      trailing: Text(
+                        quran.getSurahNameArabic(items[i]),
+                        textDirection: TextDirection.rtl,
+                        style: const TextStyle(fontFamily: 'serif', fontSize: 17),
+                      ),
+                      onTap: () => _openReader(items[i]),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (defaultTargetPlatform != TargetPlatform.iOS) {
+      return _buildMaterialQuran(context);
+    }
     final items = _items;
     return AdaptivePageScaffold(
       navigationBar: CupertinoNavigationBar(
