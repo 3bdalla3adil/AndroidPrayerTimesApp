@@ -201,7 +201,7 @@ class _QuranScreenState extends State<QuranScreen> {
             ),
             const SizedBox(height: 12),
             material.TextField(
-              decoration: InputDecoration(
+              decoration: material.InputDecoration(
                 hintText: arabic ? 'ابحث عن سورة' : 'Search surah',
                 prefixIcon: const Icon(material.Icons.search_rounded),
                 suffixIcon: _query.isEmpty
