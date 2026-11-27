@@ -1,4 +1,6 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart' as material;
 import '../core/adaptive_page_scaffold.dart';
 
 import '../services/app_routes.dart';
@@ -11,6 +13,59 @@ class MoreScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (defaultTargetPlatform != TargetPlatform.iOS) {
+      final arabic = LocaleController.isArabic;
+      final groups = <(String, List<(IconData, String, String, String)>)>[
+        (arabic ? 'مساحتك' : 'Your space', [
+          (material.Icons.bookmark_outline, arabic ? 'العلامات المرجعية' : 'Bookmarks', arabic ? 'الآيات المحفوظة' : 'Saved Quran ayahs', AppRoutes.bookmarks),
+          (material.Icons.menu_book_rounded, arabic ? 'الورد اليومي' : 'Daily Quran wird', arabic ? 'هدف قراءة متتابع وختمة منظمة' : 'A continuous daily Quran reading plan', AppRoutes.dailyWird),
+          (material.Icons.school_outlined, arabic ? 'حفظ القرآن' : 'Quran memorization', arabic ? 'حفظ الآيات وتتبع المراجعة دون إنترنت' : 'Practice ayahs and track revision offline', AppRoutes.quranMemorization),
+          (material.Icons.auto_awesome, arabic ? 'التسبيح' : 'Tasbih', arabic ? 'عداد ذكر يعمل دون إنترنت' : 'Offline dhikr counter', AppRoutes.tasbih),
+          (material.Icons.favorite_outline, arabic ? 'أذكار يومية' : 'Daily Adhkar', arabic ? 'مجموعة أذكار دون إنترنت' : 'Offline remembrance collection', AppRoutes.adhkar),
+          (material.Icons.nights_stay_outlined, arabic ? 'الصيام' : 'Fasting', arabic ? 'رمضان ومواقيت الصيام دون إنترنت' : 'Offline Ramadan and fasting times', AppRoutes.fasting),
+          (material.Icons.calendar_month_outlined, arabic ? 'التقويم' : 'Calendar', arabic ? 'التاريخ الميلادي والهجري التقريبي' : 'Gregorian and approximate Hijri date', AppRoutes.calendar),
+        ]),
+        (arabic ? 'الأدوات' : 'Tools', [
+          (material.Icons.explore_outlined, arabic ? 'القبلة' : 'Qibla', arabic ? 'اتجاه مكة' : 'Direction to Makkah', AppRoutes.qibla),
+          (material.Icons.schedule_outlined, arabic ? 'مواقيت الصلاة' : 'Prayer times', arabic ? 'المواقيت والإعدادات' : 'Prayer schedule and settings', AppRoutes.prayer),
+          (material.Icons.settings_outlined, arabic ? 'الإعدادات' : 'Settings', arabic ? 'اللغة والتنبيهات والمظهر' : 'Language, reminders and appearance', AppRoutes.settings),
+        ]),
+      ];
+      return AdaptivePageScaffold(
+        navigationBar: material.AppBar(title: Text(arabic ? 'المزيد' : 'More')),
+        child: SafeArea(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+            children: [
+              for (final group in groups) ...[
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(4, 18, 4, 8),
+                  child: Text(group.$1.toUpperCase(),
+                    style: material.Theme.of(context).textTheme.labelLarge?.copyWith(
+                      letterSpacing: 1.1, fontWeight: FontWeight.w700)),
+                ),
+                material.Card(
+                  child: Column(
+                    children: [
+                      for (var i = 0; i < group.$2.length; i++) ...[
+                        if (i > 0) const material.Divider(height: 1),
+                        material.ListTile(
+                          leading: Icon(group.$2[i].$1),
+                          title: Text(group.$2[i].$2),
+                          subtitle: Text(group.$2[i].$3),
+                          trailing: const Icon(material.Icons.chevron_right_rounded),
+                          onTap: () => Navigator.of(context).pushNamed(group.$2[i].$4),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      );
+    }
     return AdaptivePageScaffold(
       navigationBar: CupertinoNavigationBar(middle: Text(LocaleController.isArabic ? 'المزيد' : 'More')),
       child: SafeArea(
