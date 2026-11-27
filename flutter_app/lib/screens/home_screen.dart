@@ -33,7 +33,10 @@ class _HomeScreenState extends State<HomeScreen> {
     _athan = AthanReminderService(_service, StorageService());
     _tahajjud = TahajjudReminderService(_service, StorageService());
     _load();
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+    _timer = Timer.periodic(const Duration(minutes: 1), (_) {
+      // Re-evaluate the next prayer once a minute. The countdown itself is
+      // isolated in _NextPrayer so the whole home screen is not rebuilt
+      // every second.
       if (mounted) setState(() => _now = DateTime.now());
     });
   }
@@ -234,11 +237,44 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-class _NextPrayer extends StatelessWidget {
+class _NextPrayer extends StatefulWidget {
   const _NextPrayer({required this.prayer, required this.now});
-  final PrayerEntry prayer; final DateTime now;
-  @override Widget build(BuildContext context) {
-    final d = prayer.time.difference(now);
+  final PrayerEntry prayer;
+  final DateTime now;
+
+  @override
+  State<_NextPrayer> createState() => _NextPrayerState();
+}
+
+class _NextPrayerState extends State<_NextPrayer> {
+  late DateTime _now;
+  Timer? _countdownTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _now = widget.now;
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() => _now = DateTime.now());
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant _NextPrayer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _now = widget.now;
+  }
+
+  @override
+  void dispose() {
+    _countdownTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final prayer = widget.prayer;
+    final d = prayer.time.difference(_now);
     final c = d.isNegative ? '00:00:00' :
       '${d.inHours.toString().padLeft(2, '0')}:${(d.inMinutes%60).toString().padLeft(2,'0')}:${(d.inSeconds%60).toString().padLeft(2,'0')}';
     return Container(
