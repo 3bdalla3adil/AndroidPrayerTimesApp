@@ -81,6 +81,25 @@ class NotificationService {
     await androidPlugin?.requestNotificationsPermission();
     if (androidPlugin != null) {
       await _createSoundChannels(androidPlugin);
+      // Checking exact-alarm access is safe during startup; requesting it is
+      // deferred until the user explicitly enables prayer reminders.
+      _exactAlarmReady =
+          await androidPlugin.canScheduleExactNotifications() ?? false;
+    }
+
+    // Do not trigger a permission dialog during cold start. Ask only after
+    // the user opts in to Athan or Tahajjud reminders.
+    _initialized = true;
+  }
+
+  static Future<void> requestPermissions() async {
+    await initialize();
+
+    final androidPlugin = _plugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
+    if (androidPlugin != null) {
+      await androidPlugin.requestNotificationsPermission();
       final exact = await androidPlugin.canScheduleExactNotifications();
       if (exact != true) {
         await androidPlugin.requestExactAlarmsPermission();
@@ -93,8 +112,6 @@ class NotificationService {
         .resolvePlatformSpecificImplementation<
             IOSFlutterLocalNotificationsPlugin>()
         ?.requestPermissions(alert: true, badge: true, sound: true);
-
-    _initialized = true;
   }
 
   static String _channelIdForSound(String soundId) =>
