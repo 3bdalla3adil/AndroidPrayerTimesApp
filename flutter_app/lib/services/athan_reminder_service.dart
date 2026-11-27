@@ -23,6 +23,7 @@ class AthanReminderService {
 
   Future<int> enable() async {
     await NotificationService.initialize();
+    await NotificationService.requestPermissions();
     final count = await _schedule();
     await _storage.saveAthanRemindersEnabled(true);
     return count;
