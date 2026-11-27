@@ -164,13 +164,36 @@ jobs:
           dart run flutter_launcher_icons -f flutter_launcher_icons_ios.yaml
           dart run flutter_native_splash:create --path=flutter_native_splash_ios.yaml
 
+      - name: Configure Flutter iOS build settings
+        run: flutter build ios --release --no-codesign --config-only
+
       - name: Build iOS app without code signing
-        run: flutter build ios --release --no-codesign
+        env:
+          FLUTTER_ROOT: ${{ env.FLUTTER_ROOT }}
+        run: |
+          set -euo pipefail
+          # Do not pass -sdk iphoneos globally. Flutter's wrapper forces that
+          # SDK onto every target, including the embedded watchOS app and
+          # extension. Let Xcode resolve each target's own SDK from its
+          # SDKROOT while selecting the iOS Runner destination.
+          xcodebuild \
+            -workspace ios/Runner.xcworkspace \
+            -scheme Runner \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build/ios/DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build
 
       - name: Ensure iOS notification sounds are in the app bundle
         run: |
           set -euo pipefail
           APP_PATH="build/ios/iphoneos/Runner.app"
+          if [ ! -d "$APP_PATH" ]; then
+            APP_PATH="build/ios/DerivedData/Build/Products/Release-iphoneos/Runner.app"
+          fi
           test -d "$APP_PATH"
           for sound in azan azan_madinah azan_dubai azan_fajr_madinah azan_fajr_makkah; do
             SOURCE="ios/Runner/$sound.wav"
