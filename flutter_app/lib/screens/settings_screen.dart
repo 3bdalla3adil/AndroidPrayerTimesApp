@@ -1,4 +1,6 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart' as material;
 import '../core/adaptive_page_scaffold.dart';
 
 import '../services/athan_reminder_service.dart';
@@ -469,7 +471,225 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  Widget _buildMaterialSettings(BuildContext context) {
+    final arabic = LocaleController.isArabic;
+
+    Widget group(String title, List<Widget> children, {String? footer}) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(4, 8, 4, 8),
+              child: Text(title.toUpperCase(),
+                style: material.Theme.of(context).textTheme.labelLarge?.copyWith(
+                  letterSpacing: 1.0, fontWeight: FontWeight.w700)),
+            ),
+            material.Card(
+              clipBehavior: Clip.antiAlias,
+              child: Column(children: [
+                for (var i = 0; i < children.length; i++) ...[
+                  if (i > 0) const material.Divider(height: 1),
+                  children[i],
+                ],
+              ]),
+            ),
+            if (footer != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(6, 8, 6, 0),
+                child: Text(footer, style: material.Theme.of(context).textTheme.bodySmall),
+              ),
+          ],
+        ),
+      );
+    }
+
+    if (_loading && !_reminders) {
+      return AdaptivePageScaffold(
+        navigationBar: material.AppBar(title: Text(arabic ? 'الإعدادات' : 'Settings')),
+        child: const Center(child: material.CircularProgressIndicator()),
+      );
+    }
+
+    return AdaptivePageScaffold(
+      navigationBar: material.AppBar(
+        title: Text(arabic ? 'الإعدادات' : 'Settings'),
+        actions: [
+          material.IconButton(
+            tooltip: arabic ? 'تحديث التنبيهات' : 'Refresh reminders',
+            onPressed: _refreshSchedules,
+            icon: const Icon(material.Icons.refresh_rounded),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 36),
+          children: [
+            group(arabic ? 'اللغة' : 'Language', [
+              material.ListTile(
+                leading: const Icon(material.Icons.language_rounded),
+                title: Text(arabic ? 'لغة التطبيق' : 'App language'),
+                subtitle: Text(arabic ? 'العربية' : 'English'),
+                trailing: const Icon(material.Icons.chevron_right_rounded),
+                onTap: () async {
+                  final selected = await material.showModalBottomSheet<String>(
+                    context: context,
+                    showDragHandle: true,
+                    builder: (sheetContext) => SafeArea(
+                      child: Column(mainAxisSize: MainAxisSize.min, children: [
+                        material.ListTile(
+                          title: const Text('العربية'),
+                          onTap: () => Navigator.pop(sheetContext, 'ar'),
+                        ),
+                        material.ListTile(
+                          title: const Text('English'),
+                          onTap: () => Navigator.pop(sheetContext, 'en'),
+                        ),
+                      ]),
+                    ),
+                  );
+                  if (selected != null) {
+                    await LocaleController.setLanguage(selected);
+                    await _nextPrayerWidget.refresh();
+                    if (mounted) setState(() {});
+                  }
+                },
+              ),
+            ]),
+            group(arabic ? 'الصلاة' : 'Prayer', [
+              material.SwitchListTile(
+                secondary: const Icon(material.Icons.notifications_active_outlined),
+                title: Text(arabic ? 'تنبيهات الأذان' : 'Athan reminders'),
+                subtitle: Text(_reminders
+                  ? '$_scheduled notifications scheduled for the next 12 days.'
+                  : 'Schedule local prayer notifications automatically.'),
+                value: _reminders,
+                onChanged: _loading ? null : (value) => _toggle(value),
+              ),
+              for (final prayer in StorageService.prayerNames)
+                material.ListTile(
+                  leading: Icon(_enabledPrayers.contains(prayer)
+                    ? material.Icons.notifications_active_outlined
+                    : material.Icons.notifications_off_outlined),
+                  title: Text(prayer),
+                  subtitle: Text(_adjustments[prayer] == null
+                    ? 'Athan enabled'
+                    : 'Adjustment: ${_adjustments[prayer]! >= 0 ? '+' : ''}${_adjustments[prayer]} min'),
+                  trailing: material.Switch(
+                    value: _enabledPrayers.contains(prayer),
+                    onChanged: _loading ? null : (value) => _togglePrayer(prayer, value),
+                  ),
+                  onTap: _loading ? null : () => _chooseAdjustment(prayer),
+                ),
+              material.ListTile(
+                leading: const Icon(material.Icons.alarm_outlined),
+                title: Text(arabic ? 'تذكير قبل الصلاة' : 'Pre-prayer reminder'),
+                subtitle: Text(_preReminderMinutes == 0 ? 'Off' : '$_preReminderMinutes minutes before each enabled prayer'),
+                trailing: const Icon(material.Icons.chevron_right_rounded),
+                onTap: _loading ? null : _choosePreReminder,
+              ),
+            ]),
+            group(arabic ? 'ويدجت الصلاة القادمة' : 'Next prayer widget', [
+              material.SwitchListTile(
+                secondary: const Icon(material.Icons.widgets_outlined),
+                title: Text(arabic ? 'ويدجت الصلاة القادمة' : 'Next Prayer Widget'),
+                subtitle: Text(_nextPrayerWidgetEnabled ? 'Enabled' : 'Disabled'),
+                value: _nextPrayerWidgetEnabled,
+                onChanged: _loading ? null : _toggleNextPrayerWidget,
+              ),
+            ], footer: arabic
+              ? 'يعرض التاريخ الهجري والصلاة القادمة والعد التنازلي. أضفه إلى الشاشة الرئيسية في Android.'
+              : 'Shows the Hijri date, next prayer and countdown. Add it to your Android Home screen.'),
+            group(arabic ? 'حساب مواقيت الصلاة' : 'Prayer calculation', [
+              material.ListTile(
+                leading: const Icon(material.Icons.schedule_rounded),
+                title: Text(arabic ? 'طريقة الحساب' : 'Calculation method'),
+                subtitle: Text(_methods[_method] ?? 'Muslim World League'),
+                trailing: const Icon(material.Icons.chevron_right_rounded),
+                onTap: _loading ? null : _chooseMethod,
+              ),
+              material.ListTile(
+                leading: const Icon(material.Icons.wb_sunny_outlined),
+                title: Text(arabic ? 'طريقة العصر' : 'Asr method'),
+                subtitle: Text(_madhab == 1 ? 'Hanafi' : 'Shafi / Standard'),
+                trailing: const Icon(material.Icons.chevron_right_rounded),
+                onTap: _loading ? null : _chooseMadhab,
+              ),
+            ]),
+            group(arabic ? 'صوت الأذان' : 'Athan sound', [
+              material.ListTile(
+                leading: const Icon(material.Icons.music_note_rounded),
+                title: Text(arabic ? 'صوت الأذان' : 'Athan sound'),
+                subtitle: Text(NotificationService.soundLabels[_athanSound] ?? 'Athan — Default'),
+                trailing: const Icon(material.Icons.chevron_right_rounded),
+                onTap: _loading ? null : _chooseAthanSound,
+              ),
+              material.ListTile(
+                leading: const Icon(material.Icons.play_circle_outline_rounded),
+                title: Text(arabic ? 'تجربة صوت الأذان' : 'Test Athan'),
+                subtitle: Text(arabic ? 'تشغيل الصوت المختار للتحقق منه' : 'Play the selected sound'),
+                onTap: _loading ? null : _testAthan,
+              ),
+            ]),
+            group(arabic ? 'الورد اليومي' : 'Daily Quran wird', [
+              material.ListTile(
+                leading: const Icon(material.Icons.menu_book_rounded),
+                title: Text(arabic ? 'هدف الورد اليومي' : 'Daily reading goal'),
+                subtitle: Text('$_wirdAmount ${_wirdUnit == WirdUnit.juz ? 'juz' : _wirdUnit == WirdUnit.hizb ? 'hizb' : 'ayah'}'),
+                trailing: const Icon(material.Icons.chevron_right_rounded),
+                onTap: _loading ? null : _chooseDailyWird,
+              ),
+            ]),
+            group(arabic ? 'القرآن الكريم' : 'Quran', [
+              material.ListTile(
+                leading: const Icon(material.Icons.text_fields_rounded),
+                title: Text(arabic ? 'حجم خط المصحف' : 'Mushaf font size'),
+                subtitle: Text('${_quranFontSize.round()} pt'),
+                trailing: const Icon(material.Icons.chevron_right_rounded),
+                onTap: _loading ? null : _chooseQuranFontSize,
+              ),
+              material.SwitchListTile(
+                secondary: const Icon(material.Icons.translate_rounded),
+                title: Text(arabic ? 'إظهار الترجمة الإنجليزية' : 'English translation'),
+                subtitle: Text(arabic ? 'عرض الترجمة أسفل الآيات' : 'Show translation below each ayah'),
+                value: _quranTranslation,
+                onChanged: _loading ? null : (value) async {
+                  await _storage.saveQuranShowTranslation(value);
+                  if (mounted) setState(() => _quranTranslation = value);
+                },
+              ),
+              material.SwitchListTile(
+                secondary: const Icon(material.Icons.touch_app_outlined),
+                title: Text(arabic ? 'أدوات الآية بالضغط المطوّل' : 'Ayah toolbar on long press'),
+                subtitle: Text(arabic ? 'إظهار أدوات الآية عند الضغط المستمر فقط' : 'Show ayah actions only after a long press'),
+                value: _quranAyahToolbarEnabled,
+                onChanged: _loading ? null : (value) async {
+                  await _storage.saveQuranAyahToolbarEnabled(value);
+                  if (mounted) setState(() => _quranAyahToolbarEnabled = value);
+                },
+              ),
+            ]),
+            group(arabic ? 'التسبيح' : 'Tasbih', [
+              material.ListTile(
+                leading: const Icon(material.Icons.radio_button_checked_rounded),
+                title: Text(arabic ? 'هدف التسبيح' : 'Tasbih target'),
+                subtitle: Text('$_tasbihTarget repetitions; alert appears when the goal is reached.'),
+                trailing: const Icon(material.Icons.chevron_right_rounded),
+                onTap: _loading ? null : _chooseTasbihTarget,
+              ),
+            ]),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override Widget build(BuildContext context) {
+    if (defaultTargetPlatform != TargetPlatform.iOS) {
+      return _buildMaterialSettings(context);
+    }
     return AdaptivePageScaffold(
       navigationBar: CupertinoNavigationBar(middle: Text(LocaleController.isArabic ? 'الإعدادات' : 'Settings')),
       child: SafeArea(
