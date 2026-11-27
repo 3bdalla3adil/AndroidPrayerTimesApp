@@ -87,7 +87,16 @@ class NotificationService {
           await androidPlugin.canScheduleExactNotifications() ?? false;
     }
 
-    // Do not trigger a permission dialog during cold start. Ask only after
+    // Preserve the existing iOS permission timing and behaviour. Android
+    // permission prompts are intentionally deferred until the user opts in.
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      await _plugin
+          .resolvePlatformSpecificImplementation<
+              IOSFlutterLocalNotificationsPlugin>()
+          ?.requestPermissions(alert: true, badge: true, sound: true);
+    }
+
+    // Do not trigger an Android permission dialog during cold start. Ask only after
     // the user opts in to Athan or Tahajjud reminders.
     _initialized = true;
   }
