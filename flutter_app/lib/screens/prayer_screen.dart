@@ -37,7 +37,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
     super.initState();
     _athan = AthanReminderService(_service, StorageService());
     _load();
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+    _timer = Timer.periodic(const Duration(minutes: 1), (_) {
       if (mounted) setState(() => _now = DateTime.now());
     });
   }
