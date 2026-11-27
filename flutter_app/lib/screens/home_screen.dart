@@ -167,13 +167,13 @@ class _HomeScreenState extends State<HomeScreen> {
           material.IconButton(
             tooltip: arabic ? 'المزيد' : 'More',
             onPressed: () => Navigator.of(context).pushNamed(AppRoutes.more),
-            icon: const Icon(Icons.more_horiz),
+            icon: const Icon(material.Icons.more_horiz),
           ),
           material.IconButton(
             key: const ValueKey('refresh-home'),
             tooltip: arabic ? 'تحديث' : 'Refresh',
             onPressed: () => _load(refresh: true),
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(material.Icons.refresh),
           ),
         ],
       ),
@@ -197,7 +197,7 @@ class _HomeScreenState extends State<HomeScreen> {
               if (_error != null)
                 material.Card(
                   child: material.ListTile(
-                    leading: const Icon(Icons.warning_amber_rounded),
+                    leading: const Icon(material.Icons.warning_amber_rounded),
                     title: Text(arabic ? 'مواقيت الصلاة غير متاحة' : 'Prayer times unavailable'),
                     subtitle: Text(_error!),
                   ),
@@ -215,21 +215,21 @@ class _HomeScreenState extends State<HomeScreen> {
                 crossAxisSpacing: 10,
                 childAspectRatio: 1.28,
                 children: [
-                  feature(icon: Icons.menu_book_rounded, title: arabic ? 'القرآن الكريم' : 'Quran',
+                  feature(icon: material.Icons.menu_book_rounded, title: arabic ? 'القرآن الكريم' : 'Quran',
                     subtitle: arabic ? 'قراءة المصحف' : 'Read Quran', onTap: _continueQuran),
-                  feature(icon: Icons.access_time_rounded, title: arabic ? 'مواقيت الصلاة' : 'Prayer times',
+                  feature(icon: material.Icons.access_time_rounded, title: arabic ? 'مواقيت الصلاة' : 'Prayer times',
                     subtitle: arabic ? 'مواعيد اليوم' : 'Today’s schedule',
                     onTap: () => Navigator.of(context).pushNamed(AppRoutes.prayer)),
-                  feature(icon: Icons.explore_rounded, title: arabic ? 'اتجاه القبلة' : 'Qibla',
+                  feature(icon: material.Icons.explore_rounded, title: arabic ? 'اتجاه القبلة' : 'Qibla',
                     subtitle: arabic ? 'اتجاه مكة' : 'Direction to Makkah',
                     onTap: () => Navigator.of(context).pushNamed(AppRoutes.qibla)),
-                  feature(icon: Icons.calendar_month_rounded, title: arabic ? 'التقويم الهجري' : 'Hijri calendar',
+                  feature(icon: material.Icons.calendar_month_rounded, title: arabic ? 'التقويم الهجري' : 'Hijri calendar',
                     subtitle: arabic ? 'التاريخ والمناسبات' : 'Dates & occasions',
                     onTap: () => Navigator.of(context).pushNamed(AppRoutes.calendar)),
-                  feature(icon: Icons.auto_awesome_rounded, title: arabic ? 'التسبيح' : 'Tasbih',
+                  feature(icon: material.Icons.auto_awesome_rounded, title: arabic ? 'التسبيح' : 'Tasbih',
                     subtitle: arabic ? 'الذكر اليومي' : 'Daily dhikr',
                     onTap: () => Navigator.of(context).pushNamed(AppRoutes.tasbih)),
-                  feature(icon: Icons.favorite_rounded, title: arabic ? 'الأذكار والأدعية' : 'Duas & Adhkar',
+                  feature(icon: material.Icons.favorite_rounded, title: arabic ? 'الأذكار والأدعية' : 'Duas & Adhkar',
                     subtitle: arabic ? 'أذكار يومية' : 'Daily remembrance',
                     onTap: () => Navigator.of(context).pushNamed(AppRoutes.adhkar)),
                 ],
@@ -243,7 +243,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     if (_prayers.isEmpty)
                       material.ListTile(
-                        leading: const Icon(Icons.schedule_rounded),
+                        leading: const Icon(material.Icons.schedule_rounded),
                         title: Text(arabic ? 'مواقيت الصلاة' : 'Prayer times'),
                         subtitle: Text(arabic ? 'يرجى تحميل موقعك لحساب المواقيت' : 'Load your location to calculate today’s prayers.'),
                       )
@@ -251,7 +251,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       for (var i = 0; i < _prayers.length; i++) ...[
                         if (i > 0) const material.Divider(height: 1),
                         material.ListTile(
-                          leading: const Icon(Icons.access_time_rounded),
+                          leading: const Icon(material.Icons.access_time_rounded),
                           title: Text(_prayers[i].name),
                           subtitle: Text(_prayers[i].arabicName, textDirection: TextDirection.rtl),
                           trailing: Text(DateFormat('h:mm a').format(_prayers[i].time),
@@ -266,15 +266,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Column(
                   children: [
                     material.ListTile(
-                      leading: const Icon(Icons.menu_book_rounded),
+                      leading: const Icon(material.Icons.menu_book_rounded),
                       title: Text(arabic ? 'متابعة القراءة' : 'Continue Quran'),
                       subtitle: Text(arabic ? 'المصحف دون إنترنت' : 'Offline Mushaf'),
-                      trailing: const Icon(Icons.chevron_right_rounded),
+                      trailing: const Icon(material.Icons.chevron_right_rounded),
                       onTap: _continueQuran,
                     ),
                     const material.Divider(height: 1),
                     material.SwitchListTile(
-                      secondary: const Icon(Icons.notifications_active_outlined),
+                      secondary: const Icon(material.Icons.notifications_active_outlined),
                       title: Text(arabic ? 'تنبيهات الأذان' : 'Athan reminders'),
                       subtitle: Text(arabic ? 'تشغيل الأذان عند دخول وقت الصلاة' : 'Play Athan at each prayer time'),
                       value: _reminders,
@@ -282,7 +282,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const material.Divider(height: 1),
                     material.SwitchListTile(
-                      secondary: const Icon(Icons.nights_stay_outlined),
+                      secondary: const Icon(material.Icons.nights_stay_outlined),
                       title: Text(arabic ? 'تذكير التهجّد' : 'Tahajjud reminder'),
                       subtitle: Text(arabic ? 'تنبيه عند بداية الثلث الأخير من الليل' : 'A quiet alert at the last third of the night'),
                       value: _tahajjudReminders,
@@ -294,10 +294,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: material.LinearProgressIndicator(),
                       ),
                     material.ListTile(
-                      leading: const Icon(Icons.headphones_rounded),
+                      leading: const Icon(material.Icons.headphones_rounded),
                       title: Text(arabic ? 'القرّاء المتاحون' : 'Available Quran reciters'),
                       subtitle: const Text('Mishary Alafasy • Abdul Basit • Mahmoud Khalil Al-Husary'),
-                      trailing: const Icon(Icons.chevron_right_rounded),
+                      trailing: const Icon(material.Icons.chevron_right_rounded),
                       onTap: _continueQuran,
                     ),
                   ],
