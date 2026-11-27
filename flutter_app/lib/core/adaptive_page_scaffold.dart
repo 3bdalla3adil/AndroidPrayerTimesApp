@@ -24,6 +24,37 @@ class AdaptivePageScaffold extends StatelessWidget {
 
   bool get _isIOS => defaultTargetPlatform == TargetPlatform.iOS;
 
+  Widget _materializeNavigationAction(Widget? action) {
+    if (action is CupertinoButton) {
+      final child = action.child;
+      if (child is Icon) {
+        return material.IconButton(
+          onPressed: action.onPressed,
+          padding: action.padding,
+          icon: child,
+        );
+      }
+      final style = action.color == null
+          ? null
+          : material.ButtonStyle(
+              backgroundColor:
+                  material.WidgetStatePropertyAll<Color?>(action.color),
+            );
+      return action.color == null
+          ? material.TextButton(
+              onPressed: action.onPressed,
+              style: style,
+              child: child,
+            )
+          : material.FilledButton(
+              onPressed: action.onPressed,
+              style: style,
+              child: child,
+            );
+    }
+    return action ?? const SizedBox.shrink();
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
@@ -47,10 +78,14 @@ class AdaptivePageScaffold extends StatelessWidget {
       appBar = material.AppBar(
         key: bar.key,
         title: bar.middle,
-        leading: bar.leading,
+        leading: bar.leading == null
+            ? null
+            : _materializeNavigationAction(bar.leading),
         automaticallyImplyLeading: bar.automaticallyImplyLeading,
-        actions: bar.trailing == null ? null : <Widget>[bar.trailing!],
-        backgroundColor: backgroundColor,
+        actions: bar.trailing == null
+            ? null
+            : <Widget>[_materializeNavigationAction(bar.trailing)],
+        backgroundColor: bar.backgroundColor ?? backgroundColor,
       );
     } else if (bar is material.PreferredSizeWidget) {
       appBar = bar;
