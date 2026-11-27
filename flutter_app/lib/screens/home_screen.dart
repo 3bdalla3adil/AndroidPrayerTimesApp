@@ -165,6 +165,7 @@ class _HomeScreenState extends State<HomeScreen> {
         title: const Text('Salawat'),
         actions: [
           material.IconButton(
+            key: const ValueKey('open-more'),
             tooltip: arabic ? 'المزيد' : 'More',
             onPressed: () => Navigator.of(context).pushNamed(AppRoutes.more),
             icon: const Icon(material.Icons.more_horiz),
