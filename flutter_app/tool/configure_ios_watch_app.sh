@@ -108,6 +108,10 @@ extension.build_configurations.each do |config|
   settings['PRODUCT_NAME'] = extension_name
   settings['EXECUTABLE_NAME'] = extension_name
   settings['WATCHOS_DEPLOYMENT_TARGET'] = '10.0'
+  settings['FLUTTER_BUILD_NAME'] = flutter_build_name
+  settings['FLUTTER_BUILD_NUMBER'] = flutter_build_number
+  settings['MARKETING_VERSION'] = flutter_build_name
+  settings['CURRENT_PROJECT_VERSION'] = flutter_build_number
   settings['TARGETED_DEVICE_FAMILY'] = '4'
   settings['SUPPORTED_PLATFORMS'] = 'watchos watchsimulator'
   settings['SDKROOT'] = 'watchos'
