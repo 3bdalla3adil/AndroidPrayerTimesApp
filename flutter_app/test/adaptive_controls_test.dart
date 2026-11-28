@@ -77,6 +77,7 @@ void main() {
                   ),
                   AdaptiveSwitch(value: true, onChanged: null),
                   AdaptiveActivityIndicator(),
+                  AdaptiveLinearProgressIndicator(value: 0.5),
                   AdaptiveAlertDialog(
                     title: Text('Confirm'),
                     content: Text('Continue?'),
