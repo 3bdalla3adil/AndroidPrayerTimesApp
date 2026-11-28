@@ -29,6 +29,7 @@ class AdaptivePageScaffold extends StatelessWidget {
       final child = action.child;
       if (child is Icon) {
         return material.IconButton(
+          key: action.key,
           onPressed: action.onPressed,
           padding: action.padding,
           icon: child,
@@ -42,11 +43,13 @@ class AdaptivePageScaffold extends StatelessWidget {
             );
       return action.color == null
           ? material.TextButton(
+              key: action.key,
               onPressed: action.onPressed,
               style: style,
               child: child,
             )
           : material.FilledButton(
+              key: action.key,
               onPressed: action.onPressed,
               style: style,
               child: child,
