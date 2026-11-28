@@ -1,0 +1,449 @@
+import 'package:flutter/cupertino.dart' as cupertino;
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart' as material;
+
+/// Platform-native controls shared by feature screens.
+/// iOS uses Cupertino widgets; Android uses Material 3 widgets.
+bool get useCupertino => defaultTargetPlatform == TargetPlatform.iOS;
+
+class AdaptiveListSection extends StatelessWidget {
+  const AdaptiveListSection.insetGrouped({
+    super.key,
+    this.header,
+    this.footer,
+    required this.children,
+  });
+
+  final Widget? header;
+  final Widget? footer;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    if (useCupertino) {
+      return cupertino.CupertinoListSection.insetGrouped(
+        header: header,
+        footer: footer,
+        children: children,
+      );
+    }
+    return material.Card(
+      clipBehavior: Clip.antiAlias,
+      margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (header != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
+              child: DefaultTextStyle(
+                style: material.Theme.of(context).textTheme.labelMedium!.copyWith(
+                  color: material.Theme.of(context).colorScheme.primary,
+                  fontWeight: FontWeight.w700,
+                ),
+                child: header!,
+              ),
+            ),
+          ...children,
+          if (footer != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 6, 16, 14),
+              child: DefaultTextStyle(
+                style: material.Theme.of(context).textTheme.bodySmall!,
+                child: footer!,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class AdaptiveListTile extends StatelessWidget {
+  const AdaptiveListTile({
+    super.key,
+    this.leading,
+    required this.title,
+    this.subtitle,
+    this.trailing,
+    this.onTap,
+    this.backgroundColor,
+    this.additionalInfo,
+  });
+
+  final Widget? leading;
+  final Widget title;
+  final Widget? subtitle;
+  final Widget? trailing;
+  final VoidCallback? onTap;
+  final Color? backgroundColor;
+  final Widget? additionalInfo;
+
+  @override
+  Widget build(BuildContext context) {
+    if (useCupertino) {
+      return cupertino.CupertinoListTile(
+        leading: leading,
+        title: title,
+        subtitle: subtitle,
+        trailing: trailing,
+        onTap: onTap,
+        backgroundColor: backgroundColor,
+        additionalInfo: additionalInfo,
+      );
+    }
+    return material.ListTile(
+      leading: leading,
+      title: title,
+      subtitle: subtitle,
+      trailing: trailing ?? additionalInfo,
+      onTap: onTap,
+      tileColor: backgroundColor,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 3),
+    );
+  }
+}
+
+class AdaptiveButton extends StatelessWidget {
+  const AdaptiveButton({
+    super.key,
+    this.padding,
+    this.color,
+    this.minimumSize,
+    required this.onPressed,
+    required this.child,
+  });
+
+  final EdgeInsetsGeometry? padding;
+  final Color? color;
+  final Size? minimumSize;
+  final VoidCallback? onPressed;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (useCupertino) {
+      return cupertino.CupertinoButton(
+        padding: padding,
+        color: color,
+        minimumSize: minimumSize ?? const Size(0, 44),
+        onPressed: onPressed,
+        child: child,
+      );
+    }
+    final style = material.ButtonStyle(
+      padding: material.WidgetStatePropertyAll(padding ?? const EdgeInsets.symmetric(horizontal: 16)),
+      minimumSize: material.WidgetStatePropertyAll(minimumSize ?? const Size(64, 48)),
+      backgroundColor: color == null ? null : material.WidgetStatePropertyAll(color),
+    );
+    return color == null
+        ? material.TextButton(onPressed: onPressed, style: style, child: child)
+        : material.FilledButton(onPressed: onPressed, style: style, child: child);
+  }
+}
+
+class AdaptiveSwitch extends StatelessWidget {
+  const AdaptiveSwitch({super.key, required this.value, required this.onChanged});
+  final bool value;
+  final ValueChanged<bool>? onChanged;
+
+  @override
+  Widget build(BuildContext context) => useCupertino
+      ? cupertino.CupertinoSwitch(value: value, onChanged: onChanged)
+      : material.Switch(value: value, onChanged: onChanged);
+}
+
+class AdaptiveActivityIndicator extends StatelessWidget {
+  const AdaptiveActivityIndicator({super.key, this.color});
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) => useCupertino
+      ? cupertino.CupertinoActivityIndicator(color: color)
+      : material.SizedBox(
+          width: 24,
+          height: 24,
+          child: material.CircularProgressIndicator(
+            strokeWidth: 2.6,
+            color: color,
+          ),
+        );
+}
+
+class AdaptiveTextField extends StatelessWidget {
+  const AdaptiveTextField({
+    super.key,
+    this.controller,
+    this.keyboardType,
+    this.textAlign = TextAlign.start,
+    this.placeholder,
+    this.autofocus = false,
+  });
+
+  final TextEditingController? controller;
+  final TextInputType? keyboardType;
+  final TextAlign textAlign;
+  final String? placeholder;
+  final bool autofocus;
+
+  @override
+  Widget build(BuildContext context) => useCupertino
+      ? cupertino.CupertinoTextField(
+          controller: controller,
+          keyboardType: keyboardType,
+          textAlign: textAlign,
+          placeholder: placeholder,
+          autofocus: autofocus,
+        )
+      : material.TextField(
+          controller: controller,
+          keyboardType: keyboardType,
+          textAlign: textAlign,
+          autofocus: autofocus,
+          decoration: material.InputDecoration(
+            hintText: placeholder,
+            border: const material.OutlineInputBorder(),
+            isDense: true,
+          ),
+        );
+}
+
+class AdaptiveSearchField extends StatelessWidget {
+  const AdaptiveSearchField({super.key, this.placeholder, this.onChanged});
+  final String? placeholder;
+  final ValueChanged<String>? onChanged;
+
+  @override
+  Widget build(BuildContext context) => useCupertino
+      ? cupertino.CupertinoSearchTextField(
+          placeholder: placeholder,
+          onChanged: onChanged,
+        )
+      : material.SearchBar(
+          hintText: placeholder,
+          onChanged: onChanged,
+          leading: const material.Icon(material.Icons.search),
+          padding: const material.WidgetStatePropertyAll(
+            EdgeInsets.symmetric(horizontal: 16),
+          ),
+        );
+}
+
+class AdaptiveSlider extends StatelessWidget {
+  const AdaptiveSlider({
+    super.key,
+    required this.value,
+    required this.onChanged,
+    this.min = 0,
+    this.max = 1,
+    this.divisions,
+  });
+
+  final double value;
+  final ValueChanged<double> onChanged;
+  final double min;
+  final double max;
+  final int? divisions;
+
+  @override
+  Widget build(BuildContext context) => useCupertino
+      ? cupertino.CupertinoSlider(
+          min: min,
+          max: max,
+          value: value,
+          divisions: divisions,
+          onChanged: onChanged,
+        )
+      : material.Slider(
+          min: min,
+          max: max,
+          value: value.clamp(min, max),
+          divisions: divisions,
+          onChanged: onChanged,
+        );
+}
+
+class AdaptiveAlertDialog extends StatelessWidget {
+  const AdaptiveAlertDialog({
+    super.key,
+    this.title,
+    this.content,
+    this.actions = const [],
+  });
+
+  final Widget? title;
+  final Widget? content;
+  final List<Widget> actions;
+
+  @override
+  Widget build(BuildContext context) => useCupertino
+      ? cupertino.CupertinoAlertDialog(
+          title: title,
+          content: content,
+          actions: actions,
+        )
+      : material.AlertDialog(
+          title: title,
+          content: content,
+          actions: actions,
+        );
+}
+
+class AdaptiveDialogAction extends StatelessWidget {
+  const AdaptiveDialogAction({
+    super.key,
+    this.isDestructiveAction = false,
+    this.isDefaultAction = false,
+    required this.onPressed,
+    required this.child,
+  });
+
+  final bool isDestructiveAction;
+  final bool isDefaultAction;
+  final VoidCallback? onPressed;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (useCupertino) {
+      return cupertino.CupertinoDialogAction(
+        isDestructiveAction: isDestructiveAction,
+        isDefaultAction: isDefaultAction,
+        onPressed: onPressed,
+        child: child,
+      );
+    }
+    final button = isDestructiveAction
+        ? material.TextButton(
+            onPressed: onPressed,
+            style: material.TextButton.styleFrom(
+              foregroundColor: material.Theme.of(context).colorScheme.error,
+            ),
+            child: child,
+          )
+        : isDefaultAction
+            ? material.FilledButton(onPressed: onPressed, child: child)
+            : material.TextButton(onPressed: onPressed, child: child);
+    return button;
+  }
+}
+
+class AdaptiveActionSheetAction extends StatelessWidget {
+  const AdaptiveActionSheetAction({
+    super.key,
+    this.isDefaultAction = false,
+    required this.onPressed,
+    required this.child,
+  });
+
+  final bool isDefaultAction;
+  final VoidCallback? onPressed;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => useCupertino
+      ? cupertino.CupertinoActionSheetAction(
+          isDefaultAction: isDefaultAction,
+          onPressed: onPressed,
+          child: child,
+        )
+      : material.ListTile(
+          title: DefaultTextStyle(
+            style: material.Theme.of(context).textTheme.bodyLarge!.copyWith(
+              color: isDefaultAction
+                  ? material.Theme.of(context).colorScheme.primary
+                  : null,
+            ),
+            child: child,
+          ),
+          onTap: onPressed,
+        );
+}
+
+class AdaptiveActionSheet extends StatelessWidget {
+  const AdaptiveActionSheet({
+    super.key,
+    this.title,
+    this.message,
+    this.actions = const [],
+    this.cancelButton,
+  });
+
+  final Widget? title;
+  final Widget? message;
+  final List<Widget> actions;
+  final Widget? cancelButton;
+
+  @override
+  Widget build(BuildContext context) {
+    if (useCupertino) {
+      return cupertino.CupertinoActionSheet(
+        title: title,
+        message: message,
+        actions: actions,
+        cancelButton: cancelButton,
+      );
+    }
+    return material.SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (title != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 18, 20, 4),
+              child: DefaultTextStyle(
+                style: material.Theme.of(context).textTheme.titleMedium!,
+                child: title!,
+              ),
+            ),
+          if (message != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+              child: DefaultTextStyle(
+                style: material.Theme.of(context).textTheme.bodySmall!,
+                child: message!,
+              ),
+            ),
+          ...actions,
+          if (cancelButton != null) ...[
+            const material.Divider(height: 1),
+            cancelButton!,
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+Future<T?> showAdaptiveDialog<T>({
+  required BuildContext context,
+  required WidgetBuilder builder,
+  bool barrierDismissible = true,
+}) {
+  return useCupertino
+      ? cupertino.showCupertinoDialog<T>(
+          context: context,
+          builder: builder,
+          barrierDismissible: barrierDismissible,
+        )
+      : material.showDialog<T>(
+          context: context,
+          builder: builder,
+          barrierDismissible: barrierDismissible,
+        );
+}
+
+Future<T?> showAdaptiveModalPopup<T>({
+  required BuildContext context,
+  required WidgetBuilder builder,
+}) {
+  return useCupertino
+      ? cupertino.showCupertinoModalPopup<T>(context: context, builder: builder)
+      : material.showModalBottomSheet<T>(
+          context: context,
+          builder: builder,
+          isScrollControlled: true,
+          useSafeArea: true,
+          showDragHandle: true,
+        );
+}
