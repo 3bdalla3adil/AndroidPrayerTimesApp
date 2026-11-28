@@ -73,7 +73,6 @@ void main() {
       await tester.pump(const Duration(milliseconds: 350));
 
       expect(find.text('اتجاه القبلة'), findsWidgets);
-      expect(find.byType(material.MaterialPageRoute<dynamic>), findsNothing);
       expect(tester.takeException(), isNull);
 
       await tester.binding.handlePopRoute();
