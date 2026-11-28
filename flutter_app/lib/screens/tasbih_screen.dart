@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import '../core/adaptive_controls.dart';
 import '../core/adaptive_page_scaffold.dart';
 
 import '../services/storage_service.dart';
@@ -39,13 +40,13 @@ class _TasbihScreenState extends State<TasbihScreen> {
     setState(() => _count = next);
     await _storage.saveTasbih(next, _target);
     if (next == _target && mounted) {
-      await showCupertinoDialog<void>(
+      await showAdaptiveDialog<void>(
         context: context,
-        builder: (dialogContext) => CupertinoAlertDialog(
+        builder: (dialogContext) => AdaptiveAlertDialog(
           title: const Text('تم الوصول إلى الهدف'),
           content: Text('ما شاء الله، أكملت $_target تسبيحة.\n\nلقد وصلت إلى الهدف المحدد.'),
           actions: [
-            CupertinoDialogAction(
+            AdaptiveDialogAction(
               isDefaultAction: true,
               onPressed: () => Navigator.pop(dialogContext),
               child: const Text('تم'),
@@ -58,13 +59,13 @@ class _TasbihScreenState extends State<TasbihScreen> {
 
   Future<void> _chooseCustomTarget() async {
     final controller = TextEditingController(text: '33');
-    final selected = await showCupertinoDialog<int>(
+    final selected = await showAdaptiveDialog<int>(
       context: context,
-      builder: (dialogContext) => CupertinoAlertDialog(
+      builder: (dialogContext) => AdaptiveAlertDialog(
         title: const Text('هدف مخصص'),
         content: Padding(
           padding: const EdgeInsets.only(top: 12),
-          child: CupertinoTextField(
+          child: AdaptiveTextField(
             controller: controller,
             keyboardType: TextInputType.number,
             textAlign: TextAlign.center,
@@ -72,11 +73,11 @@ class _TasbihScreenState extends State<TasbihScreen> {
           ),
         ),
         actions: [
-          CupertinoDialogAction(
+          AdaptiveDialogAction(
             onPressed: () => Navigator.pop(dialogContext),
             child: const Text('إلغاء'),
           ),
-          CupertinoDialogAction(
+          AdaptiveDialogAction(
             isDefaultAction: true,
             onPressed: () {
               final value = int.tryParse(controller.text.trim());
@@ -111,7 +112,7 @@ class _TasbihScreenState extends State<TasbihScreen> {
     if (_loading) {
       return const AdaptivePageScaffold(
         navigationBar: CupertinoNavigationBar(middle: Text('Tasbih')),
-        child: Center(child: CupertinoActivityIndicator()),
+        child: Center(child: AdaptiveActivityIndicator()),
       );
     }
 
@@ -120,7 +121,7 @@ class _TasbihScreenState extends State<TasbihScreen> {
     return AdaptivePageScaffold(
       navigationBar: CupertinoNavigationBar(
         middle: const Text('Tasbih'),
-        trailing: CupertinoButton(
+        trailing: AdaptiveButton(
           padding: EdgeInsets.zero,
           onPressed: _reset,
           child: const Text('Reset'),
@@ -199,28 +200,28 @@ class _TasbihScreenState extends State<TasbihScreen> {
                 ),
               ),
             ),
-            CupertinoListSection.insetGrouped(
+            AdaptiveListSection.insetGrouped(
               header: const Text('TARGET'),
               children: [
                 for (final target in const [33, 99, 100])
-                  CupertinoListTile(
+                  AdaptiveListTile(
                     title: Text('$target repetitions'),
                     trailing: _target == target
                         ? const Icon(CupertinoIcons.check_mark)
                         : null,
                     onTap: () => _setTarget(target),
                   ),
-                CupertinoListTile(
+                AdaptiveListTile(
                   title: const Text('Custom target'),
                   subtitle: Text('$_target repetitions selected'),
-                  trailing: const CupertinoListTileChevron(),
+                  trailing: const AdaptiveListTileChevron(),
                   onTap: _chooseCustomTarget,
                 ),
               ],
             ),
-            CupertinoListSection.insetGrouped(
+            AdaptiveListSection.insetGrouped(
               children: [
-                CupertinoListTile(
+                AdaptiveListTile(
                   leading: const Icon(CupertinoIcons.arrow_counterclockwise),
                   title: const Text('Reset counter'),
                   onTap: _reset,
