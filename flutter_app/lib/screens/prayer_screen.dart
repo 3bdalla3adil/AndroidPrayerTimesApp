@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' as material;
+import '../core/adaptive_controls.dart';
 import '../core/adaptive_page_scaffold.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 
@@ -135,7 +136,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
     if (!mounted) return;
     if (cityIndex < 0) cityIndex = 0;
 
-    final result = await showCupertinoModalPopup<PrayerCity>(
+    final result = await showAdaptiveModalPopup<PrayerCity>(
       context: context,
       builder: (popupContext) {
         var selectedCountry = country;
@@ -153,7 +154,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      CupertinoButton(
+                      AdaptiveButton(
                         child: const Text('Cancel'),
                         onPressed: () => Navigator.pop(popupContext),
                       ),
@@ -161,7 +162,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
                         'Prayer location',
                         style: TextStyle(fontWeight: FontWeight.w700),
                       ),
-                      CupertinoButton(
+                      AdaptiveButton(
                         child: const Text('Done'),
                         onPressed: () => Navigator.pop(
                           popupContext,
@@ -174,7 +175,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
                     child: Row(
                       children: [
                         Expanded(
-                          child: CupertinoPicker(
+                          child: AdaptivePicker(
                             itemExtent: 44,
                             scrollController: FixedExtentScrollController(
                               initialItem: countries.indexOf(selectedCountry),
@@ -196,7 +197,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
                           ),
                         ),
                         Expanded(
-                          child: CupertinoPicker(
+                          child: AdaptivePicker(
                             itemExtent: 44,
                             scrollController: FixedExtentScrollController(
                               initialItem: selectedCityIndex,
@@ -382,7 +383,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
     return AdaptivePageScaffold(
       navigationBar: CupertinoNavigationBar(
         middle: const Text('Prayer times'),
-        trailing: CupertinoButton(
+        trailing: AdaptiveButton(
           padding: EdgeInsets.zero,
           onPressed: () => _load(refresh: true),
           child: const Icon(CupertinoIcons.refresh),
@@ -393,16 +394,16 @@ class _PrayerScreenState extends State<PrayerScreen> {
           padding: const EdgeInsets.fromLTRB(12, 14, 12, 100),
           children: [
             Text(DateFormat('EEEE, d MMMM y').format(_now)),
-            CupertinoListSection.insetGrouped(
+            AdaptiveListSection.insetGrouped(
               children: [
-                CupertinoListTile(
+                AdaptiveListTile(
                   leading: const Icon(CupertinoIcons.location),
                   title: Text(_location),
                   subtitle: const Text('Used locally for calculation'),
-                  trailing: const CupertinoListTileChevron(),
+                  trailing: const AdaptiveListTileChevron(),
                   onTap: _chooseCity,
                 ),
-                CupertinoListTile(
+                AdaptiveListTile(
                   leading: const Icon(CupertinoIcons.location_fill),
                   title: Text(LocaleController.isArabic ? 'استخدم موقعي الحالي' : 'Use my current location'),
                   onTap: _useDeviceLocation,
@@ -410,8 +411,8 @@ class _PrayerScreenState extends State<PrayerScreen> {
               ],
             ),
             if (_message != null)
-              CupertinoListSection.insetGrouped(
-                children: [CupertinoListTile(title: Text(_message!))],
+              AdaptiveListSection.insetGrouped(
+                children: [AdaptiveListTile(title: Text(_message!))],
               ),
             if (next != null)
               Container(
@@ -429,11 +430,11 @@ class _PrayerScreenState extends State<PrayerScreen> {
                   ],
                 ),
               ),
-            CupertinoListSection.insetGrouped(
+            AdaptiveListSection.insetGrouped(
               header: Text(LocaleController.isArabic ? 'اليوم' : 'TODAY'),
               children: [
                 for (final prayer in _prayers)
-                  CupertinoListTile(
+                  AdaptiveListTile(
                     leading: const Icon(CupertinoIcons.time),
                     title: Text(prayer.name),
                     subtitle: Text(prayer.arabicName, textDirection: TextDirection.rtl),
@@ -441,13 +442,13 @@ class _PrayerScreenState extends State<PrayerScreen> {
                   ),
               ],
             ),
-            CupertinoListSection.insetGrouped(
+            AdaptiveListSection.insetGrouped(
               children: [
-                CupertinoListTile(
+                AdaptiveListTile(
                   leading: const Icon(CupertinoIcons.bell),
                   title: Text(LocaleController.isArabic ? 'تنبيهات الأذان' : 'Athan reminders'),
                   subtitle: Text(LocaleController.isArabic ? 'تشغيل الأذان عند دخول وقت كل صلاة' : 'Plays the bundled Athan at each prayer time'),
-                  trailing: CupertinoSwitch(
+                  trailing: AdaptiveSwitch(
                     value: _reminders,
                     onChanged: _toggleReminders,
                   ),
