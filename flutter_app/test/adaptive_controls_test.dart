@@ -98,7 +98,12 @@ void main() {
       expect(find.byType(CupertinoListTile), findsOneWidget);
       expect(find.byType(CupertinoSwitch), findsOneWidget);
       expect(find.byType(CupertinoActivityIndicator), findsOneWidget);
-      expect(find.bySemanticsLabel('Progress'), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (widget) => widget is Semantics && widget.properties.label == 'Progress',
+        ),
+        findsOneWidget,
+      );
       expect(find.byType(material.LinearProgressIndicator), findsNothing);
       expect(find.byType(CupertinoAlertDialog), findsOneWidget);
       expect(find.byType(material.ListTile), findsNothing);
