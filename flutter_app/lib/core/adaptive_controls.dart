@@ -447,3 +447,55 @@ Future<T?> showAdaptiveModalPopup<T>({
           showDragHandle: true,
         );
 }
+
+class AdaptivePicker extends StatefulWidget {
+  const AdaptivePicker({
+    super.key,
+    required this.itemExtent,
+    required this.onSelectedItemChanged,
+    required this.children,
+    this.scrollController,
+  });
+
+  final double itemExtent;
+  final FixedExtentScrollController? scrollController;
+  final ValueChanged<int> onSelectedItemChanged;
+  final List<Widget> children;
+
+  @override
+  State<AdaptivePicker> createState() => _AdaptivePickerState();
+}
+
+class _AdaptivePickerState extends State<AdaptivePicker> {
+  late int _selected = (widget.scrollController?.initialItem ?? 0)
+      .clamp(0, widget.children.length - 1);
+
+  @override
+  Widget build(BuildContext context) {
+    if (useCupertino) {
+      return cupertino.CupertinoPicker(
+        itemExtent: widget.itemExtent,
+        scrollController: widget.scrollController,
+        onSelectedItemChanged: widget.onSelectedItemChanged,
+        children: widget.children,
+      );
+    }
+    return material.DropdownButton<int>(
+      isExpanded: true,
+      value: _selected,
+      menuMaxHeight: 360,
+      items: [
+        for (var i = 0; i < widget.children.length; i++)
+          material.DropdownMenuItem<int>(
+            value: i,
+            child: widget.children[i],
+          ),
+      ],
+      onChanged: (value) {
+        if (value == null) return;
+        setState(() => _selected = value);
+        widget.onSelectedItemChanged(value);
+      },
+    );
+  }
+}
