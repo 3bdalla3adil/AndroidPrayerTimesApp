@@ -330,7 +330,7 @@ class _QuranMemorizationScreenState extends State<QuranMemorizationScreen> {
                   const SizedBox(height: 7),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(6),
-                    child: material.LinearProgressIndicator(value: completedInRange / rangeCount, minHeight: 6),
+                    child: AdaptiveLinearProgressIndicator(value: completedInRange / rangeCount, minHeight: 6),
                   ),
                   const SizedBox(height: 18),
                   Container(
