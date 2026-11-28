@@ -154,7 +154,7 @@ class _DailyWirdScreenState extends State<DailyWirdScreen> {
                     style: const TextStyle(color: CupertinoColors.secondaryLabel, height: 1.5),
                   ),
                   const SizedBox(height: 24),
-                  CupertinoButton.filled(
+                  AdaptiveButton.filled(
                     onPressed: plan.completed ? null : _startReading,
                     child: Text(_ar ? 'ابدأ القراءة من موضع الورد' : 'Start reading'),
                   ),
