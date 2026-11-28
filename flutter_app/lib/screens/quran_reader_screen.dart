@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart' show Material;
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -1093,7 +1092,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
     const height = 62.0;
     final left = (local.dx - width / 2).clamp(8.0, screen.width - width - 8.0).toDouble();
     final top = (local.dy - height - 18).clamp(90.0, screen.height - height - 95.0).toDouble();
-    _ayahActionOverlay = OverlayEntry(builder: (overlayContext) => Positioned(left: left, top: top, width: width, child: Material(color: const Color(0x00000000), child: DecoratedBox(decoration: BoxDecoration(color: CupertinoColors.secondarySystemGroupedBackground.resolveFrom(overlayContext), borderRadius: BorderRadius.circular(22), border: Border.all(color: CupertinoColors.separator.resolveFrom(overlayContext).withValues(alpha: .45)), boxShadow: [BoxShadow(color: CupertinoColors.black.withValues(alpha: .18), blurRadius: 22, offset: const Offset(0, 8))]), child: SizedBox(height: height, child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
+    _ayahActionOverlay = OverlayEntry(builder: (overlayContext) => Positioned(left: left, top: top, width: width, child: ColoredBox(color: const Color(0x00000000), child: DecoratedBox(decoration: BoxDecoration(color: CupertinoColors.secondarySystemGroupedBackground.resolveFrom(overlayContext), borderRadius: BorderRadius.circular(22), border: Border.all(color: CupertinoColors.separator.resolveFrom(overlayContext).withValues(alpha: .45)), boxShadow: [BoxShadow(color: CupertinoColors.black.withValues(alpha: .18), blurRadius: 22, offset: const Offset(0, 8))]), child: SizedBox(height: height, child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
       _AyahActionButton(icon: CupertinoIcons.text_quote, active: _showTranslation, label: LocaleController.isArabic ? 'ترجمة' : 'Translation', onPressed: () { setState(() => _showTranslation = !_showTranslation); _settingsService.saveTranslation(_showTranslation); _removeAyahToolbar(); }),
       _AyahActionButton(icon: _darkPage ? CupertinoIcons.moon_fill : CupertinoIcons.sun_max, active: _darkPage, label: LocaleController.isArabic ? 'المظهر' : 'Theme', onPressed: () { setState(() => _darkPage = !_darkPage); _settingsService.saveDarkPage(_darkPage); _removeAyahToolbar(); }),
       _AyahActionButton(icon: CupertinoIcons.book, active: _tajweedMode, label: _tajweedMode ? (LocaleController.isArabic ? 'تجويد' : 'Tajweed') : (LocaleController.isArabic ? 'المدينة' : 'Madinah'), onPressed: () { setState(() => _tajweedMode = !_tajweedMode); _removeAyahToolbar(); }),
