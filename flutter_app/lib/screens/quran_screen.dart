@@ -276,7 +276,7 @@ class _QuranScreenState extends State<QuranScreen> {
               padding: const EdgeInsets.fromLTRB(12, 12, 12, 110),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
-                  CupertinoButton.filled(
+                  AdaptiveButton.filled(
                     onPressed: () => Navigator.of(context).pushNamed(AppRoutes.quranMemorization),
                     child: Text(LocaleController.isArabic ? 'حفظ القرآن ومراجعة الآيات' : 'Memorize and review Quran'),
                   ),
@@ -286,7 +286,7 @@ class _QuranScreenState extends State<QuranScreen> {
                     onChanged: (value) => setState(() => _query = value),
                   ),
                   const SizedBox(height: 8),
-                  CupertinoButton.filled(
+                  AdaptiveButton.filled(
                     onPressed: _openNavigator,
                     child: const Text('تنقّل: سورة • آية • صفحة • جزء'),
                   ),
