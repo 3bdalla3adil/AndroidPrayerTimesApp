@@ -304,6 +304,65 @@ class AdaptiveSlider extends StatelessWidget {
         );
 }
 
+/// Determinate progress that follows the platform's native visual language.
+class AdaptiveLinearProgressIndicator extends StatelessWidget {
+  const AdaptiveLinearProgressIndicator({
+    super.key,
+    required this.value,
+    this.minHeight = 4,
+    this.backgroundColor,
+    this.valueColor,
+  });
+
+  final double value;
+  final double minHeight;
+  final Color? backgroundColor;
+  final Color? valueColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final progress = value.clamp(0.0, 1.0).toDouble();
+    if (!useCupertino) {
+      return material.LinearProgressIndicator(
+        value: progress,
+        minHeight: minHeight,
+        backgroundColor: backgroundColor,
+        valueColor: valueColor == null
+            ? null
+            : material.AlwaysStoppedAnimation<Color>(valueColor!),
+      );
+    }
+
+    final trackColor = backgroundColor ??
+        cupertino.CupertinoColors.systemGrey5.resolveFrom(context);
+    final progressColor = valueColor ?? cupertino.CupertinoTheme.of(context).primaryColor;
+    return Semantics(
+      label: 'Progress',
+      value: '${(progress * 100).round()}%',
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(minHeight / 2),
+        child: SizedBox(
+          height: minHeight,
+          width: double.infinity,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              ColoredBox(color: trackColor),
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: FractionallySizedBox(
+                  widthFactor: progress,
+                  child: ColoredBox(color: progressColor),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class AdaptiveAlertDialog extends StatelessWidget {
   const AdaptiveAlertDialog({
     super.key,
