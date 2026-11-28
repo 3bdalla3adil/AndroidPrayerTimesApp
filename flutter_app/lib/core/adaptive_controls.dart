@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart' as cupertino;
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter/material.dart' as material;
 
 /// Platform-native controls shared by feature screens.
@@ -538,4 +539,17 @@ class _AdaptivePickerState extends State<AdaptivePicker> {
       },
     );
   }
+}
+
+/// Trailing chevron matching the active platform's list affordance.
+class AdaptiveListTileChevron extends StatelessWidget {
+  const AdaptiveListTileChevron({super.key});
+
+  @override
+  Widget build(BuildContext context) => useCupertino
+      ? const cupertino.CupertinoListTileChevron()
+      : const material.Icon(
+          material.Icons.chevron_right,
+          size: 22,
+        );
 }
