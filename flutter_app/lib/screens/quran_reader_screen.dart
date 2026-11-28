@@ -2051,7 +2051,7 @@ class _ErrorPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: CupertinoButton.filled(
+      child: AdaptiveButton.filled(
         onPressed: onRetry,
         child: Text(LocaleController.isArabic ? 'إعادة تحميل الصفحة $page' : 'Retry loading page $page'),
       ),
