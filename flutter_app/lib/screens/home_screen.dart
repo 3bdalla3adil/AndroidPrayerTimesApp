@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' as material;
+import '../core/adaptive_controls.dart';
 import '../core/adaptive_page_scaffold.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 import '../models/prayer_entry.dart';
@@ -118,11 +119,11 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _dialog(String title, String message) => showCupertinoDialog<void>(
+  void _dialog(String title, String message) => showAdaptiveDialog<void>(
     context: context,
-    builder: (_) => CupertinoAlertDialog(
+    builder: (_) => AdaptiveAlertDialog(
       title: Text(title), content: Text(message),
-      actions: [CupertinoDialogAction(child: Text(LocaleController.isArabic ? 'حسنًا' : 'OK'), onPressed: () => Navigator.pop(context))],
+      actions: [AdaptiveDialogAction(child: Text(LocaleController.isArabic ? 'حسنًا' : 'OK'), onPressed: () => Navigator.pop(context))],
     ),
   );
 
@@ -322,14 +323,14 @@ class _HomeScreenState extends State<HomeScreen> {
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            CupertinoButton(
+            AdaptiveButton(
               key: const ValueKey('open-more'),
               padding: EdgeInsets.zero,
               onPressed: () => Navigator.of(context).pushNamed(AppRoutes.more),
               child: const Icon(CupertinoIcons.ellipsis_circle),
             ),
             const SizedBox(width: 8),
-            CupertinoButton(
+            AdaptiveButton(
               key: const ValueKey('refresh-home'),
               padding: EdgeInsets.zero,
               onPressed: () => _load(refresh: true),
@@ -350,8 +351,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 4), Text(DateFormat('EEEE, d MMMM y').format(_now)),
                 Text(_location, style: const TextStyle(color: CupertinoColors.secondaryLabel)),
                 const SizedBox(height: 18),
-                if (_error != null) CupertinoListSection.insetGrouped(children: [
-                  CupertinoListTile(leading: const Icon(CupertinoIcons.exclamationmark_triangle),
+                if (_error != null) AdaptiveListSection.insetGrouped(children: [
+                  AdaptiveListTile(leading: const Icon(CupertinoIcons.exclamationmark_triangle),
                     title: Text(LocaleController.isArabic ? 'مواقيت الصلاة غير متاحة' : 'Prayer times unavailable'), subtitle: Text(_error!)),
                 ]),
                 if (next != null) _NextPrayer(prayer: next, now: _now),
@@ -373,26 +374,26 @@ class _HomeScreenState extends State<HomeScreen> {
                   remindersEnabled: _reminders,
                 ),
                 const SizedBox(height: 22),
-                CupertinoListSection.insetGrouped(children: [
-                  if (_prayers.isEmpty) CupertinoListTile(
+                AdaptiveListSection.insetGrouped(children: [
+                  if (_prayers.isEmpty) AdaptiveListTile(
                     leading: Icon(CupertinoIcons.time), title: Text(LocaleController.isArabic ? 'مواقيت الصلاة' : 'Prayer times'),
                     subtitle: Text('Load your location to calculate today\'s prayers.'),
-                  ) else for (final p in _prayers) CupertinoListTile(
+                  ) else for (final p in _prayers) AdaptiveListTile(
                     leading: const Icon(CupertinoIcons.time), title: Text(p.name),
                     subtitle: Text(p.arabicName, textDirection: TextDirection.rtl),
                     trailing: Text(DateFormat('h:mm a').format(p.time)),
                   ),
                 ]),
-                CupertinoListSection.insetGrouped(children: [
-                  CupertinoListTile(
+                AdaptiveListSection.insetGrouped(children: [
+                  AdaptiveListTile(
                     leading: const Icon(CupertinoIcons.book), title: Text(LocaleController.isArabic ? 'متابعة القراءة' : 'Continue Quran'),
-                    subtitle: Text(LocaleController.isArabic ? 'المصحف دون إنترنت' : 'Offline Mushaf'), trailing: const CupertinoListTileChevron(),
+                    subtitle: Text(LocaleController.isArabic ? 'المصحف دون إنترنت' : 'Offline Mushaf'), trailing: const AdaptiveListTileChevron(),
                     onTap: _continueQuran,
                   ),
-                  CupertinoListTile(
+                  AdaptiveListTile(
                     leading: const Icon(CupertinoIcons.bell), title: Text(LocaleController.isArabic ? 'تنبيهات الأذان' : 'Athan reminders'),
                     subtitle: Text(LocaleController.isArabic ? 'تشغيل الأذان عند دخول وقت الصلاة' : 'Plays the bundled Athan at prayer time'),
-                    trailing: CupertinoButton(
+                    trailing: AdaptiveButton(
                       padding: EdgeInsets.zero,
                       minimumSize: const Size(36, 36),
                       onPressed: () => _toggle(!_reminders),
@@ -403,18 +404,18 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ]),
-                CupertinoListSection.insetGrouped(children: [
-                  CupertinoListTile(
+                AdaptiveListSection.insetGrouped(children: [
+                  AdaptiveListTile(
                     leading: const Icon(CupertinoIcons.moon_stars),
                     title: Text(LocaleController.isArabic ? 'تذكير التهجّد' : 'Tahajjud reminder'),
                     subtitle: Text(LocaleController.isArabic ? 'تنبيه عند بداية الثلث الأخير من الليل' : 'A quiet alert at the start of the last third of the night'),
-                    trailing: _tahajjudLoading ? const CupertinoActivityIndicator() : CupertinoSwitch(value: _tahajjudReminders, onChanged: _toggleTahajjud),
+                    trailing: _tahajjudLoading ? const AdaptiveActivityIndicator() : AdaptiveSwitch(value: _tahajjudReminders, onChanged: _toggleTahajjud),
                   ),
-                  CupertinoListTile(
+                  AdaptiveListTile(
                     leading: const Icon(CupertinoIcons.music_note_2),
                     title: Text(LocaleController.isArabic ? 'القرّاء المتاحون' : 'Available Quran reciters'),
                     subtitle: const Text('Mishary Alafasy • Abdul Basit • Mahmoud Khalil Al-Husary'),
-                    trailing: const CupertinoListTileChevron(),
+                    trailing: const AdaptiveListTileChevron(),
                     onTap: _continueQuran,
                   ),
                 ]),
@@ -558,7 +559,7 @@ class _HomeFeatureGrid extends StatelessWidget {
                   final item = items[index];
                   return SizedBox(
                     width: 148,
-                    child: CupertinoButton(
+                    child: AdaptiveButton(
                       padding: EdgeInsets.zero,
                       onPressed: item.$4,
                       child: Container(
