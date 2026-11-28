@@ -141,6 +141,7 @@ class AdaptiveButton extends StatelessWidget {
         return cupertino.CupertinoButton.filled(
           padding: padding,
           borderRadius: borderRadius,
+          minSize: minimumSize?.height,
           onPressed: onPressed,
           child: child,
         );
@@ -149,7 +150,7 @@ class AdaptiveButton extends StatelessWidget {
         padding: padding,
         color: buttonColor,
         borderRadius: borderRadius,
-        minimumSize: minimumSize ?? const Size(0, 44),
+        minSize: minimumSize?.height ?? 44,
         onPressed: onPressed,
         child: child,
       );
