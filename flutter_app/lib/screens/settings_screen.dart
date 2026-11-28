@@ -1,4 +1,7 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart' as material;
+import '../core/adaptive_controls.dart';
 import '../core/adaptive_page_scaffold.dart';
 
 import '../services/athan_reminder_service.dart';
@@ -130,19 +133,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _chooseAdjustment(String prayer) async {
     final current = _adjustments[prayer] ?? 0;
-    final selected = await showCupertinoModalPopup<int>(
+    final selected = await showAdaptiveModalPopup<int>(
       context: context,
-      builder: (context) => CupertinoActionSheet(
+      builder: (context) => AdaptiveActionSheet(
         title: Text('$prayer time adjustment'),
         message: Text('Current: ${current >= 0 ? '+' : ''}$current minutes'),
         actions: [
           for (var value = -60; value <= 60; value += 5)
-            CupertinoActionSheetAction(
+            AdaptiveActionSheetAction(
               onPressed: () => Navigator.pop(context, value),
               child: Text('${value >= 0 ? '+' : ''}$value minutes'),
             ),
         ],
-        cancelButton: CupertinoActionSheetAction(
+        cancelButton: AdaptiveActionSheetAction(
           onPressed: () => Navigator.pop(context),
           child: const Text('Cancel'),
         ),
@@ -161,19 +164,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _chooseQuranFontSize() async {
-    final selected = await showCupertinoModalPopup<double>(
+    final selected = await showAdaptiveModalPopup<double>(
       context: context,
-      builder: (context) => CupertinoActionSheet(
+      builder: (context) => AdaptiveActionSheet(
         title: const Text('حجم خط المصحف'),
         message: const Text('اختر حجمًا واضحًا للنص العربي العثماني.'),
         actions: [
           for (final value in const [20.0, 22.0, 24.0, 26.0, 28.0, 30.0, 32.0, 34.0, 36.0, 38.0])
-            CupertinoActionSheetAction(
+            AdaptiveActionSheetAction(
               onPressed: () => Navigator.pop(context, value),
               child: Text(value.round().toString()),
             ),
         ],
-        cancelButton: CupertinoActionSheetAction(
+        cancelButton: AdaptiveActionSheetAction(
           onPressed: () => Navigator.pop(context),
           child: const Text('إلغاء'),
         ),
@@ -185,25 +188,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _chooseDailyWird() async {
-    final selectedUnit = await showCupertinoModalPopup<WirdUnit>(
+    final selectedUnit = await showAdaptiveModalPopup<WirdUnit>(
       context: context,
-      builder: (popupContext) => CupertinoActionSheet(
+      builder: (popupContext) => AdaptiveActionSheet(
         title: Text(LocaleController.isArabic ? 'نوع الورد اليومي' : 'Daily wird unit'),
         actions: [
-          CupertinoActionSheetAction(
+          AdaptiveActionSheetAction(
             onPressed: () => Navigator.pop(popupContext, WirdUnit.juz),
             child: const Text('جزء'),
           ),
-          CupertinoActionSheetAction(
+          AdaptiveActionSheetAction(
             onPressed: () => Navigator.pop(popupContext, WirdUnit.hizb),
             child: const Text('حزب'),
           ),
-          CupertinoActionSheetAction(
+          AdaptiveActionSheetAction(
             onPressed: () => Navigator.pop(popupContext, WirdUnit.ayah),
             child: const Text('عدد الآيات'),
           ),
         ],
-        cancelButton: CupertinoActionSheetAction(
+        cancelButton: AdaptiveActionSheetAction(
           onPressed: () => Navigator.pop(popupContext),
           child: Text(LocaleController.isArabic ? 'إلغاء' : 'Cancel'),
         ),
@@ -218,13 +221,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final controller = TextEditingController(
       text: selectedUnit == _wirdUnit ? _wirdAmount.toString() : '1',
     );
-    final amount = await showCupertinoDialog<int>(
+    final amount = await showAdaptiveDialog<int>(
       context: context,
-      builder: (dialogContext) => CupertinoAlertDialog(
+      builder: (dialogContext) => AdaptiveAlertDialog(
         title: Text(LocaleController.isArabic ? 'كم تريد أن تقرأ يومياً؟' : 'Daily reading target'),
         content: Padding(
           padding: const EdgeInsets.only(top: 12),
-          child: CupertinoTextField(
+          child: AdaptiveTextField(
             controller: controller,
             keyboardType: TextInputType.number,
             textAlign: TextAlign.center,
@@ -232,11 +235,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ),
         actions: [
-          CupertinoDialogAction(
+          AdaptiveDialogAction(
             onPressed: () => Navigator.pop(dialogContext),
             child: Text(LocaleController.isArabic ? 'إلغاء' : 'Cancel'),
           ),
-          CupertinoDialogAction(
+          AdaptiveDialogAction(
             isDefaultAction: true,
             onPressed: () {
               final value = int.tryParse(controller.text.trim());
@@ -260,13 +263,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _chooseTasbihTarget() async {
     final controller = TextEditingController(text: _tasbihTarget.toString());
-    final selected = await showCupertinoDialog<int>(
+    final selected = await showAdaptiveDialog<int>(
       context: context,
-      builder: (dialogContext) => CupertinoAlertDialog(
+      builder: (dialogContext) => AdaptiveAlertDialog(
         title: const Text('هدف التسبيح'),
         content: Padding(
           padding: const EdgeInsets.only(top: 12),
-          child: CupertinoTextField(
+          child: AdaptiveTextField(
             controller: controller,
             keyboardType: TextInputType.number,
             textAlign: TextAlign.center,
@@ -274,11 +277,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ),
         actions: [
-          CupertinoDialogAction(
+          AdaptiveDialogAction(
             onPressed: () => Navigator.pop(dialogContext),
             child: const Text('إلغاء'),
           ),
-          CupertinoDialogAction(
+          AdaptiveDialogAction(
             isDefaultAction: true,
             onPressed: () {
               final value = int.tryParse(controller.text.trim());
@@ -298,19 +301,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _chooseAthanSound() async {
-    final selected = await showCupertinoModalPopup<String>(
+    final selected = await showAdaptiveModalPopup<String>(
       context: context,
-      builder: (context) => CupertinoActionSheet(
+      builder: (context) => AdaptiveActionSheet(
         title: const Text('Athan sound'),
         message: const Text('Choose the bundled Athan recording used at every prayer time.'),
         actions: [
           for (final entry in NotificationService.soundLabels.entries)
-            CupertinoActionSheetAction(
+            AdaptiveActionSheetAction(
               onPressed: () => Navigator.pop(context, entry.key),
               child: Text(entry.value),
             ),
         ],
-        cancelButton: CupertinoActionSheetAction(
+        cancelButton: AdaptiveActionSheetAction(
           onPressed: () => Navigator.pop(context),
           child: const Text('Cancel'),
         ),
@@ -329,13 +332,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           : _athanSound;
       await NotificationService.playTestAthan(soundId: soundId);
       if (!mounted) return;
-      await showCupertinoDialog<void>(
+      await showAdaptiveDialog<void>(
         context: context,
-        builder: (dialogContext) => CupertinoAlertDialog(
+        builder: (dialogContext) => AdaptiveAlertDialog(
           title: Text(fajr ? 'Fajr Athan playing' : 'Athan playing'),
           content: const Text('The selected Athan should play immediately. Keep the device audio enabled and make sure Silent Mode / Do Not Disturb is not suppressing audio.'),
           actions: [
-            CupertinoDialogAction(
+            AdaptiveDialogAction(
               onPressed: () => Navigator.pop(dialogContext),
               child: const Text('OK'),
             ),
@@ -348,19 +351,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _choosePreReminder() async {
-    final selected = await showCupertinoModalPopup<int>(
+    final selected = await showAdaptiveModalPopup<int>(
       context: context,
-      builder: (context) => CupertinoActionSheet(
+      builder: (context) => AdaptiveActionSheet(
         title: const Text('Pre-prayer reminder'),
         message: const Text('When enabled, the schedule uses 6 days so iOS stays within its 64-notification pending limit.'),
         actions: [
           for (final value in const [0, 5, 10, 15, 20, 30])
-            CupertinoActionSheetAction(
+            AdaptiveActionSheetAction(
               onPressed: () => Navigator.pop(context, value),
               child: Text(value == 0 ? 'Off' : '$value minutes before'),
             ),
         ],
-        cancelButton: CupertinoActionSheetAction(
+        cancelButton: AdaptiveActionSheetAction(
           onPressed: () => Navigator.pop(context),
           child: const Text('Cancel'),
         ),
@@ -374,29 +377,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _showError(String title, Object? error) async {
     if (!mounted) return;
-    await showCupertinoDialog<void>(
+    await showAdaptiveDialog<void>(
       context: context,
-      builder: (dialogContext) => CupertinoAlertDialog(
+      builder: (dialogContext) => AdaptiveAlertDialog(
         title: Text(title),
         content: error == null ? null : Text(error.toString()),
-        actions: [CupertinoDialogAction(child: const Text('OK'), onPressed: () => Navigator.pop(dialogContext))],
+        actions: [AdaptiveDialogAction(child: const Text('OK'), onPressed: () => Navigator.pop(dialogContext))],
       ),
     );
   }
 
   Future<void> _chooseMethod() async {
-    final selected = await showCupertinoModalPopup<int>(
+    final selected = await showAdaptiveModalPopup<int>(
       context: context,
-      builder: (context) => CupertinoActionSheet(
+      builder: (context) => AdaptiveActionSheet(
         title: const Text('Calculation method'),
         actions: [
           for (final entry in _methods.entries)
-            CupertinoActionSheetAction(
+            AdaptiveActionSheetAction(
               onPressed: () => Navigator.pop(context, entry.key),
               child: Text(entry.value),
             ),
         ],
-        cancelButton: CupertinoActionSheetAction(
+        cancelButton: AdaptiveActionSheetAction(
           onPressed: () => Navigator.pop(context),
           child: const Text('Cancel'),
         ),
@@ -414,21 +417,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _chooseMadhab() async {
-    final selected = await showCupertinoModalPopup<int>(
+    final selected = await showAdaptiveModalPopup<int>(
       context: context,
-      builder: (context) => CupertinoActionSheet(
+      builder: (context) => AdaptiveActionSheet(
         title: const Text('Asr calculation'),
         actions: [
-          CupertinoActionSheetAction(
+          AdaptiveActionSheetAction(
             onPressed: () => Navigator.pop(context, 0),
             child: const Text('Shafi / Standard'),
           ),
-          CupertinoActionSheetAction(
+          AdaptiveActionSheetAction(
             onPressed: () => Navigator.pop(context, 1),
             child: const Text('Hanafi'),
           ),
         ],
-        cancelButton: CupertinoActionSheetAction(
+        cancelButton: AdaptiveActionSheetAction(
           onPressed: () => Navigator.pop(context),
           child: const Text('Cancel'),
         ),
@@ -458,50 +461,268 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _loading = false);
-      await showCupertinoDialog<void>(
+      await showAdaptiveDialog<void>(
         context: context,
-        builder: (dialogContext) => CupertinoAlertDialog(
+        builder: (dialogContext) => AdaptiveAlertDialog(
           title: const Text('Athan setup failed'),
           content: Text(e.toString()),
-          actions: [CupertinoDialogAction(child: const Text('OK'), onPressed: () => Navigator.pop(dialogContext))],
+          actions: [AdaptiveDialogAction(child: const Text('OK'), onPressed: () => Navigator.pop(dialogContext))],
         ),
       );
     }
   }
 
+  Widget _buildMaterialSettings(BuildContext context) {
+    final arabic = LocaleController.isArabic;
+
+    Widget group(String title, List<Widget> children, {String? footer}) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(4, 8, 4, 8),
+              child: Text(title.toUpperCase(),
+                style: material.Theme.of(context).textTheme.labelLarge?.copyWith(
+                  letterSpacing: 1.0, fontWeight: FontWeight.w700)),
+            ),
+            material.Card(
+              clipBehavior: Clip.antiAlias,
+              child: Column(children: [
+                for (var i = 0; i < children.length; i++) ...[
+                  if (i > 0) const material.Divider(height: 1),
+                  children[i],
+                ],
+              ]),
+            ),
+            if (footer != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(6, 8, 6, 0),
+                child: Text(footer, style: material.Theme.of(context).textTheme.bodySmall),
+              ),
+          ],
+        ),
+      );
+    }
+
+    if (_loading && !_reminders) {
+      return AdaptivePageScaffold(
+        navigationBar: material.AppBar(title: Text(arabic ? 'الإعدادات' : 'Settings')),
+        child: const Center(child: material.CircularProgressIndicator()),
+      );
+    }
+
+    return AdaptivePageScaffold(
+      navigationBar: material.AppBar(
+        title: Text(arabic ? 'الإعدادات' : 'Settings'),
+        actions: [
+          material.IconButton(
+            tooltip: arabic ? 'تحديث التنبيهات' : 'Refresh reminders',
+            onPressed: _refreshSchedules,
+            icon: const Icon(material.Icons.refresh_rounded),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 36),
+          children: [
+            group(arabic ? 'اللغة' : 'Language', [
+              material.ListTile(
+                leading: const Icon(material.Icons.language_rounded),
+                title: Text(arabic ? 'لغة التطبيق' : 'App language'),
+                subtitle: Text(arabic ? 'العربية' : 'English'),
+                trailing: const Icon(material.Icons.chevron_right_rounded),
+                onTap: () async {
+                  final selected = await material.showModalBottomSheet<String>(
+                    context: context,
+                    showDragHandle: true,
+                    builder: (sheetContext) => SafeArea(
+                      child: Column(mainAxisSize: MainAxisSize.min, children: [
+                        material.ListTile(
+                          title: const Text('العربية'),
+                          onTap: () => Navigator.pop(sheetContext, 'ar'),
+                        ),
+                        material.ListTile(
+                          title: const Text('English'),
+                          onTap: () => Navigator.pop(sheetContext, 'en'),
+                        ),
+                      ]),
+                    ),
+                  );
+                  if (selected != null) {
+                    await LocaleController.setLanguage(selected);
+                    await _nextPrayerWidget.refresh();
+                    if (mounted) setState(() {});
+                  }
+                },
+              ),
+            ]),
+            group(arabic ? 'الصلاة' : 'Prayer', [
+              material.SwitchListTile(
+                secondary: const Icon(material.Icons.notifications_active_outlined),
+                title: Text(arabic ? 'تنبيهات الأذان' : 'Athan reminders'),
+                subtitle: Text(_reminders
+                  ? '$_scheduled notifications scheduled for the next 12 days.'
+                  : 'Schedule local prayer notifications automatically.'),
+                value: _reminders,
+                onChanged: _loading ? null : (value) => _toggle(value),
+              ),
+              for (final prayer in StorageService.prayerNames)
+                material.ListTile(
+                  leading: Icon(_enabledPrayers.contains(prayer)
+                    ? material.Icons.notifications_active_outlined
+                    : material.Icons.notifications_off_outlined),
+                  title: Text(prayer),
+                  subtitle: Text(_adjustments[prayer] == null
+                    ? 'Athan enabled'
+                    : 'Adjustment: ${_adjustments[prayer]! >= 0 ? '+' : ''}${_adjustments[prayer]} min'),
+                  trailing: material.Switch(
+                    value: _enabledPrayers.contains(prayer),
+                    onChanged: _loading ? null : (value) => _togglePrayer(prayer, value),
+                  ),
+                  onTap: _loading ? null : () => _chooseAdjustment(prayer),
+                ),
+              material.ListTile(
+                leading: const Icon(material.Icons.alarm_outlined),
+                title: Text(arabic ? 'تذكير قبل الصلاة' : 'Pre-prayer reminder'),
+                subtitle: Text(_preReminderMinutes == 0 ? 'Off' : '$_preReminderMinutes minutes before each enabled prayer'),
+                trailing: const Icon(material.Icons.chevron_right_rounded),
+                onTap: _loading ? null : _choosePreReminder,
+              ),
+            ]),
+            group(arabic ? 'ويدجت الصلاة القادمة' : 'Next prayer widget', [
+              material.SwitchListTile(
+                secondary: const Icon(material.Icons.widgets_outlined),
+                title: Text(arabic ? 'ويدجت الصلاة القادمة' : 'Next Prayer Widget'),
+                subtitle: Text(_nextPrayerWidgetEnabled ? 'Enabled' : 'Disabled'),
+                value: _nextPrayerWidgetEnabled,
+                onChanged: _loading ? null : _toggleNextPrayerWidget,
+              ),
+            ], footer: arabic
+              ? 'يعرض التاريخ الهجري والصلاة القادمة والعد التنازلي. أضفه إلى الشاشة الرئيسية في Android.'
+              : 'Shows the Hijri date, next prayer and countdown. Add it to your Android Home screen.'),
+            group(arabic ? 'حساب مواقيت الصلاة' : 'Prayer calculation', [
+              material.ListTile(
+                leading: const Icon(material.Icons.schedule_rounded),
+                title: Text(arabic ? 'طريقة الحساب' : 'Calculation method'),
+                subtitle: Text(_methods[_method] ?? 'Muslim World League'),
+                trailing: const Icon(material.Icons.chevron_right_rounded),
+                onTap: _loading ? null : _chooseMethod,
+              ),
+              material.ListTile(
+                leading: const Icon(material.Icons.wb_sunny_outlined),
+                title: Text(arabic ? 'طريقة العصر' : 'Asr method'),
+                subtitle: Text(_madhab == 1 ? 'Hanafi' : 'Shafi / Standard'),
+                trailing: const Icon(material.Icons.chevron_right_rounded),
+                onTap: _loading ? null : _chooseMadhab,
+              ),
+            ]),
+            group(arabic ? 'صوت الأذان' : 'Athan sound', [
+              material.ListTile(
+                leading: const Icon(material.Icons.music_note_rounded),
+                title: Text(arabic ? 'صوت الأذان' : 'Athan sound'),
+                subtitle: Text(NotificationService.soundLabels[_athanSound] ?? 'Athan — Default'),
+                trailing: const Icon(material.Icons.chevron_right_rounded),
+                onTap: _loading ? null : _chooseAthanSound,
+              ),
+              material.ListTile(
+                leading: const Icon(material.Icons.play_circle_outline_rounded),
+                title: Text(arabic ? 'تجربة صوت الأذان' : 'Test Athan'),
+                subtitle: Text(arabic ? 'تشغيل الصوت المختار للتحقق منه' : 'Play the selected sound'),
+                onTap: _loading ? null : _testAthan,
+              ),
+            ]),
+            group(arabic ? 'الورد اليومي' : 'Daily Quran wird', [
+              material.ListTile(
+                leading: const Icon(material.Icons.menu_book_rounded),
+                title: Text(arabic ? 'هدف الورد اليومي' : 'Daily reading goal'),
+                subtitle: Text('$_wirdAmount ${_wirdUnit == WirdUnit.juz ? 'juz' : _wirdUnit == WirdUnit.hizb ? 'hizb' : 'ayah'}'),
+                trailing: const Icon(material.Icons.chevron_right_rounded),
+                onTap: _loading ? null : _chooseDailyWird,
+              ),
+            ]),
+            group(arabic ? 'القرآن الكريم' : 'Quran', [
+              material.ListTile(
+                leading: const Icon(material.Icons.text_fields_rounded),
+                title: Text(arabic ? 'حجم خط المصحف' : 'Mushaf font size'),
+                subtitle: Text('${_quranFontSize.round()} pt'),
+                trailing: const Icon(material.Icons.chevron_right_rounded),
+                onTap: _loading ? null : _chooseQuranFontSize,
+              ),
+              material.SwitchListTile(
+                secondary: const Icon(material.Icons.translate_rounded),
+                title: Text(arabic ? 'إظهار الترجمة الإنجليزية' : 'English translation'),
+                subtitle: Text(arabic ? 'عرض الترجمة أسفل الآيات' : 'Show translation below each ayah'),
+                value: _quranTranslation,
+                onChanged: _loading ? null : (value) async {
+                  await _storage.saveQuranShowTranslation(value);
+                  if (mounted) setState(() => _quranTranslation = value);
+                },
+              ),
+              material.SwitchListTile(
+                secondary: const Icon(material.Icons.touch_app_outlined),
+                title: Text(arabic ? 'أدوات الآية بالضغط المطوّل' : 'Ayah toolbar on long press'),
+                subtitle: Text(arabic ? 'إظهار أدوات الآية عند الضغط المستمر فقط' : 'Show ayah actions only after a long press'),
+                value: _quranAyahToolbarEnabled,
+                onChanged: _loading ? null : (value) async {
+                  await _storage.saveQuranAyahToolbarEnabled(value);
+                  if (mounted) setState(() => _quranAyahToolbarEnabled = value);
+                },
+              ),
+            ]),
+            group(arabic ? 'التسبيح' : 'Tasbih', [
+              material.ListTile(
+                leading: const Icon(material.Icons.radio_button_checked_rounded),
+                title: Text(arabic ? 'هدف التسبيح' : 'Tasbih target'),
+                subtitle: Text('$_tasbihTarget repetitions; alert appears when the goal is reached.'),
+                trailing: const Icon(material.Icons.chevron_right_rounded),
+                onTap: _loading ? null : _chooseTasbihTarget,
+              ),
+            ]),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override Widget build(BuildContext context) {
+    if (defaultTargetPlatform != TargetPlatform.iOS) {
+      return _buildMaterialSettings(context);
+    }
     return AdaptivePageScaffold(
       navigationBar: CupertinoNavigationBar(middle: Text(LocaleController.isArabic ? 'الإعدادات' : 'Settings')),
       child: SafeArea(
         child: _loading && !_reminders
-            ? const Center(child: CupertinoActivityIndicator())
+            ? const Center(child: AdaptiveActivityIndicator())
             : ListView(
                 padding: const EdgeInsets.fromLTRB(12, 16, 12, 40),
                 children: [
-                  CupertinoListSection.insetGrouped(
+                  AdaptiveListSection.insetGrouped(
                     header: Text(LocaleController.isArabic ? 'اللغة' : 'LANGUAGE'),
                     children: [
-                      CupertinoListTile(
+                      AdaptiveListTile(
                         leading: const Icon(CupertinoIcons.globe),
                         title: Text(LocaleController.isArabic ? 'لغة التطبيق' : 'App language'),
                         subtitle: Text(LocaleController.isArabic ? 'العربية (الافتراضية)' : 'English'),
-                        trailing: const CupertinoListTileChevron(),
+                        trailing: const AdaptiveListTileChevron(),
                         onTap: () async {
-                          final selected = await showCupertinoModalPopup<String>(
+                          final selected = await showAdaptiveModalPopup<String>(
                             context: context,
-                            builder: (popupContext) => CupertinoActionSheet(
+                            builder: (popupContext) => AdaptiveActionSheet(
                               title: Text(LocaleController.isArabic ? 'اختر لغة التطبيق' : 'Choose app language'),
                               actions: [
-                                CupertinoActionSheetAction(
+                                AdaptiveActionSheetAction(
                                   onPressed: () => Navigator.pop(popupContext, 'ar'),
                                   child: const Text('العربية'),
                                 ),
-                                CupertinoActionSheetAction(
+                                AdaptiveActionSheetAction(
                                   onPressed: () => Navigator.pop(popupContext, 'en'),
                                   child: const Text('English'),
                                 ),
                               ],
-                              cancelButton: CupertinoActionSheetAction(
+                              cancelButton: AdaptiveActionSheetAction(
                                 onPressed: () => Navigator.pop(popupContext),
                                 child: Text(LocaleController.isArabic ? 'إلغاء' : 'Cancel'),
                               ),
@@ -516,16 +737,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     ],
                   ),
-                  CupertinoListSection.insetGrouped(
+                  AdaptiveListSection.insetGrouped(
                     header: Text(LocaleController.isArabic ? 'الصلاة' : 'PRAYER'),
                     children: [
-                      CupertinoListTile(
+                      AdaptiveListTile(
                         leading: const Icon(CupertinoIcons.bell_fill),
                         title: const Text('Athan reminders'),
                         subtitle: Text(_reminders
                             ? '$_scheduled notifications scheduled for the next 12 days.'
                             : 'Schedule local prayer notifications automatically.'),
-                        trailing: CupertinoButton(
+                        trailing: AdaptiveButton(
                           padding: EdgeInsets.zero,
                           minimumSize: const Size(36, 36),
                           onPressed: _loading ? null : () => _toggle(!_reminders),
@@ -536,11 +757,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                       ),
                       for (final prayer in StorageService.prayerNames)
-                        CupertinoListTile(
+                        AdaptiveListTile(
                           leading: Icon(_enabledPrayers.contains(prayer) ? CupertinoIcons.bell_fill : CupertinoIcons.bell_slash),
                           title: Text(prayer),
                           subtitle: Text(_adjustments[prayer] == null ? 'Athan enabled' : 'Adjustment: ${_adjustments[prayer]! >= 0 ? '+' : ''}${_adjustments[prayer]} min'),
-                          trailing: CupertinoButton(
+                          trailing: AdaptiveButton(
                             padding: EdgeInsets.zero,
                             minimumSize: const Size(36, 36),
                             onPressed: _loading
@@ -559,64 +780,64 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           onTap: _loading ? null : () => _chooseAdjustment(prayer),
                         ),
 
-                      CupertinoListTile(
+                      AdaptiveListTile(
                         leading: const Icon(CupertinoIcons.alarm),
                         title: const Text('Pre-prayer reminder'),
                         subtitle: Text(_preReminderMinutes == 0 ? 'Off' : '$_preReminderMinutes minutes before each enabled prayer'),
-                        trailing: const CupertinoListTileChevron(),
+                        trailing: const AdaptiveListTileChevron(),
                         onTap: _loading ? null : _choosePreReminder,
                       ),
                     ],
                   ),
-                  CupertinoListSection.insetGrouped(
+                  AdaptiveListSection.insetGrouped(
                     header: Text(LocaleController.isArabic ? 'ويدجت الصلاة القادمة' : 'NEXT PRAYER WIDGET'),
                     footer: Text(LocaleController.isArabic
                         ? 'يعرض التاريخ الهجري والصلاة القادمة ووقت الصلاة والعد التنازلي. على iPhone أضفه من تخصيص شاشة القفل. في Android أضفه إلى الشاشة الرئيسية لأن النظام لا يدعم ويدجت شاشة القفل.'
                         : 'Shows today’s Hijri date, next prayer, prayer time and a live countdown. On iPhone, add it from Lock Screen customization. Android supports adding it to the Home screen, not the Lock screen.'),
                     children: [
-                      CupertinoListTile(
+                      AdaptiveListTile(
                         leading: const Icon(CupertinoIcons.lock_fill),
                         title: Text(LocaleController.isArabic ? 'ويدجت الصلاة القادمة' : 'Next Prayer Widget'),
                         subtitle: Text(_nextPrayerWidgetEnabled
                             ? (LocaleController.isArabic ? 'مفعّل' : 'Enabled')
                             : (LocaleController.isArabic ? 'غير مفعّل' : 'Disabled')),
-                        trailing: CupertinoSwitch(
+                        trailing: AdaptiveSwitch(
                           value: _nextPrayerWidgetEnabled,
                           onChanged: _loading ? null : _toggleNextPrayerWidget,
                         ),
                       ),
                     ],
                   ),
-                  CupertinoListSection.insetGrouped(
+                  AdaptiveListSection.insetGrouped(
                     header: const Text('PRAYER CALCULATION'),
                     children: [
-                      CupertinoListTile(
+                      AdaptiveListTile(
                         leading: const Icon(CupertinoIcons.time),
                         title: const Text('Calculation method'),
                         subtitle: Text(_methods[_method] ?? 'Muslim World League'),
-                        trailing: const CupertinoListTileChevron(),
+                        trailing: const AdaptiveListTileChevron(),
                         onTap: _loading ? null : _chooseMethod,
                       ),
-                      CupertinoListTile(
+                      AdaptiveListTile(
                         leading: const Icon(CupertinoIcons.sun_max),
                         title: const Text('Asr method'),
                         subtitle: Text(_madhab == 1 ? 'Hanafi' : 'Shafi / Standard'),
-                        trailing: const CupertinoListTileChevron(),
+                        trailing: const AdaptiveListTileChevron(),
                         onTap: _loading ? null : _chooseMadhab,
                       ),
                     ],
                   ),
-                  CupertinoListSection.insetGrouped(
+                  AdaptiveListSection.insetGrouped(
                     header: Text(LocaleController.isArabic ? 'صوت الأذان' : 'ATHAN SOUND'),
                     children: [
-                      CupertinoListTile(
+                      AdaptiveListTile(
                         leading: const Icon(CupertinoIcons.music_note),
                         title: Text(LocaleController.isArabic ? 'صوت الأذان' : 'Athan sound'),
                         subtitle: Text(NotificationService.soundLabels[_athanSound] ?? 'Athan — Default'),
-                        trailing: const CupertinoListTileChevron(),
+                        trailing: const AdaptiveListTileChevron(),
                         onTap: _loading ? null : _chooseAthanSound,
                       ),
-                      CupertinoListTile(
+                      AdaptiveListTile(
                         leading: const Icon(CupertinoIcons.play_circle_fill),
                         title: Text(LocaleController.isArabic ? 'تجربة صوت الأذان' : 'Test Athan'),
                         subtitle: Text(LocaleController.isArabic ? 'تشغيل الصوت المختار للتحقق منه' : 'Play the selected sound'),
@@ -624,33 +845,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     ],
                   ),
-                  CupertinoListSection.insetGrouped(
+                  AdaptiveListSection.insetGrouped(
                     header: Text(LocaleController.isArabic ? 'الورد اليومي' : 'DAILY QURAN WIRD'),
                     children: [
-                      CupertinoListTile(
+                      AdaptiveListTile(
                         leading: const Icon(CupertinoIcons.book_fill),
                         title: Text(LocaleController.isArabic ? 'هدف الورد اليومي' : 'Daily reading goal'),
                         subtitle: Text('$_wirdAmount ${_wirdUnit == WirdUnit.juz ? 'جزء' : _wirdUnit == WirdUnit.hizb ? 'حزب' : 'آية'}'),
-                        trailing: const CupertinoListTileChevron(),
+                        trailing: const AdaptiveListTileChevron(),
                         onTap: _loading ? null : _chooseDailyWird,
                       ),
                     ],
                   ),
-                  CupertinoListSection.insetGrouped(
+                  AdaptiveListSection.insetGrouped(
                     header: Text(LocaleController.isArabic ? 'القرآن الكريم' : 'QURAN'),
                     children: [
-                      CupertinoListTile(
+                      AdaptiveListTile(
                         leading: const Icon(CupertinoIcons.textformat_size),
                         title: Text(LocaleController.isArabic ? 'حجم خط المصحف' : 'Mushaf font size'),
                         subtitle: Text('${_quranFontSize.round()} pt'),
-                        trailing: const CupertinoListTileChevron(),
+                        trailing: const AdaptiveListTileChevron(),
                         onTap: _loading ? null : _chooseQuranFontSize,
                       ),
-                      CupertinoListTile(
+                      AdaptiveListTile(
                         leading: const Icon(CupertinoIcons.globe),
                         title: Text(LocaleController.isArabic ? 'إظهار الترجمة الإنجليزية' : 'English translation'),
                         subtitle: Text(LocaleController.isArabic ? 'عرض الترجمة أسفل الآيات' : 'Show translation below each ayah'),
-                        trailing: CupertinoSwitch(
+                        trailing: AdaptiveSwitch(
                           value: _quranTranslation,
                           onChanged: _loading ? null : (value) async {
                             await _storage.saveQuranShowTranslation(value);
@@ -658,11 +879,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           },
                         ),
                       ),
-                      CupertinoListTile(
+                      AdaptiveListTile(
                         leading: const Icon(CupertinoIcons.hand_draw),
                         title: Text(LocaleController.isArabic ? 'أدوات الآية بالضغط المطوّل' : 'Ayah toolbar on long press'),
                         subtitle: Text(LocaleController.isArabic ? 'إظهار أدوات الآية عند الضغط المستمر فقط' : 'Show ayah actions only after a long press'),
-                        trailing: CupertinoSwitch(
+                        trailing: AdaptiveSwitch(
                           value: _quranAyahToolbarEnabled,
                           onChanged: _loading ? null : (value) async {
                             await _storage.saveQuranAyahToolbarEnabled(value);
@@ -672,14 +893,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     ],
                   ),
-                  CupertinoListSection.insetGrouped(
+                  AdaptiveListSection.insetGrouped(
                     header: const Text('TASBIH'),
                     children: [
-                      CupertinoListTile(
+                      AdaptiveListTile(
                         leading: const Icon(CupertinoIcons.circle),
                         title: const Text('Tasbih target'),
                         subtitle: Text('$_tasbihTarget repetitions; alert appears when the goal is reached.'),
-                        trailing: const CupertinoListTileChevron(),
+                        trailing: const AdaptiveListTileChevron(),
                         onTap: _loading ? null : _chooseTasbihTarget,
                       ),
                     ],

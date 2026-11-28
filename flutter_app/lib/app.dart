@@ -43,6 +43,34 @@ class _RootShellState extends State<RootShell> {
         ? 'إلى والد زوجتي العزيز، وأمير قلبها،\n\nأهديك هذه الكلمات المتواضعة تقديرًا لمقامك، واحترامًا لشخصك الكريم، وامتنانًا للمكانة العزيزة التي تحملها في قلوبنا.\n\nلك مني خالص التقدير وصادق الدعاء؛ أسأل الله أن يبارك في عمرك وصحتك، وأن يجزيك خير الجزاء، ويديم عليك السكينة والرضا، ويحفظ لك من تحب.\n\nقد لا تفي الكلمات حقك، لكنها تحمل احترامًا صادقًا ومودةً خالصة.'
         : 'To my dear father-in-law, and the cherished father of my beloved,\n\nPlease accept this humble dedication as a sign of my respect for you and gratitude for the valued place you hold in our family.\n\nWith sincere appreciation and prayers, may Allah bless you with health, a long life filled with goodness, peace of heart, and the happiness of those you love.\n\nWords may never fully express my esteem, but these come with genuine respect and affection.';
 
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      await showCupertinoDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => CupertinoAlertDialog(
+          title: Text(isArabic ? 'إهداء وتقدير' : 'A Gift of Gratitude'),
+          content: Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: SingleChildScrollView(
+              child: Text(
+                dedication,
+                textAlign: TextAlign.center,
+                textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
+              ),
+            ),
+          ),
+          actions: [
+            CupertinoDialogAction(
+              isDefaultAction: true,
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(isArabic ? 'الدخول إلى التطبيق' : 'Enter app'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
     await material.showGeneralDialog<void>(
       context: context,
       barrierDismissible: false,
@@ -63,7 +91,7 @@ class _RootShellState extends State<RootShell> {
                     child: Column(
                       children: [
                         const Icon(
-                          CupertinoIcons.gift_fill,
+                          material.Icons.card_giftcard,
                           color: mutedGold,
                           size: 38,
                         ),
@@ -113,7 +141,7 @@ class _RootShellState extends State<RootShell> {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   const Icon(
-                                    CupertinoIcons.sparkles,
+                                    material.Icons.auto_awesome,
                                     color: gold,
                                     size: 22,
                                   ),
@@ -243,6 +271,13 @@ class SalawatQuranApp extends StatelessWidget {
             title: locale.languageCode == 'ar' ? 'صلوات' : 'Salawat',
             debugShowCheckedModeBanner: false,
             theme: AppTheme.data,
+            builder: (context, child) => IconTheme(
+              data: IconThemeData(
+                color: AppTheme.iconTint.resolveFrom(context),
+                size: 22,
+              ),
+              child: child ?? const SizedBox.shrink(),
+            ),
             locale: locale,
             localizationsDelegates: const [
               GlobalCupertinoLocalizations.delegate,
@@ -261,6 +296,26 @@ class SalawatQuranApp extends StatelessWidget {
           theme: AppTheme.materialData,
           darkTheme: AppTheme.materialDarkData,
           themeMode: material.ThemeMode.system,
+          // Bridge Material brightness and the shared Salawat palette for the few
+          // Cupertino primitives used only for platform-neutral decoration.
+          builder: (context, child) {
+            final isDark =
+                material.Theme.of(context).brightness == material.Brightness.dark;
+            return CupertinoTheme(
+              data: AppTheme.data.copyWith(
+                brightness: isDark ? Brightness.dark : Brightness.light,
+              ),
+              child: IconTheme(
+                data: IconThemeData(
+                  color: isDark
+                      ? const Color(0xFFD8C18A)
+                      : AppTheme.deepEmerald,
+                  size: 22,
+                ),
+                child: child ?? const SizedBox.shrink(),
+              ),
+            );
+          },
           locale: locale,
           localizationsDelegates: const [
             GlobalMaterialLocalizations.delegate,

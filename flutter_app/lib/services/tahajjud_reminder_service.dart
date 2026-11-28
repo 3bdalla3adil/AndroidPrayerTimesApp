@@ -13,6 +13,8 @@ class TahajjudReminderService {
   static const daysToSchedule = 4;
 
   Future<int> enable() async {
+    await NotificationService.initialize();
+    await NotificationService.requestPermissions();
     final count = await _schedule();
     await _storage.saveTahajjudRemindersEnabled(true);
     return count;

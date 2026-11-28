@@ -18,6 +18,10 @@ cat > ios/WatchApp/Info.plist <<'PLIST'
     <true/>
     <key>WKCompanionAppBundleIdentifier</key>
     <string>com.salawatquran.salawatQuran</string>
+    <key>CFBundleShortVersionString</key>
+    <string>$(FLUTTER_BUILD_NAME)</string>
+    <key>CFBundleVersion</key>
+    <string>$(FLUTTER_BUILD_NUMBER)</string>
 </dict>
 </plist>
 PLIST
@@ -37,6 +41,10 @@ cat > ios/WatchExtension/Info.plist <<'PLIST'
         <key>NSExtensionPointIdentifier</key>
         <string>com.apple.watchkit</string>
     </dict>
+    <key>CFBundleShortVersionString</key>
+    <string>$(FLUTTER_BUILD_NAME)</string>
+    <key>CFBundleVersion</key>
+    <string>$(FLUTTER_BUILD_NUMBER)</string>
 </dict>
 </plist>
 PLIST
@@ -47,6 +55,12 @@ require 'xcodeproj'
 project = Xcodeproj::Project.open('ios/Runner.xcodeproj')
 runner = project.targets.find { |target| target.name == 'Runner' }
 abort 'Runner target not found' unless runner
+
+# Keep the embedded WatchKit app and extension versions exactly aligned with
+# the Flutter companion app. Xcode validates this during the iOS embed phase.
+generated_xcconfig = File.read('ios/Flutter/Generated.xcconfig')
+flutter_build_name = generated_xcconfig[/^FLUTTER_BUILD_NAME=(.*)$/, 1] || '1.0'
+flutter_build_number = generated_xcconfig[/^FLUTTER_BUILD_NUMBER=(.*)$/, 1] || '1'
 
 watch_name = 'SalawatWatchApp'
 extension_name = 'SalawatWatchExtension'
@@ -74,6 +88,10 @@ watch.build_configurations.each do |config|
   settings['PRODUCT_NAME'] = watch_name
   settings['EXECUTABLE_NAME'] = watch_name
   settings['WATCHOS_DEPLOYMENT_TARGET'] = '10.0'
+  settings['FLUTTER_BUILD_NAME'] = flutter_build_name
+  settings['FLUTTER_BUILD_NUMBER'] = flutter_build_number
+  settings['MARKETING_VERSION'] = flutter_build_name
+  settings['CURRENT_PROJECT_VERSION'] = flutter_build_number
   settings['TARGETED_DEVICE_FAMILY'] = '4'
   settings['SUPPORTED_PLATFORMS'] = 'watchos watchsimulator'
   settings['SDKROOT'] = 'watchos'
@@ -90,6 +108,10 @@ extension.build_configurations.each do |config|
   settings['PRODUCT_NAME'] = extension_name
   settings['EXECUTABLE_NAME'] = extension_name
   settings['WATCHOS_DEPLOYMENT_TARGET'] = '10.0'
+  settings['FLUTTER_BUILD_NAME'] = flutter_build_name
+  settings['FLUTTER_BUILD_NUMBER'] = flutter_build_number
+  settings['MARKETING_VERSION'] = flutter_build_name
+  settings['CURRENT_PROJECT_VERSION'] = flutter_build_number
   settings['TARGETED_DEVICE_FAMILY'] = '4'
   settings['SUPPORTED_PLATFORMS'] = 'watchos watchsimulator'
   settings['SDKROOT'] = 'watchos'

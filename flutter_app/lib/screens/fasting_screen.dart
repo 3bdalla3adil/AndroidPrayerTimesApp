@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import '../core/adaptive_controls.dart';
 import '../core/adaptive_page_scaffold.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 
@@ -89,7 +90,7 @@ class _FastingScreenState extends State<FastingScreen> {
     return AdaptivePageScaffold(
       navigationBar: CupertinoNavigationBar(
         middle: const Text('Fasting'),
-        trailing: CupertinoButton(
+        trailing: AdaptiveButton(
           padding: EdgeInsets.zero,
           onPressed: _load,
           child: const Icon(CupertinoIcons.refresh),
@@ -97,29 +98,29 @@ class _FastingScreenState extends State<FastingScreen> {
       ),
       child: SafeArea(
         child: _loading
-            ? const Center(child: CupertinoActivityIndicator())
+            ? const Center(child: AdaptiveActivityIndicator())
             : ListView(
                 padding: const EdgeInsets.fromLTRB(12, 16, 12, 40),
                 children: [
                   if (_error != null)
-                    CupertinoListSection.insetGrouped(
-                      children: [CupertinoListTile(title: Text(_error!))],
+                    AdaptiveListSection.insetGrouped(
+                      children: [AdaptiveListTile(title: Text(_error!))],
                     ),
-                  CupertinoListSection.insetGrouped(
+                  AdaptiveListSection.insetGrouped(
                     header: const Text('TODAY'),
                     children: [
-                      CupertinoListTile(
+                      AdaptiveListTile(
                         leading: const Icon(CupertinoIcons.moon_fill),
                         title: Text('Hijri ${h.$3} / ${h.$2} / ${h.$1}'),
                         subtitle: Text(isRamadan ? 'Ramadan' : 'Not Ramadan'),
                       ),
-                      CupertinoListTile(
+                      AdaptiveListTile(
                         leading: const Icon(CupertinoIcons.sunrise),
                         title: const Text('Suhoor ends'),
                         subtitle: const Text('Fajr begins'),
                         trailing: Text(fajr == null ? '--' : DateFormat('h:mm a').format(fajr.time)),
                       ),
-                      CupertinoListTile(
+                      AdaptiveListTile(
                         leading: const Icon(CupertinoIcons.sunset),
                         title: const Text('Iftar'),
                         subtitle: const Text('Maghrib begins'),
@@ -127,9 +128,9 @@ class _FastingScreenState extends State<FastingScreen> {
                       ),
                     ],
                   ),
-                  CupertinoListSection.insetGrouped(
+                  AdaptiveListSection.insetGrouped(
                     children: [
-                      CupertinoListTile(
+                      AdaptiveListTile(
                         leading: const Icon(CupertinoIcons.info_circle),
                         title: Text(isRamadan ? 'Ramadan fasting guidance' : 'Fasting utilities'),
                         subtitle: const Text('Times are calculated offline from your selected prayer location. Confirm local religious calendars when needed.'),

@@ -56,7 +56,7 @@ void main() {
     expect(find.text('0 / 73 repetitions'), findsOneWidget);
     expect(find.text('Astaghfirullah'), findsOneWidget);
 
-    await tester.tap(find.widgetWithText(CupertinoButton, 'Count').first);
+    await tester.tap(find.widgetWithText(FilledButton, 'Count').first);
     await tester.pumpAndSettle();
 
     expect(find.text('1 / 73 repetitions'), findsOneWidget);

@@ -1,7 +1,9 @@
 import 'package:flutter/cupertino.dart';
+import '../theme/app_theme.dart';
 import 'package:flutter/material.dart' show LinearProgressIndicator;
 import 'package:quran/quran.dart' as quran;
 
+import '../core/adaptive_controls.dart';
 import '../core/adaptive_page_scaffold.dart';
 import '../services/app_routes.dart';
 import '../services/daily_wird_service.dart';
@@ -52,19 +54,19 @@ class _DailyWirdScreenState extends State<DailyWirdScreen> {
   }
 
   Future<void> _confirm() async {
-    final confirmed = await showCupertinoDialog<bool>(
+    final confirmed = await showAdaptiveDialog<bool>(
       context: context,
-      builder: (dialogContext) => CupertinoAlertDialog(
+      builder: (dialogContext) => AdaptiveAlertDialog(
         title: Text(_ar ? 'إتمام الورد اليومي' : 'Complete today’s wird?'),
         content: Text(_ar
             ? 'هل أتممت قراءة الورد المحدد لهذا اليوم؟ سيُحفظ موضع البداية التالي تلقائياً.'
             : 'Have you finished today’s reading? Your next starting point will be saved.'),
         actions: [
-          CupertinoDialogAction(
+          AdaptiveDialogAction(
             onPressed: () => Navigator.pop(dialogContext, false),
             child: Text(_ar ? 'ليس بعد' : 'Not yet'),
           ),
-          CupertinoDialogAction(
+          AdaptiveDialogAction(
             isDefaultAction: true,
             onPressed: () => Navigator.pop(dialogContext, true),
             child: Text(_ar ? 'نعم، أتممت' : 'Yes, completed'),
@@ -76,15 +78,15 @@ class _DailyWirdScreenState extends State<DailyWirdScreen> {
     await _service.confirmCompletion();
     await _refresh();
     if (!mounted) return;
-    await showCupertinoDialog<void>(
+    await showAdaptiveDialog<void>(
       context: context,
-      builder: (dialogContext) => CupertinoAlertDialog(
+      builder: (dialogContext) => AdaptiveAlertDialog(
         title: Text(_ar ? 'تقبّل الله منك' : 'Well done'),
         content: Text(_ar
             ? 'تم تسجيل إنجاز ورد اليوم وحفظ نقطة البداية للورد القادم.'
             : 'Today’s wird has been recorded and your next reading point is saved.'),
         actions: [
-          CupertinoDialogAction(
+          AdaptiveDialogAction(
             onPressed: () => Navigator.pop(dialogContext),
             child: Text(_ar ? 'حسنًا' : 'OK'),
           ),
@@ -102,21 +104,21 @@ class _DailyWirdScreenState extends State<DailyWirdScreen> {
       ),
       child: SafeArea(
         child: _loading || plan == null
-            ? const Center(child: CupertinoActivityIndicator())
+            ? const Center(child: AdaptiveActivityIndicator())
             : ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF104B3D),
+                      color: AppTheme.deepEmerald,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(_ar ? 'وردك لهذا اليوم' : 'YOUR DAILY READING',
-                            style: const TextStyle(color: Color(0xFFD7C18A), fontWeight: FontWeight.w700)),
+                            style: const TextStyle(color: AppTheme.goldHighlight, fontWeight: FontWeight.w700)),
                         const SizedBox(height: 12),
                         Text('${plan.amount} ${_unitLabel(plan.unit)}',
                             style: const TextStyle(color: CupertinoColors.white, fontSize: 28, fontWeight: FontWeight.bold)),
@@ -152,12 +154,12 @@ class _DailyWirdScreenState extends State<DailyWirdScreen> {
                     style: const TextStyle(color: CupertinoColors.secondaryLabel, height: 1.5),
                   ),
                   const SizedBox(height: 24),
-                  CupertinoButton.filled(
+                  AdaptiveButton.filled(
                     onPressed: plan.completed ? null : _startReading,
                     child: Text(_ar ? 'ابدأ القراءة من موضع الورد' : 'Start reading'),
                   ),
                   const SizedBox(height: 8),
-                  CupertinoButton(
+                  AdaptiveButton(
                     onPressed: plan.completed ? null : _confirm,
                     child: Text(_ar ? 'أتممت الورد اليوم' : 'I finished today’s wird'),
                   ),

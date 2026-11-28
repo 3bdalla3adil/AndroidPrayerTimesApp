@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import '../core/adaptive_controls.dart';
 import '../core/adaptive_page_scaffold.dart';
 import 'package:quran/quran.dart' as quran;
 import '../services/app_routes.dart';
@@ -37,13 +38,13 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
   }
 
   Future<void> _confirmRemove((int, int) bookmark) async {
-    await showCupertinoDialog<void>(
+    await showAdaptiveDialog<void>(
       context: context,
-      builder: (dialogContext) => CupertinoAlertDialog(
+      builder: (dialogContext) => AdaptiveAlertDialog(
         title: const Text('Remove bookmark?'),
         actions: [
-          CupertinoDialogAction(child: const Text('Cancel'), onPressed: () => Navigator.pop(dialogContext)),
-          CupertinoDialogAction(
+          AdaptiveDialogAction(child: const Text('Cancel'), onPressed: () => Navigator.pop(dialogContext)),
+          AdaptiveDialogAction(
             isDestructiveAction: true,
             child: const Text('Remove'),
             onPressed: () { Navigator.pop(dialogContext); _remove(bookmark); },
@@ -58,7 +59,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
       navigationBar: const CupertinoNavigationBar(middle: Text('Bookmarks')),
       child: SafeArea(
         child: _loading
-            ? const Center(child: CupertinoActivityIndicator())
+            ? const Center(child: AdaptiveActivityIndicator())
             : _bookmarks.isEmpty
                 ? const Center(
                     child: Padding(
@@ -78,10 +79,10 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
                 : ListView(
                     padding: const EdgeInsets.fromLTRB(12, 16, 12, 40),
                     children: [
-                      CupertinoListSection.insetGrouped(
+                      AdaptiveListSection.insetGrouped(
                         children: [
                           for (final bookmark in _bookmarks)
-                            CupertinoListTile(
+                            AdaptiveListTile(
                               leading: const Icon(CupertinoIcons.bookmark_fill),
                               title: Text(quran.getSurahName(bookmark.$1)),
                               subtitle: Text(
@@ -90,7 +91,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
                                 overflow: TextOverflow.ellipsis,
                                 textDirection: TextDirection.rtl,
                               ),
-                              trailing: CupertinoButton(
+                              trailing: AdaptiveButton(
                                 padding: EdgeInsets.zero,
                                 onPressed: () => _confirmRemove(bookmark),
                                 child: const Icon(CupertinoIcons.trash),

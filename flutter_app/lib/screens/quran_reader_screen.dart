@@ -3,10 +3,10 @@ import 'dart:convert';
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart' show Material;
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/adaptive_controls.dart';
 import '../core/adaptive_page_scaffold.dart';
 import 'package:flutter/services.dart';
 import 'package:quran/quran.dart' as quran;
@@ -254,14 +254,14 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
       await _playRecitationVerse(generation);
     } catch (_) {
       if (mounted) {
-        await showCupertinoDialog<void>(
+        await showAdaptiveDialog<void>(
           context: context,
-          builder: (dialogContext) => CupertinoAlertDialog(
+          builder: (dialogContext) => AdaptiveAlertDialog(
             title: Text(LocaleController.isArabic ? 'تعذّر تشغيل التلاوة' : 'Unable to play recitation'),
             content: Text(LocaleController.isArabic
                 ? 'تحقّق من اتصال الإنترنت ثم حاول مرة أخرى.'
                 : 'Check your internet connection and try again.'),
-            actions: [CupertinoDialogAction(
+            actions: [AdaptiveDialogAction(
               onPressed: () => Navigator.pop(dialogContext),
               child: Text(LocaleController.isArabic ? 'حسنًا' : 'OK'),
             )],
@@ -349,9 +349,9 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
         _recitationQueue = const <Verse>[];
         _recitationIndex = 0;
       });
-      await showCupertinoDialog<void>(
+      await showAdaptiveDialog<void>(
         context: context,
-        builder: (dialogContext) => CupertinoAlertDialog(
+        builder: (dialogContext) => AdaptiveAlertDialog(
           title: Text(LocaleController.isArabic
               ? 'توقفت التلاوة'
               : 'Recitation stopped'),
@@ -359,7 +359,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
               ? 'تعذّر تحميل الصفحة التالية من المصحف. تحقّق من الاتصال ثم أعد التشغيل.'
               : 'The next Quran page could not be loaded. Check your connection and restart recitation.'),
           actions: [
-            CupertinoDialogAction(
+            AdaptiveDialogAction(
               onPressed: () => Navigator.pop(dialogContext),
               child: Text(LocaleController.isArabic ? 'حسنًا' : 'OK'),
             ),
@@ -374,13 +374,13 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
   }
 
   Future<void> _chooseReciter() async {
-    await showCupertinoModalPopup<void>(
+    await showAdaptiveModalPopup<void>(
       context: context,
-      builder: (popupContext) => CupertinoActionSheet(
+      builder: (popupContext) => AdaptiveActionSheet(
         title: Text(LocaleController.isArabic ? 'اختر القارئ' : 'Choose reciter'),
         actions: [
           for (final entry in _reciters.entries)
-            CupertinoActionSheetAction(
+            AdaptiveActionSheetAction(
               isDefaultAction: entry.key == _selectedReciter,
               onPressed: () async {
                 Navigator.pop(popupContext);
@@ -398,7 +398,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
               child: Text(entry.value),
             ),
         ],
-        cancelButton: CupertinoActionSheetAction(
+        cancelButton: AdaptiveActionSheetAction(
           onPressed: () => Navigator.pop(popupContext),
           child: Text(LocaleController.isArabic ? 'إلغاء' : 'Cancel'),
         ),
@@ -671,13 +671,13 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
       await _bookmarkService.loadAll(),
     );
     if (!mounted) return;
-    await showCupertinoDialog<void>(
+    await showAdaptiveDialog<void>(
       context: context,
-      builder: (dialogContext) => CupertinoAlertDialog(
+      builder: (dialogContext) => AdaptiveAlertDialog(
         title: Text(added ? 'Ayah bookmarked' : 'Bookmark removed'),
         content: Text('${quran.getSurahName(surah)} • Ayah $ayah'),
         actions: [
-          CupertinoDialogAction(
+          AdaptiveDialogAction(
             child: const Text('OK'),
             onPressed: () => Navigator.pop(dialogContext),
           ),
@@ -693,13 +693,13 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
     required int max,
   }) async {
     final input = TextEditingController();
-    final value = await showCupertinoDialog<int>(
+    final value = await showAdaptiveDialog<int>(
       context: context,
-      builder: (dialogContext) => CupertinoAlertDialog(
+      builder: (dialogContext) => AdaptiveAlertDialog(
         title: Text(title),
         content: Padding(
           padding: const EdgeInsets.only(top: 14),
-          child: CupertinoTextField(
+          child: AdaptiveTextField(
             controller: input,
             keyboardType: TextInputType.number,
             textAlign: TextAlign.center,
@@ -707,11 +707,11 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
           ),
         ),
         actions: [
-          CupertinoDialogAction(
+          AdaptiveDialogAction(
             onPressed: () => Navigator.pop(dialogContext),
             child: Text(LocaleController.isArabic ? 'إلغاء' : 'Cancel'),
           ),
-          CupertinoDialogAction(
+          AdaptiveDialogAction(
             isDefaultAction: true,
             onPressed: () {
               final number = int.tryParse(input.text.trim());
@@ -729,15 +729,15 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
   }
 
   Future<void> _openNavigator() async {
-    await showCupertinoModalPopup<void>(
+    await showAdaptiveModalPopup<void>(
       context: context,
-      builder: (popupContext) => CupertinoActionSheet(
+      builder: (popupContext) => AdaptiveActionSheet(
         title: Text(LocaleController.isArabic ? 'التنقّل في القرآن' : 'Browse Quran'),
         message: Text(LocaleController.isArabic
             ? 'انتقل حسب السورة أو الآية أو الصفحة أو الجزء'
             : 'Jump to a surah, ayah, page, or juz'),
         actions: [
-          CupertinoActionSheetAction(
+          AdaptiveActionSheetAction(
             onPressed: () {
               Navigator.pop(popupContext);
               _askNumber(
@@ -753,14 +753,14 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
             },
             child: Text(LocaleController.isArabic ? 'حسب السورة' : 'Go to surah'),
           ),
-          CupertinoActionSheetAction(
+          AdaptiveActionSheetAction(
             onPressed: () {
               Navigator.pop(popupContext);
               _navigateByAyah();
             },
             child: Text(LocaleController.isArabic ? 'حسب السورة والآية' : 'Go to surah and ayah'),
           ),
-          CupertinoActionSheetAction(
+          AdaptiveActionSheetAction(
             onPressed: () {
               Navigator.pop(popupContext);
               _askNumber(
@@ -774,7 +774,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
             },
             child: Text(LocaleController.isArabic ? 'حسب الصفحة' : 'Go to page'),
           ),
-          CupertinoActionSheetAction(
+          AdaptiveActionSheetAction(
             onPressed: () {
               Navigator.pop(popupContext);
               _askNumber(
@@ -794,7 +794,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
             },
             child: Text(LocaleController.isArabic ? 'حسب الجزء' : 'Go to juz'),
           ),
-          CupertinoActionSheetAction(
+          AdaptiveActionSheetAction(
             onPressed: () {
               Navigator.pop(popupContext);
               _searchQuran();
@@ -802,7 +802,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
             child: Text(LocaleController.isArabic ? 'البحث في القرآن' : 'Search Quran'),
           ),
         ],
-        cancelButton: CupertinoActionSheetAction(
+        cancelButton: AdaptiveActionSheetAction(
           onPressed: () => Navigator.pop(popupContext),
           child: Text(LocaleController.isArabic ? 'إلغاء' : 'Cancel'),
         ),
@@ -831,13 +831,13 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
 
   Future<void> _searchQuran() async {
     final input = TextEditingController();
-    final query = await showCupertinoDialog<String>(
+    final query = await showAdaptiveDialog<String>(
       context: context,
-      builder: (dialogContext) => CupertinoAlertDialog(
+      builder: (dialogContext) => AdaptiveAlertDialog(
         title: Text(LocaleController.isArabic ? 'البحث في القرآن' : 'Search Quran'),
         content: Padding(
           padding: const EdgeInsets.only(top: 14),
-          child: CupertinoTextField(
+          child: AdaptiveTextField(
             controller: input,
             autofocus: true,
             placeholder: LocaleController.isArabic
@@ -846,11 +846,11 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
           ),
         ),
         actions: [
-          CupertinoDialogAction(
+          AdaptiveDialogAction(
             onPressed: () => Navigator.pop(dialogContext),
             child: Text(LocaleController.isArabic ? 'إلغاء' : 'Cancel'),
           ),
-          CupertinoDialogAction(
+          AdaptiveDialogAction(
             isDefaultAction: true,
             onPressed: () {
               final value = input.text.trim();
@@ -872,9 +872,9 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
     final totalMatches = searchResponse.totalMatches;
 
     if (!mounted) return;
-    await showCupertinoModalPopup<void>(
+    await showAdaptiveModalPopup<void>(
       context: context,
-      builder: (popupContext) => CupertinoActionSheet(
+      builder: (popupContext) => AdaptiveActionSheet(
         title: Text(LocaleController.isArabic
             ? 'نتائج البحث: $totalMatches'
             : 'Search results: $totalMatches'),
@@ -887,7 +887,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
                 : null),
         actions: [
           for (final match in matches)
-            CupertinoActionSheetAction(
+            AdaptiveActionSheetAction(
               onPressed: () {
                 Navigator.pop(popupContext);
                 _scrollToPage(match.page);
@@ -911,7 +911,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
               ),
             ),
         ],
-        cancelButton: CupertinoActionSheetAction(
+        cancelButton: AdaptiveActionSheetAction(
           onPressed: () => Navigator.pop(popupContext),
           child: Text(LocaleController.isArabic ? 'إغلاق' : 'Close'),
         ),
@@ -946,14 +946,14 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
   }
 
   Future<void> _openSurahNavigator() async {
-    await showCupertinoModalPopup<void>(
+    await showAdaptiveModalPopup<void>(
       context: context,
-      builder: (popupContext) => CupertinoActionSheet(
+      builder: (popupContext) => AdaptiveActionSheet(
         title: Text(LocaleController.isArabic ? 'انتقال إلى سورة' : 'Navigate to surah'),
         message: Text(LocaleController.isArabic ? 'اختر سورة للانتقال إلى بدايتها' : 'Choose a surah to open its beginning'),
         actions: [
           for (var surah = 1; surah <= 114; surah++)
-            CupertinoActionSheetAction(
+            AdaptiveActionSheetAction(
               isDefaultAction: surah == _currentPageSurah,
               onPressed: () {
                 Navigator.pop(popupContext);
@@ -967,7 +967,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
               ),
             ),
         ],
-        cancelButton: CupertinoActionSheetAction(
+        cancelButton: AdaptiveActionSheetAction(
           onPressed: () => Navigator.pop(popupContext),
           child: Text(LocaleController.isArabic ? 'إلغاء' : 'Cancel'),
         ),
@@ -987,12 +987,12 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
       await _playRecitationVerse(generation);
     } catch (_) {
       if (mounted) {
-        showCupertinoDialog<void>(
+        showAdaptiveDialog<void>(
           context: context,
-          builder: (dialogContext) => CupertinoAlertDialog(
+          builder: (dialogContext) => AdaptiveAlertDialog(
             title: Text(LocaleController.isArabic ? 'تعذّر تشغيل التلاوة' : 'Unable to play recitation'),
             content: Text(LocaleController.isArabic ? 'تحقّق من اتصال الإنترنت ثم حاول مرة أخرى.' : 'Check your internet connection and try again.'),
-            actions: [CupertinoDialogAction(onPressed: () => Navigator.pop(dialogContext), child: Text(LocaleController.isArabic ? 'حسنًا' : 'OK'))],
+            actions: [AdaptiveDialogAction(onPressed: () => Navigator.pop(dialogContext), child: Text(LocaleController.isArabic ? 'حسنًا' : 'OK'))],
           ),
         );
       }
@@ -1092,7 +1092,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
     const height = 62.0;
     final left = (local.dx - width / 2).clamp(8.0, screen.width - width - 8.0).toDouble();
     final top = (local.dy - height - 18).clamp(90.0, screen.height - height - 95.0).toDouble();
-    _ayahActionOverlay = OverlayEntry(builder: (overlayContext) => Positioned(left: left, top: top, width: width, child: Material(color: const Color(0x00000000), child: DecoratedBox(decoration: BoxDecoration(color: CupertinoColors.secondarySystemGroupedBackground.resolveFrom(overlayContext), borderRadius: BorderRadius.circular(22), border: Border.all(color: CupertinoColors.separator.resolveFrom(overlayContext).withValues(alpha: .45)), boxShadow: [BoxShadow(color: CupertinoColors.black.withValues(alpha: .18), blurRadius: 22, offset: const Offset(0, 8))]), child: SizedBox(height: height, child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
+    _ayahActionOverlay = OverlayEntry(builder: (overlayContext) => Positioned(left: left, top: top, width: width, child: ColoredBox(color: const Color(0x00000000), child: DecoratedBox(decoration: BoxDecoration(color: CupertinoColors.secondarySystemGroupedBackground.resolveFrom(overlayContext), borderRadius: BorderRadius.circular(22), border: Border.all(color: CupertinoColors.separator.resolveFrom(overlayContext).withValues(alpha: .45)), boxShadow: [BoxShadow(color: CupertinoColors.black.withValues(alpha: .18), blurRadius: 22, offset: const Offset(0, 8))]), child: SizedBox(height: height, child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
       _AyahActionButton(icon: CupertinoIcons.text_quote, active: _showTranslation, label: LocaleController.isArabic ? 'ترجمة' : 'Translation', onPressed: () { setState(() => _showTranslation = !_showTranslation); _settingsService.saveTranslation(_showTranslation); _removeAyahToolbar(); }),
       _AyahActionButton(icon: _darkPage ? CupertinoIcons.moon_fill : CupertinoIcons.sun_max, active: _darkPage, label: LocaleController.isArabic ? 'المظهر' : 'Theme', onPressed: () { setState(() => _darkPage = !_darkPage); _settingsService.saveDarkPage(_darkPage); _removeAyahToolbar(); }),
       _AyahActionButton(icon: CupertinoIcons.book, active: _tajweedMode, label: _tajweedMode ? (LocaleController.isArabic ? 'تجويد' : 'Tajweed') : (LocaleController.isArabic ? 'المدينة' : 'Madinah'), onPressed: () { setState(() => _tajweedMode = !_tajweedMode); _removeAyahToolbar(); }),
@@ -1220,7 +1220,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
   }
 
   void _openReaderSettings() {
-    showCupertinoModalPopup<void>(
+    showAdaptiveModalPopup<void>(
       context: context,
       builder: (popupContext) => StatefulBuilder(
         builder: (popupContext, sheetSetState) {
@@ -1248,33 +1248,33 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
             unawaited(_settingsService.saveAutoScrollSecondsPerPage(value));
           }
 
-          return CupertinoActionSheet(
+          return AdaptiveActionSheet(
             title: Text(LocaleController.isArabic ? 'إعدادات المصحف' : 'Mushaf settings'),
             message: Column(
               children: [
                 const SizedBox(height: 8),
                 Text(LocaleController.isArabic ? 'تباعد السطور: ${_lineHeight.toStringAsFixed(2)}' : 'Line spacing: ${_lineHeight.toStringAsFixed(2)}'),
-                CupertinoSlider(
+                AdaptiveSlider(
                   min: 1.35,
                   max: 2.15,
                   value: _lineHeight,
                   onChanged: updateLineHeight,
                 ),
-                CupertinoListTile(
+                AdaptiveListTile(
                   title: Text(LocaleController.isArabic ? 'الترجمة الإنجليزية' : 'English translation'),
-                  trailing: CupertinoSwitch(
+                  trailing: AdaptiveSwitch(
                     value: _showTranslation,
                     onChanged: updateTranslation,
                   ),
                 ),
-                CupertinoListTile(
+                AdaptiveListTile(
                   title: Text(LocaleController.isArabic ? 'صفحة داكنة' : 'Dark page'),
-                  trailing: CupertinoSwitch(
+                  trailing: AdaptiveSwitch(
                     value: _darkPage,
                     onChanged: updateDarkPage,
                   ),
                 ),
-                CupertinoListTile(
+                AdaptiveListTile(
                   title: Text(
                     LocaleController.isArabic
                         ? 'أدوات الآية عند الضغط المطوّل'
@@ -1285,7 +1285,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
                         ? 'إظهار أدوات الترجمة والتلاوة والحفظ عند الضغط المطوّل على آية'
                         : 'Show translation, recitation and memorization actions when an ayah is long-pressed.',
                   ),
-                  trailing: CupertinoSwitch(
+                  trailing: AdaptiveSwitch(
                     value: _ayahToolbarEnabled,
                     onChanged: (value) {
                       sheetSetState(() {});
@@ -1301,7 +1301,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
                       ? 'سرعة التمرير التلقائي: ${_autoScrollSecondsPerPage.round()} ثانية لكل صفحة'
                       : 'Auto-scroll speed: ${_autoScrollSecondsPerPage.round()} seconds per page',
                 ),
-                CupertinoSlider(
+                AdaptiveSlider(
                   min: 10,
                   max: 60,
                   divisions: 10,
@@ -1320,7 +1320,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
                 ),
               ],
             ),
-            cancelButton: CupertinoActionSheetAction(
+            cancelButton: AdaptiveActionSheetAction(
               onPressed: () => Navigator.pop(popupContext),
               child: Text(LocaleController.isArabic ? 'إغلاق' : 'Close'),
             ),
@@ -1348,7 +1348,7 @@ class _QuranReaderScreenState extends ConsumerState<QuranReaderScreen> {
       navigationBar: _readerChromeVisible ? CupertinoNavigationBar(
         key: const ValueKey('quran-reader-app-bar'),
         middle: Text(LocaleController.isArabic ? 'القرآن الكريم' : 'The Holy Quran', style: const TextStyle(fontWeight: FontWeight.w700)),
-        trailing: CupertinoButton(
+        trailing: AdaptiveButton(
           padding: EdgeInsets.zero,
           onPressed: () => setState(() => _bottomBarVisible = !_bottomBarVisible),
           child: Icon(_bottomBarVisible ? CupertinoIcons.chevron_down : CupertinoIcons.chevron_up),
@@ -1513,7 +1513,7 @@ class _MemorizationBottomBar extends StatelessWidget {
             textAlign: ar ? TextAlign.right : TextAlign.left,
             style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
           )),
-          CupertinoButton(padding: const EdgeInsets.all(4), minimumSize: const Size(36, 36), onPressed: onClose, child: const Icon(CupertinoIcons.xmark_circle, size: 19)),
+          AdaptiveButton(padding: const EdgeInsets.all(4), minimumSize: const Size(36, 36), onPressed: onClose, child: const Icon(CupertinoIcons.xmark_circle, size: 19)),
         ]),
         Row(children: [
           Expanded(child: _control(context, CupertinoIcons.chevron_left, ar ? 'السابق' : 'Previous', onPrevious)),
@@ -1527,7 +1527,7 @@ class _MemorizationBottomBar extends StatelessWidget {
 
   Widget _control(BuildContext context, IconData icon, String label, VoidCallback action, {bool active = false, bool enabled = true}) {
     final foreground = active ? const Color(0xFF176B52) : CupertinoColors.label.resolveFrom(context);
-    return CupertinoButton(
+    return AdaptiveButton(
       padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 5),
       minimumSize: const Size(44, 44),
       onPressed: enabled ? action : null,
@@ -1543,7 +1543,7 @@ class _MemorizationBottomBar extends StatelessWidget {
 class _AyahActionButton extends StatelessWidget {
   const _AyahActionButton({required this.icon, required this.active, required this.label, required this.onPressed});
   final IconData icon; final bool active; final String label; final VoidCallback onPressed;
-  @override Widget build(BuildContext context) => CupertinoButton(
+  @override Widget build(BuildContext context) => AdaptiveButton(
     padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5), minimumSize: const Size(42, 48),
     onPressed: onPressed,
     child: Column(mainAxisAlignment: MainAxisAlignment.center, mainAxisSize: MainAxisSize.min, children: [
@@ -1566,7 +1566,7 @@ class _ReaderBottomBar extends StatelessWidget {
     child: Row(children: [
       _item(context, CupertinoIcons.chevron_up, ar ? 'السابق' : 'Previous', onPrevious),
       _item(context, CupertinoIcons.chevron_down, ar ? 'التالي' : 'Next', onNext),
-      CupertinoButton(padding: const EdgeInsets.symmetric(horizontal: 5), minimumSize: const Size(35, 45), onPressed: onJump, child: const Icon(CupertinoIcons.list_number, size: 18)),
+      AdaptiveButton(padding: const EdgeInsets.symmetric(horizontal: 5), minimumSize: const Size(35, 45), onPressed: onJump, child: const Icon(CupertinoIcons.list_number, size: 18)),
       _item(context, autoScrollEnabled ? CupertinoIcons.pause_circle_fill : CupertinoIcons.speedometer, ar ? 'تلقائي' : 'Auto', onAutoScroll, active: autoScrollEnabled),
       _item(context, isPlaying ? CupertinoIcons.pause_fill : CupertinoIcons.play_fill, ar ? 'استمع' : 'Listen', onPlayPause, active: isPlaying),
       _item(context, CupertinoIcons.person_crop_circle, ar ? 'القارئ' : 'Reciter', onChooseReciter),
@@ -1576,7 +1576,7 @@ class _ReaderBottomBar extends StatelessWidget {
     ]),
   );
   }
-  Widget _item(BuildContext context, IconData icon, String label, VoidCallback action, {bool active = false}) => Expanded(child: CupertinoButton(padding: EdgeInsets.zero, minimumSize: const Size(0, 44), onPressed: action, child: Column(mainAxisAlignment: MainAxisAlignment.center, mainAxisSize: MainAxisSize.min, children: [Icon(icon, size: 17, color: active ? const Color(0xFF176B52) : CupertinoColors.label.resolveFrom(context)), Text(label, maxLines: 1, style: TextStyle(fontSize: 8, color: active ? const Color(0xFF176B52) : CupertinoColors.secondaryLabel.resolveFrom(context)))])));
+  Widget _item(BuildContext context, IconData icon, String label, VoidCallback action, {bool active = false}) => Expanded(child: AdaptiveButton(padding: EdgeInsets.zero, minimumSize: const Size(0, 44), onPressed: action, child: Column(mainAxisAlignment: MainAxisAlignment.center, mainAxisSize: MainAxisSize.min, children: [Icon(icon, size: 17, color: active ? const Color(0xFF176B52) : CupertinoColors.label.resolveFrom(context)), Text(label, maxLines: 1, style: TextStyle(fontSize: 8, color: active ? const Color(0xFF176B52) : CupertinoColors.secondaryLabel.resolveFrom(context)))])));
 }
 
 class _MushafPage extends StatefulWidget {
@@ -1927,7 +1927,7 @@ class _MushafNavigationStrip extends StatelessWidget {
     final arabic = LocaleController.isArabic;
     return Row(
       children: [
-        CupertinoButton(
+        AdaptiveButton(
           padding: const EdgeInsets.symmetric(horizontal: 8),
           minimumSize: const Size(32, 40),
           onPressed: onPrevious,
@@ -1939,7 +1939,7 @@ class _MushafNavigationStrip extends StatelessWidget {
           child: Text(_arabicNumber(page), style: TextStyle(fontSize: 19, color: foreground)),
         ),
         Expanded(
-          child: CupertinoButton(
+          child: AdaptiveButton(
             padding: EdgeInsets.zero,
             minimumSize: const Size(44, 40),
             onPressed: onChooseSurah,
@@ -1968,7 +1968,7 @@ class _MushafNavigationStrip extends StatelessWidget {
             ),
           ),
         ),
-        CupertinoButton(
+        AdaptiveButton(
           padding: const EdgeInsets.symmetric(horizontal: 8),
           minimumSize: const Size(32, 40),
           onPressed: onNext,
@@ -2050,7 +2050,7 @@ class _ErrorPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: CupertinoButton.filled(
+      child: AdaptiveButton.filled(
         onPressed: onRetry,
         child: Text(LocaleController.isArabic ? 'إعادة تحميل الصفحة $page' : 'Retry loading page $page'),
       ),

@@ -1,4 +1,6 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart' as material;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:salawat_quran/services/app_routes.dart';
 
@@ -13,6 +15,26 @@ void main() {
         AppRoutes.qibla,
         AppRoutes.more,
       ]);
+    });
+
+    test('every canonical route resolves to the native platform route', () {
+      try {
+        debugDefaultTargetPlatformOverride = TargetPlatform.android;
+        for (final name in AppRoutes.allRoutes) {
+          final route = AppRoutes.onGenerateRoute(RouteSettings(name: name));
+          expect(route, isA<material.MaterialPageRoute<dynamic>>(),
+              reason: 'Android route $name');
+        }
+
+        debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+        for (final name in AppRoutes.allRoutes) {
+          final route = AppRoutes.onGenerateRoute(RouteSettings(name: name));
+          expect(route, isA<CupertinoPageRoute<dynamic>>(),
+              reason: 'iOS route $name');
+        }
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
     });
 
     test('every canonical route resolves to a named page route', () {

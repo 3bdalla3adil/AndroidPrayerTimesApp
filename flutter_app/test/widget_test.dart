@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' as material;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -54,4 +55,33 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('السلام عليكم'), findsOneWidget);
   });
+  
+  testWidgets('Android app opens on Material 3 without startup exceptions', (
+    tester,
+  ) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.android;
+    try {
+      await tester.pumpWidget(const SalawatQuranApp());
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // Android must select the Material application shell, not the iOS shell.
+      expect(find.byType(material.MaterialApp), findsOneWidget);
+      expect(find.byType(CupertinoApp), findsNothing);
+      expect(tester.takeException(), isNull);
+
+      // Exercise the first-launch screen and enter the actual Home screen.
+      expect(find.text('الدخول إلى التطبيق'), findsOneWidget);
+      await tester.tap(find.text('الدخول إلى التطبيق'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('السلام عليكم'), findsOneWidget);
+      expect(find.byType(material.Scaffold), findsWidgets);
+      expect(tester.takeException(), isNull);
+    } finally {
+      debugDefaultTargetPlatformOverride = null;
+    }
+  });
+
 }

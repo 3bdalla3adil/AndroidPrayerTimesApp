@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:adhan_dart/adhan_dart.dart';
 import 'package:flutter/cupertino.dart';
+import '../core/adaptive_controls.dart';
 import '../core/adaptive_page_scaffold.dart';
 import 'package:flutter_compass/flutter_compass.dart';
 import '../services/location_service.dart';
@@ -65,7 +66,7 @@ class _QiblaScreenState extends State<QiblaScreen> {
     return AdaptivePageScaffold(
       navigationBar: CupertinoNavigationBar(
         middle: Text(_isArabic ? 'اتجاه القبلة' : 'Qibla'),
-        trailing: CupertinoButton(
+        trailing: AdaptiveButton(
           padding: EdgeInsets.zero,
           onPressed: _isCalculating ? null : _calculateQibla,
           child: Icon(CupertinoIcons.refresh, color: accent),
@@ -99,7 +100,7 @@ class _QiblaScreenState extends State<QiblaScreen> {
                       end: Alignment.bottomRight,
                       colors: [
                         accent,
-                        Color.lerp(accent, const Color(0xFF073D35), .58)!,
+                        Color.lerp(accent, AppTheme.deepEmerald, .58)!,
                       ],
                     ),
                     boxShadow: [
@@ -326,7 +327,7 @@ class _QiblaScreenState extends State<QiblaScreen> {
                                           outline: isDark
                                               ? CupertinoColors.white
                                                   .withValues(alpha: .9)
-                                              : const Color(0xFF164A3A),
+                                              : AppTheme.deepEmerald,
                                         ),
                                       ),
                                     ),
@@ -446,12 +447,12 @@ class _QiblaScreenState extends State<QiblaScreen> {
                   ),
                 ],
                 const SizedBox(height: 18),
-                CupertinoButton.filled(
+                AdaptiveButton.filled(
                   onPressed: _isCalculating ? null : _calculateQibla,
                   borderRadius: BorderRadius.circular(16),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   child: _isCalculating
-                      ? const CupertinoActivityIndicator(
+                      ? const AdaptiveActivityIndicator(
                           color: CupertinoColors.white,
                         )
                       : Row(

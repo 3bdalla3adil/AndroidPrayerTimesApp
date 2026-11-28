@@ -1,4 +1,7 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart' as material;
+import '../core/adaptive_controls.dart';
 import '../core/adaptive_page_scaffold.dart';
 import 'package:quran/quran.dart' as quran;
 
@@ -44,13 +47,13 @@ class _QuranScreenState extends State<QuranScreen> {
     required int max,
   }) async {
     final controller = TextEditingController();
-    final value = await showCupertinoDialog<int>(
+    final value = await showAdaptiveDialog<int>(
       context: context,
-      builder: (dialogContext) => CupertinoAlertDialog(
+      builder: (dialogContext) => AdaptiveAlertDialog(
         title: Text(title),
         content: Padding(
           padding: const EdgeInsets.only(top: 14),
-          child: CupertinoTextField(
+          child: AdaptiveTextField(
             controller: controller,
             keyboardType: TextInputType.number,
             textAlign: TextAlign.center,
@@ -58,11 +61,11 @@ class _QuranScreenState extends State<QuranScreen> {
           ),
         ),
         actions: [
-          CupertinoDialogAction(
+          AdaptiveDialogAction(
             onPressed: () => Navigator.pop(dialogContext),
             child: Text(LocaleController.isArabic ? 'إلغاء' : 'Cancel'),
           ),
-          CupertinoDialogAction(
+          AdaptiveDialogAction(
             isDefaultAction: true,
             onPressed: () {
               final parsed = int.tryParse(controller.text.trim());
@@ -138,27 +141,27 @@ class _QuranScreenState extends State<QuranScreen> {
   }
 
   Future<void> _openNavigator() async {
-    await showCupertinoModalPopup<void>(
+    await showAdaptiveModalPopup<void>(
       context: context,
-      builder: (popupContext) => CupertinoActionSheet(
+      builder: (popupContext) => AdaptiveActionSheet(
         title: const Text('تنقّل في القرآن'),
         message: const Text('السورة والآية والصفحة والجزء'),
         actions: [
-          CupertinoActionSheetAction(
+          AdaptiveActionSheetAction(
             onPressed: () {
               Navigator.pop(popupContext);
               _navigateByJuz();
             },
             child: const Text('حسب الجزء (30 جزءًا)'),
           ),
-          CupertinoActionSheetAction(
+          AdaptiveActionSheetAction(
             onPressed: () {
               Navigator.pop(popupContext);
               _navigateByPage();
             },
             child: const Text('حسب الصفحة (604 صفحات)'),
           ),
-          CupertinoActionSheetAction(
+          AdaptiveActionSheetAction(
             onPressed: () {
               Navigator.pop(popupContext);
               _navigateByAyah();
@@ -166,7 +169,7 @@ class _QuranScreenState extends State<QuranScreen> {
             child: const Text('حسب السورة والآية'),
           ),
         ],
-        cancelButton: CupertinoActionSheetAction(
+        cancelButton: AdaptiveActionSheetAction(
           onPressed: () => Navigator.pop(popupContext),
           child: const Text('إلغاء'),
         ),
@@ -174,13 +177,93 @@ class _QuranScreenState extends State<QuranScreen> {
     );
   }
 
+  Widget _buildMaterialQuran(BuildContext context) {
+    final items = _items;
+    final arabic = LocaleController.isArabic;
+    return AdaptivePageScaffold(
+      navigationBar: material.AppBar(
+        title: Text(arabic ? 'القرآن الكريم' : 'The Holy Quran'),
+        actions: [
+          material.IconButton(
+            tooltip: arabic ? 'تنقّل' : 'Navigate',
+            onPressed: _openNavigator,
+            icon: const Icon(material.Icons.tune_rounded),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+          children: [
+            material.FilledButton.icon(
+              onPressed: () => Navigator.of(context).pushNamed(AppRoutes.quranMemorization),
+              icon: const Icon(material.Icons.school_outlined),
+              label: Text(arabic ? 'حفظ القرآن ومراجعة الآيات' : 'Memorize and review Quran'),
+            ),
+            const SizedBox(height: 12),
+            material.TextField(
+              decoration: material.InputDecoration(
+                hintText: arabic ? 'ابحث عن سورة' : 'Search surah',
+                prefixIcon: const Icon(material.Icons.search_rounded),
+                suffixIcon: _query.isEmpty
+                    ? null
+                    : material.IconButton(
+                        tooltip: arabic ? 'مسح' : 'Clear',
+                        onPressed: () => setState(() => _query = ''),
+                        icon: const Icon(material.Icons.close_rounded),
+                      ),
+              ),
+              onChanged: (value) => setState(() => _query = value),
+            ),
+            const SizedBox(height: 10),
+            material.OutlinedButton.icon(
+              onPressed: _openNavigator,
+              icon: const Icon(material.Icons.swap_horiz_rounded),
+              label: Text(arabic ? 'تنقّل: سورة • آية • صفحة • جزء' : 'Navigate by surah, ayah, page or juz'),
+            ),
+            const SizedBox(height: 16),
+            Text(arabic ? 'السور' : 'Surahs',
+              style: material.Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 8),
+            material.Card(
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                children: [
+                  for (var i = 0; i < items.length; i++) ...[
+                    if (i > 0) const material.Divider(height: 1),
+                    material.ListTile(
+                      leading: _NumberBadge(number: items[i]),
+                      title: Text(quran.getSurahName(items[i])),
+                      subtitle: Text(
+                        '${quran.getPlaceOfRevelation(items[i])} • ${quran.getVerseCount(items[i])} verses',
+                      ),
+                      trailing: Text(
+                        quran.getSurahNameArabic(items[i]),
+                        textDirection: TextDirection.rtl,
+                        style: const TextStyle(fontFamily: 'serif', fontSize: 17),
+                      ),
+                      onTap: () => _openReader(items[i]),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (defaultTargetPlatform != TargetPlatform.iOS) {
+      return _buildMaterialQuran(context);
+    }
     final items = _items;
     return AdaptivePageScaffold(
       navigationBar: CupertinoNavigationBar(
         middle: Text(LocaleController.isArabic ? 'القرآن الكريم' : 'The Holy Quran'),
-        trailing: CupertinoButton(
+        trailing: AdaptiveButton(
           padding: EdgeInsets.zero,
           onPressed: _openNavigator,
           child: const Icon(CupertinoIcons.arrow_right_arrow_left),
@@ -193,25 +276,25 @@ class _QuranScreenState extends State<QuranScreen> {
               padding: const EdgeInsets.fromLTRB(12, 12, 12, 110),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
-                  CupertinoButton.filled(
+                  AdaptiveButton.filled(
                     onPressed: () => Navigator.of(context).pushNamed(AppRoutes.quranMemorization),
                     child: Text(LocaleController.isArabic ? 'حفظ القرآن ومراجعة الآيات' : 'Memorize and review Quran'),
                   ),
                   const SizedBox(height: 8),
-                  CupertinoSearchTextField(
+                  AdaptiveSearchField(
                     placeholder: 'Search surah',
                     onChanged: (value) => setState(() => _query = value),
                   ),
                   const SizedBox(height: 8),
-                  CupertinoButton.filled(
+                  AdaptiveButton.filled(
                     onPressed: _openNavigator,
                     child: const Text('تنقّل: سورة • آية • صفحة • جزء'),
                   ),
                   const SizedBox(height: 12),
-                  CupertinoListSection.insetGrouped(
+                  AdaptiveListSection.insetGrouped(
                     children: [
                       for (final number in items)
-                        CupertinoListTile(
+                        AdaptiveListTile(
                           leading: _NumberBadge(number: number),
                           title: Text(quran.getSurahName(number)),
                           subtitle: Text(

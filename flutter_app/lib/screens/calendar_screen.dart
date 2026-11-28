@@ -1,6 +1,7 @@
 import 'dart:ui' as ui;
 
 import 'package:flutter/cupertino.dart';
+import '../core/adaptive_controls.dart';
 import '../core/adaptive_page_scaffold.dart';
 import 'package:hijri_core/hijri_core.dart';
 import 'package:intl/intl.dart';
@@ -72,7 +73,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     return AdaptivePageScaffold(
       navigationBar: CupertinoNavigationBar(
         middle: const Text('Calendar'),
-        trailing: CupertinoButton(
+        trailing: AdaptiveButton(
           padding: EdgeInsets.zero,
           onPressed: _goToToday,
           child: const Text('Today'),
@@ -82,10 +83,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(12, 18, 12, 40),
           children: [
-            CupertinoListSection.insetGrouped(
+            AdaptiveListSection.insetGrouped(
               header: const Text('TODAY'),
               children: [
-                CupertinoListTile(
+                AdaptiveListTile(
                   leading: const Icon(CupertinoIcons.calendar_today),
                   title: Text(DateFormat('EEEE, d MMMM y').format(now)),
                   subtitle: Text(
@@ -98,14 +99,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 ),
               ],
             ),
-            CupertinoListSection.insetGrouped(
+            AdaptiveListSection.insetGrouped(
               header: const Text('MONTH'),
               children: [
                 Padding(
                   padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
                   child: Row(
                     children: [
-                      CupertinoButton(
+                      AdaptiveButton(
                         padding: EdgeInsets.zero,
                         onPressed: () => _moveMonth(-1),
                         child: const Icon(CupertinoIcons.chevron_left),
@@ -120,7 +121,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                           ),
                         ),
                       ),
-                      CupertinoButton(
+                      AdaptiveButton(
                         padding: EdgeInsets.zero,
                         onPressed: () => _moveMonth(1),
                         child: const Icon(CupertinoIcons.chevron_right),
@@ -204,7 +205,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     ],
                   ),
                 ),
-                CupertinoListTile(
+                AdaptiveListTile(
                   leading: const Icon(CupertinoIcons.moon),
                   title: Text(
                     '${_hijri(_visibleMonth).$1} / '
@@ -217,10 +218,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 ),
               ],
             ),
-            CupertinoListSection.insetGrouped(
+            AdaptiveListSection.insetGrouped(
               header: const Text('CALENDAR ACCURACY'),
               children: [
-                const CupertinoListTile(
+                const AdaptiveListTile(
                   leading: Icon(CupertinoIcons.info),
                   title: Text('Calculated Hijri calendar'),
                   subtitle: Text(

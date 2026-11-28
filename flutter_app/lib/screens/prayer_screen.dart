@@ -1,6 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart' as material;
+import '../core/adaptive_controls.dart';
 import '../core/adaptive_page_scaffold.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 
@@ -35,7 +38,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
     super.initState();
     _athan = AthanReminderService(_service, StorageService());
     _load();
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+    _timer = Timer.periodic(const Duration(minutes: 1), (_) {
       if (mounted) setState(() => _now = DateTime.now());
     });
   }
@@ -133,7 +136,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
     if (!mounted) return;
     if (cityIndex < 0) cityIndex = 0;
 
-    final result = await showCupertinoModalPopup<PrayerCity>(
+    final result = await showAdaptiveModalPopup<PrayerCity>(
       context: context,
       builder: (popupContext) {
         var selectedCountry = country;
@@ -151,7 +154,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      CupertinoButton(
+                      AdaptiveButton(
                         child: const Text('Cancel'),
                         onPressed: () => Navigator.pop(popupContext),
                       ),
@@ -159,7 +162,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
                         'Prayer location',
                         style: TextStyle(fontWeight: FontWeight.w700),
                       ),
-                      CupertinoButton(
+                      AdaptiveButton(
                         child: const Text('Done'),
                         onPressed: () => Navigator.pop(
                           popupContext,
@@ -172,7 +175,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
                     child: Row(
                       children: [
                         Expanded(
-                          child: CupertinoPicker(
+                          child: AdaptivePicker(
                             itemExtent: 44,
                             scrollController: FixedExtentScrollController(
                               initialItem: countries.indexOf(selectedCountry),
@@ -194,7 +197,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
                           ),
                         ),
                         Expanded(
-                          child: CupertinoPicker(
+                          child: AdaptivePicker(
                             itemExtent: 44,
                             scrollController: FixedExtentScrollController(
                               initialItem: selectedCityIndex,
@@ -247,14 +250,140 @@ class _PrayerScreenState extends State<PrayerScreen> {
     }
   }
 
+  Widget _buildMaterialPrayerTimes(BuildContext context) {
+    final next = _next;
+    final arabic = LocaleController.isArabic;
+    return AdaptivePageScaffold(
+      navigationBar: material.AppBar(
+        title: Text(arabic ? 'مواقيت الصلاة' : 'Prayer times'),
+        actions: [
+          material.IconButton(
+            tooltip: arabic ? 'تحديث' : 'Refresh',
+            onPressed: () => _load(refresh: true),
+            icon: const Icon(material.Icons.refresh_rounded),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        child: material.RefreshIndicator(
+          onRefresh: () => _load(refresh: true),
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 32),
+            children: [
+              Text(DateFormat('EEEE, d MMMM y').format(_now),
+                style: material.Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 12),
+              material.Card(
+                child: Column(
+                  children: [
+                    material.ListTile(
+                      leading: const Icon(material.Icons.location_on_outlined),
+                      title: Text(_location),
+                      subtitle: Text(arabic ? 'يُستخدم لحساب المواقيت محلياً' : 'Used locally for prayer calculations'),
+                      trailing: const Icon(material.Icons.chevron_right_rounded),
+                      onTap: _chooseCity,
+                    ),
+                    const material.Divider(height: 1),
+                    material.ListTile(
+                      leading: const Icon(material.Icons.my_location_rounded),
+                      title: Text(arabic ? 'استخدم موقعي الحالي' : 'Use my current location'),
+                      onTap: _useDeviceLocation,
+                    ),
+                  ],
+                ),
+              ),
+              if (_message != null) ...[
+                const SizedBox(height: 12),
+                material.Card(
+                  child: material.ListTile(
+                    leading: const Icon(material.Icons.info_outline_rounded),
+                    title: Text(_message!),
+                  ),
+                ),
+              ],
+              if (next != null) ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(22),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [AppTheme.emerald, AppTheme.deepEmerald],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(AppTheme.radiusHero),
+                    border: Border.all(color: AppTheme.antiqueGold.withValues(alpha: .5)),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(arabic ? 'الصلاة القادمة' : 'UP NEXT',
+                        style: const TextStyle(color: AppTheme.goldHighlight, letterSpacing: 1.2)),
+                      const SizedBox(height: 8),
+                      Text(next.arabicName, textDirection: TextDirection.rtl,
+                        style: const TextStyle(color: AppTheme.warmIvory, fontSize: 28, fontWeight: FontWeight.w700)),
+                      Text(next.name, style: const TextStyle(color: AppTheme.warmIvory)),
+                      const SizedBox(height: 6),
+                      Text(DateFormat('h:mm a').format(next.time),
+                        style: const TextStyle(color: AppTheme.warmIvory, fontSize: 23, fontWeight: FontWeight.w700)),
+                    ],
+                  ),
+                ),
+              ],
+              const SizedBox(height: 20),
+              Text(arabic ? 'مواقيت اليوم' : 'Today’s schedule',
+                style: material.Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 8),
+              material.Card(
+                child: Column(
+                  children: [
+                    if (_prayers.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.all(18),
+                        child: Text(arabic ? 'لم يتم تحميل المواقيت بعد' : 'Prayer times have not loaded yet'),
+                      )
+                    else
+                      for (var i = 0; i < _prayers.length; i++) ...[
+                        if (i > 0) const material.Divider(height: 1),
+                        material.ListTile(
+                          leading: const Icon(material.Icons.access_time_rounded),
+                          title: Text(_prayers[i].name),
+                          subtitle: Text(_prayers[i].arabicName, textDirection: TextDirection.rtl),
+                          trailing: Text(DateFormat('h:mm a').format(_prayers[i].time),
+                            style: const TextStyle(fontWeight: FontWeight.w700)),
+                        ),
+                      ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              material.Card(
+                child: material.SwitchListTile(
+                  secondary: const Icon(material.Icons.notifications_active_outlined),
+                  title: Text(arabic ? 'تنبيهات الأذان' : 'Athan reminders'),
+                  subtitle: Text(arabic ? 'تشغيل الأذان عند دخول وقت كل صلاة' : 'Play the bundled Athan at each prayer time'),
+                  value: _reminders,
+                  onChanged: _toggleReminders,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (defaultTargetPlatform != TargetPlatform.iOS) {
+      return _buildMaterialPrayerTimes(context);
+    }
     final next = _next;
 
     return AdaptivePageScaffold(
       navigationBar: CupertinoNavigationBar(
         middle: const Text('Prayer times'),
-        trailing: CupertinoButton(
+        trailing: AdaptiveButton(
           padding: EdgeInsets.zero,
           onPressed: () => _load(refresh: true),
           child: const Icon(CupertinoIcons.refresh),
@@ -265,16 +394,16 @@ class _PrayerScreenState extends State<PrayerScreen> {
           padding: const EdgeInsets.fromLTRB(12, 14, 12, 100),
           children: [
             Text(DateFormat('EEEE, d MMMM y').format(_now)),
-            CupertinoListSection.insetGrouped(
+            AdaptiveListSection.insetGrouped(
               children: [
-                CupertinoListTile(
+                AdaptiveListTile(
                   leading: const Icon(CupertinoIcons.location),
                   title: Text(_location),
                   subtitle: const Text('Used locally for calculation'),
-                  trailing: const CupertinoListTileChevron(),
+                  trailing: const AdaptiveListTileChevron(),
                   onTap: _chooseCity,
                 ),
-                CupertinoListTile(
+                AdaptiveListTile(
                   leading: const Icon(CupertinoIcons.location_fill),
                   title: Text(LocaleController.isArabic ? 'استخدم موقعي الحالي' : 'Use my current location'),
                   onTap: _useDeviceLocation,
@@ -282,8 +411,8 @@ class _PrayerScreenState extends State<PrayerScreen> {
               ],
             ),
             if (_message != null)
-              CupertinoListSection.insetGrouped(
-                children: [CupertinoListTile(title: Text(_message!))],
+              AdaptiveListSection.insetGrouped(
+                children: [AdaptiveListTile(title: Text(_message!))],
               ),
             if (next != null)
               Container(
@@ -301,11 +430,11 @@ class _PrayerScreenState extends State<PrayerScreen> {
                   ],
                 ),
               ),
-            CupertinoListSection.insetGrouped(
+            AdaptiveListSection.insetGrouped(
               header: Text(LocaleController.isArabic ? 'اليوم' : 'TODAY'),
               children: [
                 for (final prayer in _prayers)
-                  CupertinoListTile(
+                  AdaptiveListTile(
                     leading: const Icon(CupertinoIcons.time),
                     title: Text(prayer.name),
                     subtitle: Text(prayer.arabicName, textDirection: TextDirection.rtl),
@@ -313,13 +442,13 @@ class _PrayerScreenState extends State<PrayerScreen> {
                   ),
               ],
             ),
-            CupertinoListSection.insetGrouped(
+            AdaptiveListSection.insetGrouped(
               children: [
-                CupertinoListTile(
+                AdaptiveListTile(
                   leading: const Icon(CupertinoIcons.bell),
                   title: Text(LocaleController.isArabic ? 'تنبيهات الأذان' : 'Athan reminders'),
                   subtitle: Text(LocaleController.isArabic ? 'تشغيل الأذان عند دخول وقت كل صلاة' : 'Plays the bundled Athan at each prayer time'),
-                  trailing: CupertinoSwitch(
+                  trailing: AdaptiveSwitch(
                     value: _reminders,
                     onChanged: _toggleReminders,
                   ),

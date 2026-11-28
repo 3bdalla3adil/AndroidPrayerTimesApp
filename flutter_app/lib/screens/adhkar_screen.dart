@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 
+import '../core/adaptive_controls.dart';
 import '../core/adaptive_page_scaffold.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
@@ -67,17 +68,17 @@ class _AdhkarScreenState extends State<AdhkarScreen> {
 
   Future<void> _resetToday() async {
     if (_saving || _progress.isEmpty) return;
-    final confirmed = await showCupertinoDialog<bool>(
+    final confirmed = await showAdaptiveDialog<bool>(
       context: context,
-      builder: (dialogContext) => CupertinoAlertDialog(
+      builder: (dialogContext) => AdaptiveAlertDialog(
         title: const Text('Reset today’s progress?'),
         content: const Text('All completed repetitions for today will be cleared.'),
         actions: [
-          CupertinoDialogAction(
+          AdaptiveDialogAction(
             onPressed: () => Navigator.pop(dialogContext, false),
             child: const Text('Cancel'),
           ),
-          CupertinoDialogAction(
+          AdaptiveDialogAction(
             isDestructiveAction: true,
             onPressed: () => Navigator.pop(dialogContext, true),
             child: const Text('Reset'),
@@ -114,7 +115,7 @@ class _AdhkarScreenState extends State<AdhkarScreen> {
     return AdaptivePageScaffold(
       navigationBar: CupertinoNavigationBar(
         middle: const Text('Daily Adhkar'),
-        trailing: CupertinoButton(
+        trailing: AdaptiveButton(
           padding: EdgeInsets.zero,
           onPressed: _loading || _saving || _progress.isEmpty ? null : _resetToday,
           child: const Text('Reset'),
@@ -122,7 +123,7 @@ class _AdhkarScreenState extends State<AdhkarScreen> {
       ),
       child: SafeArea(
         child: _loading
-            ? const Center(child: CupertinoActivityIndicator())
+            ? const Center(child: AdaptiveActivityIndicator())
             : ListView(
                 padding: const EdgeInsets.fromLTRB(12, 16, 12, 40),
                 children: [
@@ -139,7 +140,7 @@ class _AdhkarScreenState extends State<AdhkarScreen> {
                     style: TextStyle(color: CupertinoColors.secondaryLabel),
                   ),
                   const SizedBox(height: 18),
-                  CupertinoListSection.insetGrouped(
+                  AdaptiveListSection.insetGrouped(
                     header: const Text('TODAY’S PROGRESS'),
                     children: [
                       Padding(
@@ -209,7 +210,7 @@ class _AdhkarCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final complete = count >= target;
-    return CupertinoListSection.insetGrouped(
+    return AdaptiveListSection.insetGrouped(
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
@@ -240,12 +241,12 @@ class _AdhkarCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  CupertinoButton(
+                  AdaptiveButton(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     onPressed: count == 0 ? null : onDecrement,
                     child: const Icon(CupertinoIcons.minus_circle),
                   ),
-                  CupertinoButton.filled(
+                  AdaptiveButton.filled(
                     padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
                     onPressed: complete ? null : onIncrement,
                     child: Text(complete ? 'Done' : 'Count'),

@@ -1,7 +1,8 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart' as material;
+import '../theme/app_theme.dart';
 import 'package:quran/quran.dart' as quran;
 
+import '../core/adaptive_controls.dart';
 import '../core/adaptive_page_scaffold.dart';
 import '../services/locale_controller.dart';
 import '../services/storage_service.dart';
@@ -67,7 +68,7 @@ class _QuranMemorizationScreenState extends State<QuranMemorizationScreen> {
 
   Future<void> _chooseSurah() async {
     var selected = _surah;
-    final result = await showCupertinoModalPopup<int>(
+    final result = await showAdaptiveModalPopup<int>(
       context: context,
       builder: (context) => Container(
         height: 320,
@@ -79,18 +80,18 @@ class _QuranMemorizationScreenState extends State<QuranMemorizationScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  CupertinoButton(
+                  AdaptiveButton(
                     onPressed: () => Navigator.pop(context),
                     child: Text(_arabic ? 'إلغاء' : 'Cancel'),
                   ),
-                  CupertinoButton(
+                  AdaptiveButton(
                     onPressed: () => Navigator.pop(context, selected),
                     child: Text(_arabic ? 'اختيار' : 'Select'),
                   ),
                 ],
               ),
               Expanded(
-                child: CupertinoPicker(
+                child: AdaptivePicker(
                   scrollController: FixedExtentScrollController(initialItem: _surah - 1),
                   itemExtent: 42,
                   onSelectedItemChanged: (index) => selected = index + 1,
@@ -125,13 +126,13 @@ class _QuranMemorizationScreenState extends State<QuranMemorizationScreen> {
 
   Future<int?> _askAyah(String title, int initial) async {
     final controller = TextEditingController(text: initial.toString());
-    final value = await showCupertinoDialog<int>(
+    final value = await showAdaptiveDialog<int>(
       context: context,
-      builder: (dialogContext) => CupertinoAlertDialog(
+      builder: (dialogContext) => AdaptiveAlertDialog(
         title: Text(title),
         content: Padding(
           padding: const EdgeInsets.only(top: 12),
-          child: CupertinoTextField(
+          child: AdaptiveTextField(
             controller: controller,
             keyboardType: TextInputType.number,
             textAlign: TextAlign.center,
@@ -139,11 +140,11 @@ class _QuranMemorizationScreenState extends State<QuranMemorizationScreen> {
           ),
         ),
         actions: [
-          CupertinoDialogAction(
+          AdaptiveDialogAction(
             onPressed: () => Navigator.pop(dialogContext),
             child: Text(_arabic ? 'إلغاء' : 'Cancel'),
           ),
-          CupertinoDialogAction(
+          AdaptiveDialogAction(
             isDefaultAction: true,
             onPressed: () {
               final value = int.tryParse(controller.text.trim());
@@ -219,12 +220,12 @@ class _QuranMemorizationScreenState extends State<QuranMemorizationScreen> {
   }
 
   void _message(String message) {
-    showCupertinoDialog<void>(
+    showAdaptiveDialog<void>(
       context: context,
-      builder: (dialogContext) => CupertinoAlertDialog(
+      builder: (dialogContext) => AdaptiveAlertDialog(
         content: Text(message),
         actions: [
-          CupertinoDialogAction(
+          AdaptiveDialogAction(
             onPressed: () => Navigator.pop(dialogContext),
             child: Text(_arabic ? 'حسنًا' : 'OK'),
           ),
@@ -242,9 +243,9 @@ class _QuranMemorizationScreenState extends State<QuranMemorizationScreen> {
     final rangeCount = _endAyah - _startAyah + 1;
     final verseText = quran.getVerse(_surah, _currentAyah);
     final statusColor = _isMemorized
-        ? const Color(0xFF18794E)
+        ? AppTheme.emerald
         : _needsReview
-            ? const Color(0xFFB7791F)
+            ? AppTheme.antiqueGold
             : CupertinoColors.secondaryLabel.resolveFrom(context);
 
     return AdaptivePageScaffold(
@@ -253,7 +254,7 @@ class _QuranMemorizationScreenState extends State<QuranMemorizationScreen> {
       ),
       child: SafeArea(
         child: _loading
-            ? const Center(child: CupertinoActivityIndicator())
+            ? const Center(child: AdaptiveActivityIndicator())
             : ListView(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 36),
                 children: [
@@ -261,7 +262,7 @@ class _QuranMemorizationScreenState extends State<QuranMemorizationScreen> {
                     padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [Color(0xFF104B3D), Color(0xFF071F1A)],
+                        colors: [AppTheme.deepEmerald, AppTheme.midnightGreen],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
@@ -272,7 +273,7 @@ class _QuranMemorizationScreenState extends State<QuranMemorizationScreen> {
                       children: [
                         Text(
                           _arabic ? 'خطوة صغيرة كل يوم' : 'A little every day',
-                          style: const TextStyle(color: Color(0xFFFFE7A3), fontSize: 22, fontWeight: FontWeight.w700),
+                          style: const TextStyle(color: AppTheme.goldHighlight, fontSize: 22, fontWeight: FontWeight.w700),
                         ),
                         const SizedBox(height: 8),
                         Text(
@@ -284,37 +285,37 @@ class _QuranMemorizationScreenState extends State<QuranMemorizationScreen> {
                         const SizedBox(height: 12),
                         ClipRRect(
                           borderRadius: BorderRadius.circular(8),
-                          child: material.LinearProgressIndicator(
+                          child: AdaptiveLinearProgressIndicator(
                             value: (_memorized.length / 6236).clamp(0.0, 1.0),
                             minHeight: 7,
-                            backgroundColor: const Color(0xFF47675C),
-                            valueColor: const material.AlwaysStoppedAnimation<Color>(Color(0xFFFFE7A3)),
+                            backgroundColor: AppTheme.mutedText,
+                            valueColor: AppTheme.goldHighlight,
                           ),
                         ),
                         const SizedBox(height: 5),
                         Text(
                           '${((_memorized.length / 6236) * 100).toStringAsFixed(1)}% ${_arabic ? 'من آيات القرآن' : 'of Quran ayahs'}',
-                          style: const TextStyle(color: Color(0xFFD6E3DB), fontSize: 12),
+                          style: const TextStyle(color: AppTheme.softMint, fontSize: 12),
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 16),
-                  CupertinoListSection.insetGrouped(
+                  AdaptiveListSection.insetGrouped(
                     header: Text(_arabic ? 'خطة الحفظ' : 'MEMORIZATION PLAN'),
                     children: [
-                      CupertinoListTile(
+                      AdaptiveListTile(
                         leading: const Icon(CupertinoIcons.book_fill),
                         title: Text(_arabic ? quran.getSurahNameArabic(_surah) : quran.getSurahName(_surah)),
                         subtitle: Text('${quran.getSurahName(_surah)} • ${_arabic ? 'السورة' : 'Surah'} $_surah'),
-                        trailing: const CupertinoListTileChevron(),
+                        trailing: const AdaptiveListTileChevron(),
                         onTap: _chooseSurah,
                       ),
-                      CupertinoListTile(
+                      AdaptiveListTile(
                         leading: const Icon(CupertinoIcons.list_number),
                         title: Text(_arabic ? 'نطاق الآيات' : 'Ayah range'),
                         subtitle: Text('$_startAyah – $_endAyah  •  $rangeCount ${_arabic ? 'آيات' : 'ayahs'}'),
-                        trailing: const CupertinoListTileChevron(),
+                        trailing: const AdaptiveListTileChevron(),
                         onTap: _chooseRange,
                       ),
                     ],
@@ -329,7 +330,7 @@ class _QuranMemorizationScreenState extends State<QuranMemorizationScreen> {
                   const SizedBox(height: 7),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(6),
-                    child: material.LinearProgressIndicator(value: completedInRange / rangeCount, minHeight: 6),
+                    child: AdaptiveLinearProgressIndicator(value: completedInRange / rangeCount, minHeight: 6),
                   ),
                   const SizedBox(height: 18),
                   Container(
@@ -351,7 +352,7 @@ class _QuranMemorizationScreenState extends State<QuranMemorizationScreen> {
                             verseText,
                             textDirection: TextDirection.rtl,
                             textAlign: TextAlign.center,
-                            style: const TextStyle(fontFamily: 'KFGQPC HAFS Uthmanic Script', fontSize: 28, height: 2, color: Color(0xFF176B52)),
+                            style: const TextStyle(fontFamily: 'KFGQPC HAFS Uthmanic Script', fontSize: 28, height: 2, color: AppTheme.emerald),
                           )
                         else
                           Column(
@@ -377,7 +378,7 @@ class _QuranMemorizationScreenState extends State<QuranMemorizationScreen> {
                         const SizedBox(height: 10),
                         SizedBox(
                           width: double.infinity,
-                          child: CupertinoButton.filled(
+                          child: AdaptiveButton.filled(
                             onPressed: () => setState(() => _showAyah = !_showAyah),
                             child: Text(_showAyah ? (_arabic ? 'إخفاء الآية' : 'Hide ayah') : (_arabic ? 'إظهار الآية' : 'Reveal ayah')),
                           ),
@@ -389,13 +390,13 @@ class _QuranMemorizationScreenState extends State<QuranMemorizationScreen> {
                   Row(
                     children: [
                       Expanded(
-                        child: CupertinoButton(
+                        child: AdaptiveButton(
                           onPressed: _currentAyah > _startAyah ? () => _moveTo(_currentAyah - 1) : null,
                           child: Text(_arabic ? 'السابقة' : 'Previous'),
                         ),
                       ),
                       Expanded(
-                        child: CupertinoButton(
+                        child: AdaptiveButton(
                           onPressed: _currentAyah < _endAyah ? () => _moveTo(_currentAyah + 1) : null,
                           child: Text(_arabic ? 'التالية' : 'Next'),
                         ),
@@ -405,13 +406,13 @@ class _QuranMemorizationScreenState extends State<QuranMemorizationScreen> {
                   Row(
                     children: [
                       Expanded(
-                        child: CupertinoButton(
+                        child: AdaptiveButton(
                           onPressed: _markForReview,
                           child: Text(_arabic ? 'تحتاج مراجعة' : 'Needs review'),
                         ),
                       ),
                       Expanded(
-                        child: CupertinoButton.filled(
+                        child: AdaptiveButton.filled(
                           onPressed: _markMemorized,
                           child: Text(_arabic ? 'حفظت الآية' : 'Memorized'),
                         ),
@@ -419,7 +420,7 @@ class _QuranMemorizationScreenState extends State<QuranMemorizationScreen> {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  CupertinoButton(
+                  AdaptiveButton(
                     onPressed: () => _moveTo(_startAyah),
                     child: Text(_arabic ? 'البدء من أول المقطع' : 'Restart passage'),
                   ),
