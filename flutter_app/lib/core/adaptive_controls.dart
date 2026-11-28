@@ -378,7 +378,7 @@ class AdaptiveActionSheetAction extends StatelessWidget {
   });
 
   final bool isDefaultAction;
-  final VoidCallback? onPressed;
+  final VoidCallback onPressed;
   final Widget child;
 
   @override
