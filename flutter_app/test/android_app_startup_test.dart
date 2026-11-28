@@ -86,4 +86,47 @@ void main() {
       }
     },
   );
+
+  testWidgets(
+    'iOS cold start keeps Cupertino UI through Home, More and Qibla',
+    (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      try {
+        await tester.pumpWidget(const SalawatQuranApp());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.byType(CupertinoApp), findsOneWidget);
+        expect(find.byType(material.MaterialApp), findsNothing);
+        expect(find.byType(CupertinoAlertDialog), findsOneWidget);
+        expect(find.text('الدخول إلى التطبيق'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+
+        await tester.tap(find.text('الدخول إلى التطبيق'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.text('السلام عليكم'), findsOneWidget);
+        expect(find.byType(CupertinoPageScaffold), findsWidgets);
+        expect(find.byType(material.Scaffold), findsNothing);
+        expect(tester.takeException(), isNull);
+
+        await tester.tap(find.byKey(const ValueKey('open-more')));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+        expect(find.text('العلامات المرجعية'), findsOneWidget);
+        expect(find.byType(CupertinoPageScaffold), findsWidgets);
+        expect(tester.takeException(), isNull);
+
+        await tester.tap(find.text('القبلة'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+        expect(find.text('اتجاه القبلة'), findsWidgets);
+        expect(find.byType(CupertinoPageScaffold), findsWidgets);
+        expect(tester.takeException(), isNull);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    },
+  );
 }
