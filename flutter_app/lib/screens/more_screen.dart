@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' as material;
+import '../core/adaptive_controls.dart';
 import '../core/adaptive_page_scaffold.dart';
 
 import '../services/app_routes.dart';
@@ -72,94 +73,94 @@ class MoreScreen extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(12, 16, 12, 28),
           children: [
-            CupertinoListSection.insetGrouped(
+            AdaptiveListSection.insetGrouped(
               header: Text(LocaleController.isArabic ? 'مساحتك' : 'YOUR SPACE'),
               children: [
-                CupertinoListTile(
+                AdaptiveListTile(
                   leading: const Icon(CupertinoIcons.bookmark),
                   title: Text(LocaleController.isArabic ? 'العلامات المرجعية' : 'Bookmarks'),
                   subtitle: Text(LocaleController.isArabic ? 'الآيات المحفوظة' : 'Saved Quran ayahs'),
-                  trailing: const CupertinoListTileChevron(),
+                  trailing: const AdaptiveListTileChevron(),
                   onTap: () => Navigator.of(context).pushNamed(AppRoutes.bookmarks),
                 ),
 
-                CupertinoListTile(
+                AdaptiveListTile(
                   leading: const Icon(CupertinoIcons.book),
                   title: Text(LocaleController.isArabic ? 'الورد اليومي' : 'Daily Quran wird'),
                   subtitle: Text(LocaleController.isArabic ? 'هدف قراءة متتابع وختمة منظمة' : 'A continuous daily Quran reading plan'),
-                  trailing: const CupertinoListTileChevron(),
+                  trailing: const AdaptiveListTileChevron(),
                   onTap: () => Navigator.of(context).pushNamed(AppRoutes.dailyWird),
                 ),
-                CupertinoListTile(
+                AdaptiveListTile(
                   leading: const Icon(CupertinoIcons.book_fill),
                   title: Text(LocaleController.isArabic ? 'حفظ القرآن' : 'Quran memorization'),
                   subtitle: Text(LocaleController.isArabic ? 'حفظ الآيات وتتبع المراجعة دون إنترنت' : 'Practice ayahs and track revision offline'),
-                  trailing: const CupertinoListTileChevron(),
+                  trailing: const AdaptiveListTileChevron(),
                   onTap: () => Navigator.of(context).pushNamed(AppRoutes.quranMemorization),
                 ),
-                CupertinoListTile(
+                AdaptiveListTile(
                   leading: const Icon(CupertinoIcons.circle_grid_3x3),
                   title: Text(LocaleController.isArabic ? 'التسبيح' : 'Tasbih'),
                   subtitle: Text(LocaleController.isArabic ? 'عداد ذكر يعمل دون إنترنت' : 'Offline dhikr counter'),
-                  trailing: const CupertinoListTileChevron(),
+                  trailing: const AdaptiveListTileChevron(),
                   onTap: () => Navigator.of(context).pushNamed(AppRoutes.tasbih),
                 ),
-                CupertinoListTile(
+                AdaptiveListTile(
                   leading: const Icon(CupertinoIcons.bookmark),
                   title: Text(LocaleController.isArabic ? 'أذكار يومية' : 'Daily Adhkar'),
                   subtitle: Text(LocaleController.isArabic ? 'مجموعة أذكار دون إنترنت' : 'Offline remembrance collection'),
-                  trailing: const CupertinoListTileChevron(),
+                  trailing: const AdaptiveListTileChevron(),
                   onTap: () => Navigator.of(context).pushNamed(AppRoutes.adhkar),
                 ),
 
-                CupertinoListTile(
+                AdaptiveListTile(
                   leading: const Icon(CupertinoIcons.moon_fill),
                   title: Text(LocaleController.isArabic ? 'الصيام' : 'Fasting'),
                   subtitle: Text(LocaleController.isArabic ? 'رمضان ومواقيت الصيام دون إنترنت' : 'Offline Ramadan and fasting times'),
-                  trailing: const CupertinoListTileChevron(),
+                  trailing: const AdaptiveListTileChevron(),
                   onTap: () => Navigator.of(context).pushNamed(AppRoutes.fasting),
                 ),
-                CupertinoListTile(
+                AdaptiveListTile(
                   leading: const Icon(CupertinoIcons.calendar),
                   title: Text(LocaleController.isArabic ? 'التقويم' : 'Calendar'),
                   subtitle: Text(LocaleController.isArabic ? 'التاريخ الميلادي والهجري التقريبي' : 'Gregorian and approximate Hijri date'),
-                  trailing: const CupertinoListTileChevron(),
+                  trailing: const AdaptiveListTileChevron(),
                   onTap: () => Navigator.of(context).pushNamed(AppRoutes.calendar),
                 ),
               ],
             ),
-            CupertinoListSection.insetGrouped(
+            AdaptiveListSection.insetGrouped(
               header: Text(LocaleController.isArabic ? 'الأدوات' : 'TOOLS'),
               children: [
-                CupertinoListTile(
+                AdaptiveListTile(
                   leading: const Icon(CupertinoIcons.compass),
                   title: Text(LocaleController.isArabic ? 'القبلة' : 'Qibla'),
-                  trailing: const CupertinoListTileChevron(),
+                  trailing: const AdaptiveListTileChevron(),
                   onTap: () => Navigator.of(context).pushNamed(AppRoutes.qibla),
                 ),
-                CupertinoListTile(
+                AdaptiveListTile(
                   leading: const Icon(CupertinoIcons.gear),
                   title: Text(LocaleController.isArabic ? 'الإعدادات' : 'Settings'),
-                  trailing: const CupertinoListTileChevron(),
+                  trailing: const AdaptiveListTileChevron(),
                   onTap: () => Navigator.of(context).pushNamed(AppRoutes.settings),
                 ),
               ],
             ),
-            CupertinoListSection.insetGrouped(
+            AdaptiveListSection.insetGrouped(
               header: Text(LocaleController.isArabic ? 'كلمة امتنان' : 'A NOTE OF GRATITUDE'),
               children: [
-                CupertinoListTile(
+                AdaptiveListTile(
                   leading: const Icon(CupertinoIcons.gift, color: AppTheme.antiqueGold),
                   title: Text(LocaleController.isArabic ? 'إهداء وتقدير' : 'A Gift of Gratitude'),
                   subtitle: Text(LocaleController.isArabic ? 'كلمات تقدير واحترام لوالد زوجتي العزيز' : 'A heartfelt dedication to my dear father-in-law'),
-                  trailing: const CupertinoListTileChevron(),
+                  trailing: const AdaptiveListTileChevron(),
                   onTap: () => Navigator.of(context).pushNamed(AppRoutes.dedication),
                 ),
               ],
             ),
-            CupertinoListSection.insetGrouped(
+            AdaptiveListSection.insetGrouped(
               children: [
-                CupertinoListTile(
+                AdaptiveListTile(
                   leading: Icon(CupertinoIcons.lock_shield),
                   title: Text(LocaleController.isArabic ? 'يعمل دون اتصال' : 'Offline-first'),
                   subtitle: Text('Prayer calculations, Quran and Qibla work on-device.'),
