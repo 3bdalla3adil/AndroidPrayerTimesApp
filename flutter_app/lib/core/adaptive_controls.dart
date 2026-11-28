@@ -110,35 +110,74 @@ class AdaptiveButton extends StatelessWidget {
     this.padding,
     this.color,
     this.minimumSize,
+    this.borderRadius,
     required this.onPressed,
     required this.child,
-  });
+  }) : _filled = false;
+
+  const AdaptiveButton.filled({
+    super.key,
+    this.padding,
+    this.color,
+    this.minimumSize,
+    this.borderRadius,
+    required this.onPressed,
+    required this.child,
+  }) : _filled = true;
 
   final EdgeInsetsGeometry? padding;
   final Color? color;
   final Size? minimumSize;
+  final BorderRadius? borderRadius;
   final VoidCallback? onPressed;
   final Widget child;
+  final bool _filled;
 
   @override
   Widget build(BuildContext context) {
     if (useCupertino) {
+      final buttonColor = color;
+      if (_filled) {
+        return cupertino.CupertinoButton.filled(
+          padding: padding,
+          borderRadius: borderRadius,
+          onPressed: onPressed,
+          child: child,
+        );
+      }
       return cupertino.CupertinoButton(
         padding: padding,
-        color: color,
+        color: buttonColor,
+        borderRadius: borderRadius,
         minimumSize: minimumSize ?? const Size(0, 44),
         onPressed: onPressed,
         child: child,
       );
     }
-    final style = material.ButtonStyle(
-      padding: material.WidgetStatePropertyAll(padding ?? const EdgeInsets.symmetric(horizontal: 16)),
-      minimumSize: material.WidgetStatePropertyAll(minimumSize ?? const Size(64, 48)),
-      backgroundColor: color == null ? null : material.WidgetStatePropertyAll(color),
+    final shape = material.RoundedRectangleBorder(
+      borderRadius: borderRadius ?? BorderRadius.circular(14),
     );
-    return color == null
-        ? material.TextButton(onPressed: onPressed, style: style, child: child)
-        : material.FilledButton(onPressed: onPressed, style: style, child: child);
+    final style = material.ButtonStyle(
+      padding: material.WidgetStatePropertyAll(
+        padding ?? const EdgeInsets.symmetric(horizontal: 16),
+      ),
+      minimumSize: material.WidgetStatePropertyAll(
+        minimumSize ?? const Size(64, 48),
+      ),
+      backgroundColor: color == null ? null : material.WidgetStatePropertyAll(color),
+      shape: material.WidgetStatePropertyAll(shape),
+    );
+    return (_filled || color != null)
+        ? material.FilledButton(
+            onPressed: onPressed,
+            style: style,
+            child: child,
+          )
+        : material.TextButton(
+            onPressed: onPressed,
+            style: style,
+            child: child,
+          );
   }
 }
 
