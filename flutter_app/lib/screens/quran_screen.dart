@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' as material;
+import '../core/adaptive_controls.dart';
 import '../core/adaptive_page_scaffold.dart';
 import 'package:quran/quran.dart' as quran;
 
@@ -46,13 +47,13 @@ class _QuranScreenState extends State<QuranScreen> {
     required int max,
   }) async {
     final controller = TextEditingController();
-    final value = await showCupertinoDialog<int>(
+    final value = await showAdaptiveDialog<int>(
       context: context,
-      builder: (dialogContext) => CupertinoAlertDialog(
+      builder: (dialogContext) => AdaptiveAlertDialog(
         title: Text(title),
         content: Padding(
           padding: const EdgeInsets.only(top: 14),
-          child: CupertinoTextField(
+          child: AdaptiveTextField(
             controller: controller,
             keyboardType: TextInputType.number,
             textAlign: TextAlign.center,
@@ -60,11 +61,11 @@ class _QuranScreenState extends State<QuranScreen> {
           ),
         ),
         actions: [
-          CupertinoDialogAction(
+          AdaptiveDialogAction(
             onPressed: () => Navigator.pop(dialogContext),
             child: Text(LocaleController.isArabic ? 'إلغاء' : 'Cancel'),
           ),
-          CupertinoDialogAction(
+          AdaptiveDialogAction(
             isDefaultAction: true,
             onPressed: () {
               final parsed = int.tryParse(controller.text.trim());
@@ -140,27 +141,27 @@ class _QuranScreenState extends State<QuranScreen> {
   }
 
   Future<void> _openNavigator() async {
-    await showCupertinoModalPopup<void>(
+    await showAdaptiveModalPopup<void>(
       context: context,
-      builder: (popupContext) => CupertinoActionSheet(
+      builder: (popupContext) => AdaptiveActionSheet(
         title: const Text('تنقّل في القرآن'),
         message: const Text('السورة والآية والصفحة والجزء'),
         actions: [
-          CupertinoActionSheetAction(
+          AdaptiveActionSheetAction(
             onPressed: () {
               Navigator.pop(popupContext);
               _navigateByJuz();
             },
             child: const Text('حسب الجزء (30 جزءًا)'),
           ),
-          CupertinoActionSheetAction(
+          AdaptiveActionSheetAction(
             onPressed: () {
               Navigator.pop(popupContext);
               _navigateByPage();
             },
             child: const Text('حسب الصفحة (604 صفحات)'),
           ),
-          CupertinoActionSheetAction(
+          AdaptiveActionSheetAction(
             onPressed: () {
               Navigator.pop(popupContext);
               _navigateByAyah();
@@ -168,7 +169,7 @@ class _QuranScreenState extends State<QuranScreen> {
             child: const Text('حسب السورة والآية'),
           ),
         ],
-        cancelButton: CupertinoActionSheetAction(
+        cancelButton: AdaptiveActionSheetAction(
           onPressed: () => Navigator.pop(popupContext),
           child: const Text('إلغاء'),
         ),
@@ -262,7 +263,7 @@ class _QuranScreenState extends State<QuranScreen> {
     return AdaptivePageScaffold(
       navigationBar: CupertinoNavigationBar(
         middle: Text(LocaleController.isArabic ? 'القرآن الكريم' : 'The Holy Quran'),
-        trailing: CupertinoButton(
+        trailing: AdaptiveButton(
           padding: EdgeInsets.zero,
           onPressed: _openNavigator,
           child: const Icon(CupertinoIcons.arrow_right_arrow_left),
@@ -280,7 +281,7 @@ class _QuranScreenState extends State<QuranScreen> {
                     child: Text(LocaleController.isArabic ? 'حفظ القرآن ومراجعة الآيات' : 'Memorize and review Quran'),
                   ),
                   const SizedBox(height: 8),
-                  CupertinoSearchTextField(
+                  AdaptiveSearchField(
                     placeholder: 'Search surah',
                     onChanged: (value) => setState(() => _query = value),
                   ),
@@ -290,10 +291,10 @@ class _QuranScreenState extends State<QuranScreen> {
                     child: const Text('تنقّل: سورة • آية • صفحة • جزء'),
                   ),
                   const SizedBox(height: 12),
-                  CupertinoListSection.insetGrouped(
+                  AdaptiveListSection.insetGrouped(
                     children: [
                       for (final number in items)
-                        CupertinoListTile(
+                        AdaptiveListTile(
                           leading: _NumberBadge(number: number),
                           title: Text(quran.getSurahName(number)),
                           subtitle: Text(
