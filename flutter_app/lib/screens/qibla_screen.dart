@@ -447,7 +447,7 @@ class _QiblaScreenState extends State<QiblaScreen> {
                   ),
                 ],
                 const SizedBox(height: 18),
-                CupertinoButton.filled(
+                AdaptiveButton.filled(
                   onPressed: _isCalculating ? null : _calculateQibla,
                   borderRadius: BorderRadius.circular(16),
                   padding: const EdgeInsets.symmetric(vertical: 16),
