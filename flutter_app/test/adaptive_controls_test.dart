@@ -25,6 +25,7 @@ void main() {
                   ),
                   AdaptiveSwitch(value: true, onChanged: null),
                   AdaptiveActivityIndicator(),
+                  AdaptiveLinearProgressIndicator(value: 0.5),
                   AdaptiveAlertDialog(
                     title: Text('Confirm'),
                     content: Text('Continue?'),
@@ -47,6 +48,7 @@ void main() {
       expect(find.byType(material.ListTile), findsOneWidget);
       expect(find.byType(material.Switch), findsOneWidget);
       expect(find.byType(material.CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(material.LinearProgressIndicator), findsOneWidget);
       expect(find.byType(material.AlertDialog), findsOneWidget);
       expect(find.byType(CupertinoListTile), findsNothing);
       expect(find.byType(CupertinoSwitch), findsNothing);
@@ -96,6 +98,8 @@ void main() {
       expect(find.byType(CupertinoListTile), findsOneWidget);
       expect(find.byType(CupertinoSwitch), findsOneWidget);
       expect(find.byType(CupertinoActivityIndicator), findsOneWidget);
+      expect(find.bySemanticsLabel('Progress'), findsOneWidget);
+      expect(find.byType(material.LinearProgressIndicator), findsNothing);
       expect(find.byType(CupertinoAlertDialog), findsOneWidget);
       expect(find.byType(material.ListTile), findsNothing);
       expect(find.byType(material.Switch), findsNothing);
