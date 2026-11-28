@@ -1,18 +1,24 @@
 #!/usr/bin/env bash
 set -e
 
-# 1. Generate the android project
+# 1. Generate the Android project with the same package used by applicationId.
 flutter create --org com.salawat_quran --project-name salawat_quran --platforms=android .
 
-# The launcher activity package must match the applicationId configured below.
-# Without --org, flutter create defaults to com.example and the installed APK
-# points Android at a MainActivity class that does not exist at runtime.
+# Flutter defaults to com.example when --org is omitted. That creates a
+# MainActivity class that does not match the applicationId set below, causing
+# Android to fail when it tries to launch the app's .MainActivity entry point.
 MAIN_ACTIVITY="$(find android/app/src/main -name MainActivity.kt -print -quit)"
 if [ -z "$MAIN_ACTIVITY" ]; then
   echo "ERROR: Flutter did not generate MainActivity.kt"
   exit 1
 fi
-if ! grep -Eq '^package com\\.salawat_quran\\.salawat_quran
+if ! grep -Fqx 'package com.salawat_quran.salawat_quran' "$MAIN_ACTIVITY"; then
+  echo "ERROR: MainActivity package does not match com.salawat_quran.salawat_quran"
+  cat "$MAIN_ACTIVITY"
+  exit 1
+fi
+echo "Verified Android launcher activity package: com.salawat_quran.salawat_quran"
+
 # compileSdk only affects APIs available at build time; runtime target behavior is
 # intentionally left unchanged.
 python3 - <<'PY'
