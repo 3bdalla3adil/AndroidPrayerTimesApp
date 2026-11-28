@@ -6,14 +6,10 @@ import 'package:flutter_test/flutter_test.dart';
 import '../lib/core/adaptive_controls.dart';
 
 void main() {
-  tearDown(() {
-    debugDefaultTargetPlatformOverride = null;
-  });
-
   testWidgets('Android renders Material 3 controls', (tester) async {
     debugDefaultTargetPlatformOverride = TargetPlatform.android;
-
-    await tester.pumpWidget(
+    try {
+      await tester.pumpWidget(
       const material.MaterialApp(
         home: material.Scaffold(
           body: SingleChildScrollView(
@@ -54,13 +50,16 @@ void main() {
     expect(find.byType(material.CircularProgressIndicator), findsOneWidget);
     expect(find.byType(material.AlertDialog), findsOneWidget);
     expect(find.byType(CupertinoListTile), findsNothing);
-    expect(find.byType(CupertinoSwitch), findsNothing);
+      expect(find.byType(CupertinoSwitch), findsNothing);
+    } finally {
+      debugDefaultTargetPlatformOverride = null;
+    }
   });
 
   testWidgets('iOS keeps native Cupertino controls', (tester) async {
     debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
-
-    await tester.pumpWidget(
+    try {
+      await tester.pumpWidget(
       const CupertinoApp(
         home: CupertinoPageScaffold(
           child: SingleChildScrollView(
@@ -100,6 +99,9 @@ void main() {
     expect(find.byType(CupertinoActivityIndicator), findsOneWidget);
     expect(find.byType(CupertinoAlertDialog), findsOneWidget);
     expect(find.byType(material.ListTile), findsNothing);
-    expect(find.byType(material.Switch), findsNothing);
+      expect(find.byType(material.Switch), findsNothing);
+    } finally {
+      debugDefaultTargetPlatformOverride = null;
+    }
   });
 }
