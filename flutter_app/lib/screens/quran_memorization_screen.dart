@@ -379,7 +379,7 @@ class _QuranMemorizationScreenState extends State<QuranMemorizationScreen> {
                         const SizedBox(height: 10),
                         SizedBox(
                           width: double.infinity,
-                          child: CupertinoButton.filled(
+                          child: AdaptiveButton.filled(
                             onPressed: () => setState(() => _showAyah = !_showAyah),
                             child: Text(_showAyah ? (_arabic ? 'إخفاء الآية' : 'Hide ayah') : (_arabic ? 'إظهار الآية' : 'Reveal ayah')),
                           ),
@@ -413,7 +413,7 @@ class _QuranMemorizationScreenState extends State<QuranMemorizationScreen> {
                         ),
                       ),
                       Expanded(
-                        child: CupertinoButton.filled(
+                        child: AdaptiveButton.filled(
                           onPressed: _markMemorized,
                           child: Text(_arabic ? 'حفظت الآية' : 'Memorized'),
                         ),
