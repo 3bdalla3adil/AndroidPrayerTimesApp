@@ -14,72 +14,76 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() async {
-    debugDefaultTargetPlatformOverride = TargetPlatform.android;
     SharedPreferences.setMockInitialValues({});
     SharedPreferencesAsyncPlatform.instance =
         InMemorySharedPreferencesAsync.empty();
     LocaleController.locale.value = const Locale('ar');
   });
 
-  tearDown(() {
-    debugDefaultTargetPlatformOverride = null;
-  });
-
   testWidgets(
     'Android cold start renders Material UI and opens Home without exceptions',
     (tester) async {
-      await tester.pumpWidget(const SalawatQuranApp());
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      try {
+        await tester.pumpWidget(const SalawatQuranApp());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.byType(material.MaterialApp), findsOneWidget);
-      expect(find.byType(CupertinoApp), findsNothing);
-      expect(find.text('إهداء وتقدير'), findsOneWidget);
-      expect(find.text('الدخول إلى التطبيق'), findsOneWidget);
-      expect(tester.takeException(), isNull);
+        expect(find.byType(material.MaterialApp), findsOneWidget);
+        expect(find.byType(CupertinoApp), findsNothing);
+        expect(find.text('إهداء وتقدير'), findsOneWidget);
+        expect(find.text('الدخول إلى التطبيق'), findsOneWidget);
+        expect(tester.takeException(), isNull);
 
-      // Complete the first-run dedication and verify the first usable screen.
-      await tester.tap(find.text('الدخول إلى التطبيق'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(find.text('الدخول إلى التطبيق'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.text('السلام عليكم'), findsOneWidget);
-      expect(find.byType(material.Scaffold), findsWidgets);
-      expect(find.byType(CupertinoPageScaffold), findsNothing);
-      expect(tester.takeException(), isNull);
+        expect(find.text('السلام عليكم'), findsOneWidget);
+        expect(find.byType(material.Scaffold), findsWidgets);
+        expect(find.byType(CupertinoPageScaffold), findsNothing);
+        expect(tester.takeException(), isNull);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
     },
   );
 
   testWidgets(
     'Android navigation opens More and Qibla and returns without exceptions',
     (tester) async {
-      await tester.pumpWidget(const SalawatQuranApp());
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      try {
+        await tester.pumpWidget(const SalawatQuranApp());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
-      await tester.tap(find.text('الدخول إلى التطبيق'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(find.text('الدخول إلى التطبيق'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
-      await tester.tap(find.byKey(const ValueKey('open-more')));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 350));
+        await tester.tap(find.byKey(const ValueKey('open-more')));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
-      expect(find.text('العلامات المرجعية'), findsOneWidget);
-      expect(tester.takeException(), isNull);
+        expect(find.text('العلامات المرجعية'), findsOneWidget);
+        expect(tester.takeException(), isNull);
 
-      await tester.tap(find.text('القبلة'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 350));
+        await tester.tap(find.text('القبلة'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
-      expect(find.text('اتجاه القبلة'), findsWidgets);
-      expect(tester.takeException(), isNull);
+        expect(find.text('اتجاه القبلة'), findsWidgets);
+        expect(tester.takeException(), isNull);
 
-      await tester.binding.handlePopRoute();
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 350));
-      expect(find.text('العلامات المرجعية'), findsOneWidget);
-      expect(tester.takeException(), isNull);
+        await tester.binding.handlePopRoute();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+        expect(find.text('العلامات المرجعية'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
     },
   );
 }
