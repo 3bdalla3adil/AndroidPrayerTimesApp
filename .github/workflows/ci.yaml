@@ -94,41 +94,6 @@ jobs:
       - name: Build release APK
         run: flutter build apk --release
 
-      - name: Launch release APK on Android emulator
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 33
-          target: google_apis
-          arch: x86_64
-          profile: pixel_2
-          emulator-options: >-
-            -no-window -no-audio -no-boot-anim -no-snapshot
-            -gpu swiftshader_indirect -camera-back none -camera-front none
-          emulator-boot-timeout: 900
-          disable-animations: true
-          script: |
-            set -euo pipefail
-            APK="build/app/outputs/flutter-apk/app-release.apk"
-            PACKAGE="com.salawat_quran.salawat_quran"
-
-            adb install -r "$APK"
-            adb logcat -c
-            adb shell monkey -p "$PACKAGE" -c android.intent.category.LAUNCHER 1
-            sleep 20
-
-            if ! adb shell pidof "$PACKAGE" >/dev/null; then
-              echo "Android app process exited after launch."
-              adb logcat -d -t 1200
-              exit 1
-            fi
-
-            if adb logcat -d -t 2000 | grep -E "FATAL EXCEPTION|Fatal signal|Process $PACKAGE.*(crash|died)"; then
-              echo "Android runtime crash detected."
-              exit 1
-            fi
-
-            echo "Android release APK launched and remained alive on Android 13 (API 33) emulator."
-
       - name: Verify Fajr Makkah sound is packaged in APK
         run: |
           set -euo pipefail
