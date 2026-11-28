@@ -332,21 +332,25 @@ class AppTheme {
             height: 1.45,
           ),
           navTitleTextStyle: TextStyle(
+            inherit: false,
             fontSize: 17,
             fontWeight: FontWeight.w700,
             color: CupertinoColors.label,
           ),
           navLargeTitleTextStyle: TextStyle(
+            inherit: false,
             fontSize: 32,
             fontWeight: FontWeight.w700,
             color: CupertinoColors.label,
           ),
           actionTextStyle: TextStyle(
+            inherit: false,
             fontSize: 16,
             fontWeight: FontWeight.w600,
             color: emerald,
           ),
           tabLabelTextStyle: TextStyle(
+            inherit: false,
             fontSize: 10,
             fontWeight: FontWeight.w600,
             color: CupertinoColors.secondaryLabel,
