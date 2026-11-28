@@ -246,7 +246,7 @@ class _AdhkarCard extends StatelessWidget {
                     onPressed: count == 0 ? null : onDecrement,
                     child: const Icon(CupertinoIcons.minus_circle),
                   ),
-                  CupertinoButton.filled(
+                  AdaptiveButton.filled(
                     padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
                     onPressed: complete ? null : onIncrement,
                     child: Text(complete ? 'Done' : 'Count'),
